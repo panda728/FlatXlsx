@@ -123,8 +123,8 @@ namespace FlatXlsx.Tests
         public void Serializer_DateTimeOffset()
         {
             var option = ExcelSerializerOptions.Default;
-            var value1 = DateTimeOffset.Now;
-            var value2 = DateTimeOffset.UtcNow;
+            var value1 = new DateTimeOffset(2000, 1, 1, 10, 30, 0, TimeSpan.FromHours(9));
+            var value2 = new DateTimeOffset(2000, 1, 1, 10, 30, 0, TimeSpan.Zero);
             RunStringColumnTest(
                 value1, value2,
                 value1.ToString(option.CultureInfo), value2.ToString(option.CultureInfo),
