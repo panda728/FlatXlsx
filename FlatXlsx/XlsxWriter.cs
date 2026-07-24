@@ -80,11 +80,11 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
 
     /// <summary>Writes a value to the Stream</summary>
     /// <remarks>Perform one line at a time.</remarks>
-    public async Task CopyToAsync(Stream stream)
+    public async Task CopyToAsync(Stream stream, CancellationToken cancellationToken = default)
     {
         if (stream == null)
             throw new ArgumentNullException(nameof(stream));
-        await _writer.CopyToAsync(stream);
+        await _writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
         Clear();
     }
 

@@ -157,6 +157,178 @@ public static class XlsxSerializer
         s.Write(bytes, 0, bytes.Length);
     }
 
+    /// <summary>Creates an .xlsx file asynchronously. The output is streamed; no working folder is used.</summary>
+    public static async Task ToFileAsync<T>(IEnumerable<T> rows, string fileName, XlsxSerializerOptions options, CancellationToken cancellationToken = default)
+    {
+        if (rows == null || !rows.Any())
+            return;
+
+        using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
+        await ToStreamAsync(rows, fs, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Writes .xlsx content to the stream asynchronously. The stream does not need to be
+    /// seekable (network streams are fine); it is left open after writing.</summary>
+    public static async Task ToStreamAsync<T>(IEnumerable<T> rows, Stream stream, XlsxSerializerOptions options, CancellationToken cancellationToken = default)
+    {
+        if (stream == null)
+            throw new ArgumentNullException(nameof(stream));
+        if (rows == null || !rows.Any())
+            return;
+
+        using var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true);
+
+        await WriteEntryAsync(archive, CONTENT_TYPE_XML, _contentTypes, cancellationToken).ConfigureAwait(false);
+        await WriteEntryAsync(archive, RELS + "/" + DOT_RELS, _rels, cancellationToken).ConfigureAwait(false);
+        await WriteEntryAsync(archive, BOOK_XML, _book, cancellationToken).ConfigureAwait(false);
+        await WriteEntryAsync(archive, RELS + "/" + BOOK_XML_RELS, _bookRels, cancellationToken).ConfigureAwait(false);
+        await WriteEntryAsync(archive, STYLES_XML, Encoding.UTF8.GetBytes(string.Format(
+            _styles,
+            options.DateTimeFormat,
+            options.DateFormat,
+            options.TimeFormat,
+            options.IntegerFormat,
+            options.NumberFormat
+        )), cancellationToken).ConfigureAwait(false);
+
+        using var writer = new XlsxWriter(options);
+        using (var sheetStream = archive.CreateEntry(SHEET_XML).Open())
+            await CreateSheetAsync(rows, sheetStream, writer, options, cancellationToken).ConfigureAwait(false);
+        using (var stringsStream = archive.CreateEntry(STRINGS_XML).Open())
+            await WriteSharedStringsAsync(stringsStream, writer, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Writes .xlsx content to a <see cref="System.IO.Pipelines.PipeWriter"/>
+    /// (e.g. ASP.NET Core's Response.BodyWriter). Data is flushed to the pipe as it is
+    /// produced, so backpressure is honored.</summary>
+    public static Task ToAsync<T>(IEnumerable<T> rows, System.IO.Pipelines.PipeWriter pipeWriter, XlsxSerializerOptions options, CancellationToken cancellationToken = default)
+    {
+        if (pipeWriter == null)
+            throw new ArgumentNullException(nameof(pipeWriter));
+
+        return ToStreamAsync(rows, pipeWriter.AsStream(leaveOpen: true), options, cancellationToken);
+    }
+
+    static async Task WriteEntryAsync(ZipArchive archive, string entryName, byte[] bytes, CancellationToken cancellationToken)
+    {
+        using var s = archive.CreateEntry(entryName).Open();
+        await s.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
+    }
+
+    static async Task CreateSheetAsync<T>(
+        IEnumerable<T> rows,
+        Stream stream,
+        XlsxWriter writer,
+        XlsxSerializerOptions options,
+        CancellationToken cancellationToken
+    )
+    {
+        await stream.WriteAsync(_sheetStart, 0, _sheetStart.Length, cancellationToken).ConfigureAwait(false);
+
+        if (options.HasHeaderRecord)
+            await stream.WriteAsync(_frozenTitleRow, 0, _frozenTitleRow.Length, cancellationToken).ConfigureAwait(false);
+
+        if (options.AutoFitColumns)
+            await WriteCellWidthAsync(rows, stream, writer, options, cancellationToken).ConfigureAwait(false);
+
+        await stream.WriteAsync(_dataStart, 0, _dataStart.Length, cancellationToken).ConfigureAwait(false);
+
+        var serializer = options.GetSerializer<T>();
+        if (serializer != null)
+        {
+            if (options.HasHeaderRecord)
+            {
+                writer.WriteRaw(_rowStart);
+                if (options.HeaderTitles != null && options.HeaderTitles.Any())
+                {
+                    foreach (var t in options.HeaderTitles)
+                        writer.Write(t);
+                }
+                else
+                {
+                    serializer.WriteTitle(writer, rows.First(), options);
+                }
+                writer.WriteRaw(_rowEnd);
+                await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
+            }
+
+            foreach (var row in rows)
+            {
+                writer.WriteRaw(_rowStart);
+                serializer.Serialize(writer, row, options);
+                writer.WriteRaw(_rowEnd);
+                await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        writer.WriteRaw(_dataEnd);
+
+        if (options.AutoFilter)
+        {
+            var colName = options.HeaderTitles != null && options.HeaderTitles.Any()
+                ? ToColumnName(options.HeaderTitles.Length)
+                : ToColumnName(writer.ColumnMaxLength.Count);
+
+            var range = $"A1:{colName}{rows.Count() + 1}";
+            writer.WriteRaw(_autoFilterStart);
+            writer.WriteRaw(Encoding.UTF8.GetBytes(range));
+            writer.WriteRaw(_autoFilterEnd);
+        }
+
+        writer.WriteRaw(_sheetEnd);
+        await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
+    }
+
+    static async Task WriteCellWidthAsync<T>(
+        IEnumerable<T> rows,
+        Stream stream,
+        XlsxWriter writer,
+        XlsxSerializerOptions options,
+        CancellationToken cancellationToken
+    )
+    {
+        var serializer = options.GetSerializer<T>();
+        if (serializer == null) return;
+        if (options.HasHeaderRecord && options.HeaderTitles != null)
+        {
+            foreach (var t in options.HeaderTitles)
+                writer.Write(t);
+            writer.Clear();
+        }
+        foreach (var row in rows.Take(options.AutoFitDepth))
+        {
+            serializer.Serialize(writer, row, options);
+            writer.Clear();
+        }
+        writer.StopCountingCharLength();
+
+        var size = 100 * writer.ColumnMaxLength.Count;
+        using var buffer = new ArrayPoolBufferWriter(size);
+        buffer.Write(_colStart);
+        foreach (var pair in writer.ColumnMaxLength)
+        {
+            var id = pair.Key + 1;
+            var width = Math.Min(options.AutoFitWidhtMax, pair.Value + COLUMN_WIDTH_MARGIN);
+
+            WriteUtf8Bytes(@$"<col min=""{id}"" max =""{id}"" width =""{width:0.0}"" bestFit =""1"" customWidth =""1"" />", buffer);
+        }
+        buffer.Write(_colEnd);
+        await buffer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
+    }
+
+    static async Task WriteSharedStringsAsync(Stream stream, XlsxWriter writer, CancellationToken cancellationToken)
+    {
+        await stream.WriteAsync(_sstStart, 0, _sstStart.Length, cancellationToken).ConfigureAwait(false);
+        using var buffer = new ArrayPoolBufferWriter();
+        foreach (var s in writer.SharedStrings.Keys)
+        {
+            buffer.Write(_siStart);
+            WriteUtf8Bytes(SecurityElement.Escape(s), buffer);
+            buffer.Write(_siEnd);
+            await buffer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
+        }
+        await stream.WriteAsync(_sstEnd, 0, _sstEnd.Length, cancellationToken).ConfigureAwait(false);
+    }
+
     static void CreateSheet<T>(
         IEnumerable<T> rows,
         Stream stream,

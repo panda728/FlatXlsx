@@ -72,7 +72,7 @@ public class ArrayPoolBufferWriter : IBufferWriter<byte>, IDisposable
         _written = 0;
     }
 
-    public async Task CopyToAsync(Stream stream)
+    public async Task CopyToAsync(Stream stream, CancellationToken cancellationToken = default)
     {
         CheckIfDisposed();
 
@@ -87,7 +87,7 @@ public class ArrayPoolBufferWriter : IBufferWriter<byte>, IDisposable
             return;
         }
 
-        await stream.WriteAsync(_rentedBuffer, 0, _written);
+        await stream.WriteAsync(_rentedBuffer, 0, _written, cancellationToken).ConfigureAwait(false);
 
         _committed += _written;
 
