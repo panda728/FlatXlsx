@@ -1,6 +1,6 @@
 ﻿using BenchmarkDotNet.Attributes;
 using ClosedXML.Excel;
-using FakeExcelSerializer;
+using FlatXlsx;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -199,7 +199,7 @@ namespace BenchmarkSample
         [Benchmark(Baseline = true)]
         public void ClosedXml()
         {
-            using (var book = new XLWorkbook(XLEventTracking.Disabled))
+            using (var book = new XLWorkbook())
             {
                 var sheet = book.AddWorksheet("ClosedXml");
                 var row = WriteTitle(sheet) + 1;
@@ -247,9 +247,9 @@ namespace BenchmarkSample
         }
         #endregion
 
-        #region FakeExcelSerializer
+        #region FlatXlsx
         [Benchmark]
-        public void FakeExcelSerializer()
+        public void FlatXlsx()
         {
             var customOptions = ExcelSerializerOptions.Default with
             {

@@ -1,11 +1,11 @@
-# FakeExcelSerializer
+﻿# FlatXlsx
 Convert object to Excel file (.xlsx) [Open XML SpreadsheetML File Format]
 
 ## Getting Started
 Supporting platform is .NET Standard 2.0, 2.1, .NET 5, .NET 6.
 
 ~~~
-PM> Install-Package FakeExcelSerializer
+PM> Install-Package FlatXlsx
 ~~~
 
 ## Usage
@@ -25,13 +25,13 @@ N = 100 lines.
 |              Method |   N |        Mean |     Error |    StdDev | Ratio |      Gen 0 |      Gen 1 |     Gen 2 |  Allocated |
 |-------------------- |---- |------------:|----------:|----------:|------:|-----------:|-----------:|----------:|-----------:|
 |           ClosedXml |   1 |    73.00 ms |  1.450 ms |  4.091 ms |  1.00 |          - |          - |         - |   5,738 KB |
-| FakeExcelSerializer |   1 |    18.88 ms |  0.362 ms |  0.417 ms |  0.24 |          - |          - |         - |     126 KB |
+| FlatXlsx |   1 |    18.88 ms |  0.362 ms |  0.417 ms |  0.24 |          - |          - |         - |     126 KB |
 |                     |     |             |           |           |       |            |            |           |            |
 |           ClosedXml |  10 |   630.72 ms |  4.783 ms |  3.994 ms |  1.00 |  9000.0000 |  2000.0000 |         - |  52,663 KB |
-| FakeExcelSerializer |  10 |    25.86 ms |  0.490 ms |  0.619 ms |  0.04 |   156.2500 |    31.2500 |         - |     661 KB |
+| FlatXlsx |  10 |    25.86 ms |  0.490 ms |  0.619 ms |  0.04 |   156.2500 |    31.2500 |         - |     661 KB |
 |                     |     |             |           |           |       |            |            |           |            |
 |           ClosedXml | 100 | 6,620.75 ms | 57.586 ms | 48.087 ms |  1.00 | 91000.0000 | 22000.0000 | 5000.0000 | 513,948 KB |
-| FakeExcelSerializer | 100 |    77.63 ms |  1.491 ms |  1.395 ms |  0.01 |  1428.5714 |   142.8571 |         - |   6,005 KB |
+| FlatXlsx | 100 |    77.63 ms |  1.491 ms |  1.395 ms |  0.01 |  1428.5714 |   142.8571 |         - |   6,005 KB |
 
 ## Example-1
 If you pass an object, it will be converted to an Excel file.  

@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Benchmark/Benchmark.csproj" />
+  <Project Path="FlatXlsx.Console/FlatXlsx.Console.csproj" />
+  <Project Path="FlatXlsx.Tests/FlatXlsx.Tests.csproj" />
+  <Project Path="FlatXlsx/FlatXlsx.csproj" />
+</Solution>

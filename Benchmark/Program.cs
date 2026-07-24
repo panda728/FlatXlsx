@@ -28,8 +28,8 @@ sw.Stop();
 Console.WriteLine($"ClosedXml : {sw.ElapsedMilliseconds:#,##0}ms");
 
 sw.Restart();
-ex.FakeExcelSerializer();
-Console.WriteLine($"FakeExcelSerializer : {sw.ElapsedMilliseconds:#,##0}ms");
+ex.FlatXlsx();
+Console.WriteLine($"FlatXlsx : {sw.ElapsedMilliseconds:#,##0}ms");
 sw.Stop();
 
 #else
