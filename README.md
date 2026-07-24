@@ -33,7 +33,16 @@ the following newer .NET types are supported when running on a modern target fra
 Folder creation permissions are required since a working folder will be used.
 
 ## Benchmark
-N = 100 lines.
+
+FlatXlsx 1.0.0 on .NET 10 (ShortRun, N = 100 lines):
+
+| Method   | N   | Mean     | Allocated  |
+|--------- |---- |---------:|-----------:|
+| FlatXlsx | 1   | 17.17 ms |  137.54 KB |
+| FlatXlsx | 10  | 21.49 ms |  672.48 KB |
+| FlatXlsx | 100 | 48.71 ms | 6,022.02 KB |
+
+Reference (FakeExcelSerializer 1.3.4 on .NET 6), N = 100 lines:
 
 |              Method |   N |        Mean |     Error |    StdDev | Ratio |      Gen 0 |      Gen 1 |     Gen 2 |  Allocated |
 |-------------------- |---- |------------:|----------:|----------:|------:|-----------:|-----------:|----------:|-----------:|

@@ -33,5 +33,5 @@ Console.WriteLine($"FlatXlsx : {sw.ElapsedMilliseconds:#,##0}ms");
 sw.Stop();
 
 #else
-BenchmarkRunner.Run<ExportExcel>();
+BenchmarkRunner.Run<ExportExcel>(null, args);
 #endif
