@@ -9,7 +9,7 @@
     <Version>1.0.0</Version>
     <Authors>Hideyuki Kitao</Authors>
     <Company />
-    <LangVersion>10.0</LangVersion>
+    <LangVersion>latest</LangVersion>
     <Description>FlatXlsx converts object into Excel file</Description>
     <PackageProjectUrl>https://github.com/panda728/FlatXlsx</PackageProjectUrl>
     <Copyright>Copyright (c) Hideyuki Kitao 2022-2026</Copyright>

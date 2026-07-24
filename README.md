@@ -1,8 +1,10 @@
 ﻿# FlatXlsx
 Convert object to Excel file (.xlsx) [Open XML SpreadsheetML File Format]
 
+FlatXlsx is the successor of [FakeExcelSerializer](https://github.com/panda728/FakeExcelSerializer), renamed and updated for .NET 10.
+
 ## Getting Started
-Supporting platform is .NET Standard 2.0, 2.1, .NET 5, .NET 6.
+Supported platforms: .NET Standard 2.0 / 2.1 (.NET Framework 4.6.2+, .NET 5/6/7), .NET 8, and .NET 10.
 
 ~~~
 PM> Install-Package FlatXlsx
@@ -14,6 +16,17 @@ You can use `ExcelSerializer.ToFile` to create .xlsx file.
 ~~~
 ExcelSerializer.ToFile(Users, "test.xlsx", ExcelSerializerOptions.Default);
 ~~~
+
+## Supported types
+
+In addition to the standard primitives, `string`, `Guid`, `Enum`, `DateTime`, `DateTimeOffset`, `TimeSpan`, and `Uri`,
+the following newer .NET types are supported when running on a modern target framework:
+
+| Type | Available on |
+|---|---|
+| `DateOnly` / `TimeOnly` | .NET 8+ |
+| `Half` | .NET 8+ |
+| `Int128` / `UInt128` | .NET 8+ |
 
 ## Notice
 

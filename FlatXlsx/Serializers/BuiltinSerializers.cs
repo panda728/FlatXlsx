@@ -73,6 +73,34 @@ internal class BuiltinSerializers
         }
     }
 
+#if NET5_0_OR_GREATER
+    public sealed class HalfExcelSerializer : IExcelSerializer<Half>
+    {
+        public void WriteTitle(ref ExcelSerializerWriter writer, Half value, ExcelSerializerOptions options, string name = "value")
+            => writer.Write(name);
+        public void Serialize(ref ExcelSerializerWriter writer, Half value, ExcelSerializerOptions options)
+            => writer.WritePrimitive(value);
+    }
+#endif
+
+#if NET7_0_OR_GREATER
+    public sealed class Int128ExcelSerializer : IExcelSerializer<Int128>
+    {
+        public void WriteTitle(ref ExcelSerializerWriter writer, Int128 value, ExcelSerializerOptions options, string name = "value")
+            => writer.Write(name);
+        public void Serialize(ref ExcelSerializerWriter writer, Int128 value, ExcelSerializerOptions options)
+            => writer.WritePrimitive(value);
+    }
+
+    public sealed class UInt128ExcelSerializer : IExcelSerializer<UInt128>
+    {
+        public void WriteTitle(ref ExcelSerializerWriter writer, UInt128 value, ExcelSerializerOptions options, string name = "value")
+            => writer.Write(name);
+        public void Serialize(ref ExcelSerializerWriter writer, UInt128 value, ExcelSerializerOptions options)
+            => writer.WritePrimitive(value);
+    }
+#endif
+
 #if NET6_0_OR_GREATER
     public sealed class DateOnlyExcelSerializer : IExcelSerializer<DateOnly>
     {

@@ -258,6 +258,16 @@ public class ExcelSerializerWriter : IDisposable
     public void WritePrimitive(short value) => WriterNumber($"{value}".AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WritePrimitive(ushort value) => WriterNumber($"{value}".AsSpan());
+#if NET5_0_OR_GREATER
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WritePrimitive(Half value) => WriterNumber($"{value}".AsSpan());
+#endif
+#if NET7_0_OR_GREATER
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WritePrimitive(Int128 value) => WriterInteger($"{value}".AsSpan());
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WritePrimitive(UInt128 value) => WriterInteger($"{value}".AsSpan());
+#endif
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WriteDateTime(DateTime value)
