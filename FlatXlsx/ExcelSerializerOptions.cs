@@ -16,6 +16,7 @@ public record ExcelSerializerOptions(IExcelSerializerProvider Provider)
     public bool AutoFitColumns { get; init; } = false;
     public int AutoFitDepth { get; init; } = 200;
     public int AutoFitWidhtMax { get; init; } = 100;
+    [Obsolete("Output is now streamed directly; no working folder is used and this value is ignored.")]
     public string WorkPath { get; init; } = "";
 
     public string DateTimeFormat { get; init; } = "yyyy/mm/dd hh:mm;@";

@@ -98,67 +98,64 @@ public static class ExcelSerializer
     private const string BOOK_XML_RELS = "book.xml.rels";
     private const string DOT_RELS = ".rels";
 
+    /// <summary>Creates an .xlsx file. The output is streamed; no working folder is used.</summary>
     public static void ToFile<T>(IEnumerable<T> rows, string fileName, ExcelSerializerOptions options)
     {
         if (rows == null || !rows.Any())
             return;
 
-        var workPathRoot = Path.Combine(options.WorkPath, Guid.NewGuid().ToString());
-        if (!Directory.Exists(workPathRoot))
-            Directory.CreateDirectory(workPathRoot);
-        try
-        {
-            using (var sheetStream = CreateStream(Path.Combine(workPathRoot, SHEET_XML)))
-            using (var stringsStream = CreateStream(Path.Combine(workPathRoot, STRINGS_XML)))
-            using (var writer = new ExcelSerializerWriter(options))
-            {
-                CreateSheet(rows, sheetStream, writer, options);
-                WriteSharedStrings(stringsStream, writer);
-            }
-
-            var workRelPath = Path.Combine(workPathRoot, RELS);
-            if (!Directory.Exists(workRelPath))
-                Directory.CreateDirectory(workRelPath);
-
-            var _stylesBytes = Encoding.UTF8.GetBytes(string.Format(
-                _styles,
-                options.DateTimeFormat,
-                options.DateFormat,
-                options.TimeFormat,
-                options.IntegerFormat,
-                options.NumberFormat
-            ));
-
-            WriteStream(_contentTypes, Path.Combine(workPathRoot, CONTENT_TYPE_XML));
-            WriteStream(_book, Path.Combine(workPathRoot, BOOK_XML));
-            WriteStream(_stylesBytes, Path.Combine(workPathRoot, STYLES_XML));
-            WriteStream(_rels, Path.Combine(workRelPath, DOT_RELS));
-            WriteStream(_bookRels, Path.Combine(workRelPath, BOOK_XML_RELS));
-
-            if (File.Exists(fileName))
-                File.Delete(fileName);
-
-            ZipFile.CreateFromDirectory(workPathRoot, fileName);
-        }
-        finally
-        {
-            try
-            {
-                if (Directory.Exists(workPathRoot))
-                    Directory.Delete(workPathRoot, true);
-            }
-            catch { }
-        }
+        using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
+        ToStream(rows, fs, options);
     }
 
-    static void WriteStream(byte[] bytes, string fileName)
+    /// <summary>Writes .xlsx content to the stream. The stream does not need to be seekable
+    /// (network streams are fine); it is left open after writing.</summary>
+    public static void ToStream<T>(IEnumerable<T> rows, Stream stream, ExcelSerializerOptions options)
     {
-        using (var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None))
-            fs.Write(bytes, 0, bytes.Length);
+        if (stream == null)
+            throw new ArgumentNullException(nameof(stream));
+        if (rows == null || !rows.Any())
+            return;
+
+        using var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true);
+
+        WriteEntry(archive, CONTENT_TYPE_XML, _contentTypes);
+        WriteEntry(archive, RELS + "/" + DOT_RELS, _rels);
+        WriteEntry(archive, BOOK_XML, _book);
+        WriteEntry(archive, RELS + "/" + BOOK_XML_RELS, _bookRels);
+        WriteEntry(archive, STYLES_XML, Encoding.UTF8.GetBytes(string.Format(
+            _styles,
+            options.DateTimeFormat,
+            options.DateFormat,
+            options.TimeFormat,
+            options.IntegerFormat,
+            options.NumberFormat
+        )));
+
+        using var writer = new ExcelSerializerWriter(options);
+        using (var sheetStream = archive.CreateEntry(SHEET_XML).Open())
+            CreateSheet(rows, sheetStream, writer, options);
+        using (var stringsStream = archive.CreateEntry(STRINGS_XML).Open())
+            WriteSharedStrings(stringsStream, writer);
     }
 
-    static Stream CreateStream(string fileName)
-        => new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
+    /// <summary>Writes .xlsx content to an <see cref="IBufferWriter{T}"/> such as
+    /// System.IO.Pipelines.PipeWriter (e.g. ASP.NET Core's Response.BodyWriter).
+    /// Flushing the underlying pipe is left to the caller.</summary>
+    public static void To<T>(IEnumerable<T> rows, IBufferWriter<byte> bufferWriter, ExcelSerializerOptions options)
+    {
+        if (bufferWriter == null)
+            throw new ArgumentNullException(nameof(bufferWriter));
+
+        using var stream = new BufferWriterStream(bufferWriter);
+        ToStream(rows, stream, options);
+    }
+
+    static void WriteEntry(ZipArchive archive, string entryName, byte[] bytes)
+    {
+        using var s = archive.CreateEntry(entryName).Open();
+        s.Write(bytes, 0, bytes.Length);
+    }
 
     static void CreateSheet<T>(
         IEnumerable<T> rows,

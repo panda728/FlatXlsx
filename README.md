@@ -13,8 +13,25 @@ PM> Install-Package FlatXlsx
 ## Usage
 You can use `ExcelSerializer.ToFile` to create .xlsx file.
 
-~~~
+~~~csharp
 ExcelSerializer.ToFile(Users, "test.xlsx", ExcelSerializerOptions.Default);
+~~~
+
+`ToStream` writes to any `Stream` (it does not need to be seekable), and `To` writes to any
+`IBufferWriter<byte>` — including `System.IO.Pipelines.PipeWriter`. Output is fully streamed;
+no temporary files or working folder are used.
+
+~~~csharp
+// Stream
+ExcelSerializer.ToStream(Users, stream, ExcelSerializerOptions.Default);
+
+// ASP.NET Core: write directly to the response without buffering a file
+app.MapGet("/users.xlsx", (HttpResponse response) =>
+{
+    response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    ExcelSerializer.To(GetUsers(), response.BodyWriter, ExcelSerializerOptions.Default);
+    return Task.CompletedTask;
+});
 ~~~
 
 ## Supported types
@@ -37,7 +54,8 @@ but Excel displays numbers with at most 15 digits of precision.
 
 ## Notice
 
-Folder creation permissions are required since a working folder will be used.
+Output is streamed directly to the destination; no working folder is used.
+(`ExcelSerializerOptions.WorkPath` is obsolete and ignored.)
 
 ## Benchmark
 
