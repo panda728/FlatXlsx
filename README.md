@@ -34,6 +34,20 @@ app.MapGet("/users.xlsx", (HttpResponse response) =>
 });
 ~~~
 
+Async variants are available: `ToFileAsync`, `ToStreamAsync`, and `ToAsync(PipeWriter)`.
+The PipeWriter overload flushes as data is produced, so pipe backpressure is honored.
+
+~~~csharp
+await XlsxSerializer.ToFileAsync(Users, "test.xlsx", XlsxSerializerOptions.Default, cancellationToken);
+
+// ASP.NET Core, fully async
+app.MapGet("/users.xlsx", async (HttpResponse response, CancellationToken ct) =>
+{
+    response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    await XlsxSerializer.ToAsync(GetUsers(), response.BodyWriter, XlsxSerializerOptions.Default, ct);
+});
+~~~
+
 ## Supported types
 
 | Category | Types | Available on |
