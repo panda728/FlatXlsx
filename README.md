@@ -73,26 +73,18 @@ Output is streamed directly to the destination; no working folder is used.
 
 ## Benchmark
 
-FlatXlsx 1.0.0 on .NET 10 (ShortRun, N = 100 lines):
+FlatXlsx 1.0.0 vs ClosedXML 0.105.0, .NET 10 (BenchmarkDotNet 0.15.8, ShortRun; N = 100 lines):
 
-| Method   | N   | Mean     | Allocated  |
-|--------- |---- |---------:|-----------:|
-| FlatXlsx | 1   | 17.17 ms |  137.54 KB |
-| FlatXlsx | 10  | 21.49 ms |  672.48 KB |
-| FlatXlsx | 100 | 48.71 ms | 6,022.02 KB |
+| Method    | N   | Mean        | Ratio | Gen0       | Gen1      | Gen2      | Allocated    | Alloc Ratio |
+|---------- |---- |------------:|------:|-----------:|----------:|----------:|-------------:|------------:|
+| ClosedXml | 1   |    49.78 ms |  1.00 |   600.0000 |  200.0000 |         - |   5,269.3 KB |       1.000 |
+| FlatXlsx  | 1   |     0.75 ms |  0.02 |     1.9531 |         - |         - |      17.2 KB |       0.003 |
+| ClosedXml | 10  |   172.17 ms |  1.00 |  5333.3333 |  333.3333 |         - |  48,481.2 KB |       1.000 |
+| FlatXlsx  | 10  |     2.85 ms |  0.02 |          - |         - |         - |      17.2 KB |       0.000 |
+| ClosedXml | 100 | 1,781.70 ms |  1.00 | 53000.0000 | 9000.0000 | 2000.0000 | 471,086.1 KB |       1.000 |
+| FlatXlsx  | 100 |    22.01 ms |  0.01 |          - |         - |         - |      17.2 KB |       0.000 |
 
-Reference (FakeXlsxSerializer 1.3.4 on .NET 6), N = 100 lines:
-
-|              Method |   N |        Mean |     Error |    StdDev | Ratio |      Gen 0 |      Gen 1 |     Gen 2 |  Allocated |
-|-------------------- |---- |------------:|----------:|----------:|------:|-----------:|-----------:|----------:|-----------:|
-|           ClosedXml |   1 |    73.00 ms |  1.450 ms |  4.091 ms |  1.00 |          - |          - |         - |   5,738 KB |
-| FlatXlsx |   1 |    18.88 ms |  0.362 ms |  0.417 ms |  0.24 |          - |          - |         - |     126 KB |
-|                     |     |             |           |           |       |            |            |           |            |
-|           ClosedXml |  10 |   630.72 ms |  4.783 ms |  3.994 ms |  1.00 |  9000.0000 |  2000.0000 |         - |  52,663 KB |
-| FlatXlsx |  10 |    25.86 ms |  0.490 ms |  0.619 ms |  0.04 |   156.2500 |    31.2500 |         - |     661 KB |
-|                     |     |             |           |           |       |            |            |           |            |
-|           ClosedXml | 100 | 6,620.75 ms | 57.586 ms | 48.087 ms |  1.00 | 91000.0000 | 22000.0000 | 5000.0000 | 513,948 KB |
-| FlatXlsx | 100 |    77.63 ms |  1.491 ms |  1.395 ms |  0.01 |  1428.5714 |   142.8571 |         - |   6,005 KB |
+Output is fully streamed, so allocations stay flat (~17 KB) regardless of row count.
 
 ## Example-1
 If you pass an object, it will be converted to an Excel file.  
