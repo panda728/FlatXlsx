@@ -7,15 +7,15 @@ namespace FlatXlsx.Tests
     {
         void RunTest<T>(
             T value1, string value1ShouldBe,
-            ExcelSerializerOptions option)
+            XlsxSerializerOptions option)
         {
             var serializer = option.GetSerializer<T>();
             Assert.NotNull(serializer);
             if (serializer == null) return;
-            var writer = new ExcelSerializerWriter(option);
+            var writer = new XlsxWriter(option);
             try
             {
-                serializer.Serialize(ref writer, value1, option);
+                serializer.Serialize(writer, value1, option);
                 Assert.Empty(writer.SharedStrings);
                 writer.ToString().Should().Be(value1ShouldBe);
             }

@@ -10,7 +10,7 @@ using System.Text;
 
 namespace FlatXlsx;
 
-public static class ExcelSerializer
+public static class XlsxSerializer
 {
     readonly static byte[] _contentTypes = Encoding.UTF8.GetBytes(@"<Types xmlns=""http://schemas.openxmlformats.org/package/2006/content-types"">
 <Default Extension=""rels"" ContentType=""application/vnd.openxmlformats-package.relationships+xml""/>
@@ -99,7 +99,7 @@ public static class ExcelSerializer
     private const string DOT_RELS = ".rels";
 
     /// <summary>Creates an .xlsx file. The output is streamed; no working folder is used.</summary>
-    public static void ToFile<T>(IEnumerable<T> rows, string fileName, ExcelSerializerOptions options)
+    public static void ToFile<T>(IEnumerable<T> rows, string fileName, XlsxSerializerOptions options)
     {
         if (rows == null || !rows.Any())
             return;
@@ -110,7 +110,7 @@ public static class ExcelSerializer
 
     /// <summary>Writes .xlsx content to the stream. The stream does not need to be seekable
     /// (network streams are fine); it is left open after writing.</summary>
-    public static void ToStream<T>(IEnumerable<T> rows, Stream stream, ExcelSerializerOptions options)
+    public static void ToStream<T>(IEnumerable<T> rows, Stream stream, XlsxSerializerOptions options)
     {
         if (stream == null)
             throw new ArgumentNullException(nameof(stream));
@@ -132,7 +132,7 @@ public static class ExcelSerializer
             options.NumberFormat
         )));
 
-        using var writer = new ExcelSerializerWriter(options);
+        using var writer = new XlsxWriter(options);
         using (var sheetStream = archive.CreateEntry(SHEET_XML).Open())
             CreateSheet(rows, sheetStream, writer, options);
         using (var stringsStream = archive.CreateEntry(STRINGS_XML).Open())
@@ -142,7 +142,7 @@ public static class ExcelSerializer
     /// <summary>Writes .xlsx content to an <see cref="IBufferWriter{T}"/> such as
     /// System.IO.Pipelines.PipeWriter (e.g. ASP.NET Core's Response.BodyWriter).
     /// Flushing the underlying pipe is left to the caller.</summary>
-    public static void To<T>(IEnumerable<T> rows, IBufferWriter<byte> bufferWriter, ExcelSerializerOptions options)
+    public static void To<T>(IEnumerable<T> rows, IBufferWriter<byte> bufferWriter, XlsxSerializerOptions options)
     {
         if (bufferWriter == null)
             throw new ArgumentNullException(nameof(bufferWriter));
@@ -160,8 +160,8 @@ public static class ExcelSerializer
     static void CreateSheet<T>(
         IEnumerable<T> rows,
         Stream stream,
-        ExcelSerializerWriter writer,
-        ExcelSerializerOptions options
+        XlsxWriter writer,
+        XlsxSerializerOptions options
     )
     {
         stream.Write(_sheetStart, 0, _sheetStart.Length);
@@ -170,7 +170,7 @@ public static class ExcelSerializer
             stream.Write(_frozenTitleRow, 0, _frozenTitleRow.Length);
 
         if (options.AutoFitColumns)
-            WriteCellWidth(rows, ref stream, ref writer, options);
+            WriteCellWidth(rows, stream, writer, options);
 
         stream.Write(_dataStart, 0, _dataStart.Length);
 
@@ -187,7 +187,7 @@ public static class ExcelSerializer
                 }
                 else
                 {
-                    serializer.WriteTitle(ref writer, rows.First(), options);
+                    serializer.WriteTitle(writer, rows.First(), options);
                 }
                 writer.WriteRaw(_rowEnd);
                 writer.CopyTo(stream);
@@ -195,16 +195,16 @@ public static class ExcelSerializer
 
 #if NET5_0_OR_GREATER
             if (rows is T[] arr)
-                WriteRowsSpan(arr.AsSpan(), ref stream, ref writer, serializer, options);
+                WriteRowsSpan(arr.AsSpan(), stream, writer, serializer, options);
             else if (rows is List<T> list)
-                WriteRowsSpan(CollectionsMarshal.AsSpan(list), ref stream, ref writer, serializer, options);
+                WriteRowsSpan(CollectionsMarshal.AsSpan(list), stream, writer, serializer, options);
             else
-                WriteRows(rows, ref stream, ref writer, serializer, options);
+                WriteRows(rows, stream, writer, serializer, options);
 #else
             if (rows is T[] arr)
-                WriteRowsSpan(arr.AsSpan(), ref stream, ref writer, serializer, options);
+                WriteRowsSpan(arr.AsSpan(), stream, writer, serializer, options);
             else
-                WriteRows(rows, ref stream, ref writer, serializer, options);
+                WriteRows(rows, stream, writer, serializer, options);
 #endif
         }
         writer.WriteRaw(_dataEnd);
@@ -244,16 +244,16 @@ public static class ExcelSerializer
 
     static void WriteRowsSpan<T>(
         Span<T> rows,
-        ref Stream stream,
-        ref ExcelSerializerWriter writer,
-        IExcelSerializer<T> serializer,
-        ExcelSerializerOptions options
+        Stream stream,
+        XlsxWriter writer,
+        IXlsxSerializer<T> serializer,
+        XlsxSerializerOptions options
     )
     {
         foreach (var row in rows)
         {
             writer.WriteRaw(_rowStart);
-            serializer.Serialize(ref writer, row, options);
+            serializer.Serialize(writer, row, options);
             writer.WriteRaw(_rowEnd);
             writer.CopyTo(stream);
         }
@@ -261,16 +261,16 @@ public static class ExcelSerializer
 
     static void WriteRows<T>(
         IEnumerable<T> rows,
-        ref Stream stream,
-        ref ExcelSerializerWriter writer,
-        IExcelSerializer<T> serializer,
-        ExcelSerializerOptions options
+        Stream stream,
+        XlsxWriter writer,
+        IXlsxSerializer<T> serializer,
+        XlsxSerializerOptions options
     )
     {
         foreach (var row in rows)
         {
             writer.WriteRaw(_rowStart);
-            serializer.Serialize(ref writer, row, options);
+            serializer.Serialize(writer, row, options);
             writer.WriteRaw(_rowEnd);
             writer.CopyTo(stream);
         }
@@ -278,9 +278,9 @@ public static class ExcelSerializer
 
     static void WriteCellWidth<T>(
         IEnumerable<T> rows,
-        ref Stream stream,
-        ref ExcelSerializerWriter writer,
-        ExcelSerializerOptions options
+        Stream stream,
+        XlsxWriter writer,
+        XlsxSerializerOptions options
     )
     {
         // Counting the number of characters in Writer's internal process
@@ -295,7 +295,7 @@ public static class ExcelSerializer
         }
         foreach (var row in rows.Take(options.AutoFitDepth))
         {
-            serializer.Serialize(ref writer, row, options);
+            serializer.Serialize(writer, row, options);
             writer.Clear();
         }
         writer.StopCountingCharLength();
@@ -314,7 +314,7 @@ public static class ExcelSerializer
         buffer.CopyTo(stream);
     }
 
-    static void WriteSharedStrings(Stream stream, ExcelSerializerWriter writer)
+    static void WriteSharedStrings(Stream stream, XlsxWriter writer)
     {
         stream.Write(_sstStart, 0, _sstStart.Length);
         using var buffer = new ArrayPoolBufferWriter();

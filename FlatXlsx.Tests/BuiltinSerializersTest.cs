@@ -7,17 +7,17 @@ namespace FlatXlsx.Tests
         void RunStringColumnTest<T>(
             T value1, T value2,
             string value1ShouldBe, string value2ShouldBe,
-            ExcelSerializerOptions option)
+            XlsxSerializerOptions option)
         {
             var serializer = option.GetSerializer<T>();
             Assert.NotNull(serializer);
             if (serializer == null) return;
-            var writer = new ExcelSerializerWriter(option);
+            var writer = new XlsxWriter(option);
             try
             {
-                serializer.Serialize(ref writer, value1, option);
-                serializer.Serialize(ref writer, value2, option);
-                serializer.Serialize(ref writer, value1, option);
+                serializer.Serialize(writer, value1, option);
+                serializer.Serialize(writer, value2, option);
+                serializer.Serialize(writer, value1, option);
 
                 Assert.Equal(2, writer.SharedStrings.Count);
 
@@ -41,15 +41,15 @@ namespace FlatXlsx.Tests
 
         void RunColumnTest<T>(
             T value1, string value1ShouldBe,
-            ExcelSerializerOptions option)
+            XlsxSerializerOptions option)
         {
             var serializer = option.GetSerializer<T>();
             Assert.NotNull(serializer);
             if (serializer == null) return;
-            var writer = new ExcelSerializerWriter(option);
+            var writer = new XlsxWriter(option);
             try
             {
-                serializer.Serialize(ref writer, value1, option);
+                serializer.Serialize(writer, value1, option);
 
                 Assert.Empty(writer.SharedStrings);
 
@@ -71,7 +71,7 @@ namespace FlatXlsx.Tests
             RunStringColumnTest(
                 "column1", "column2",
                 "column1", "column2",
-                ExcelSerializerOptions.Default);
+                XlsxSerializerOptions.Default);
         }
 
         [Fact]
@@ -80,7 +80,7 @@ namespace FlatXlsx.Tests
             RunStringColumnTest(
                 'A', 'Z',
                 "A", "Z",
-                ExcelSerializerOptions.Default);
+                XlsxSerializerOptions.Default);
         }
 
         [Fact]
@@ -92,7 +92,7 @@ namespace FlatXlsx.Tests
             RunStringColumnTest(
                 guid1, guid2,
                 guid1.ToString(), guid2.ToString(),
-                ExcelSerializerOptions.Default);
+                XlsxSerializerOptions.Default);
         }
 
         enum DayOfWeek
@@ -106,7 +106,7 @@ namespace FlatXlsx.Tests
             RunStringColumnTest(
                 DayOfWeek.Mon, DayOfWeek.Tue,
                 DayOfWeek.Mon.ToString(), DayOfWeek.Tue.ToString(),
-                ExcelSerializerOptions.Default);
+                XlsxSerializerOptions.Default);
         }
 
         [Fact]
@@ -116,13 +116,13 @@ namespace FlatXlsx.Tests
             RunColumnTest(
                 value,
                 "<c t=\"d\" s=\"3\"><v>2000-01-01T00:00:00</v></c>",
-                ExcelSerializerOptions.Default);
+                XlsxSerializerOptions.Default);
         }
 
         [Fact]
         public void Serializer_DateTimeOffset()
         {
-            var option = ExcelSerializerOptions.Default;
+            var option = XlsxSerializerOptions.Default;
             var value1 = new DateTimeOffset(2000, 1, 1, 10, 30, 0, TimeSpan.FromHours(9));
             var value2 = new DateTimeOffset(2000, 1, 1, 10, 30, 0, TimeSpan.Zero);
             RunStringColumnTest(
@@ -139,7 +139,7 @@ namespace FlatXlsx.Tests
             RunStringColumnTest(
                 value1, value2,
                 "10:00:00", "-10:00:00",
-                ExcelSerializerOptions.Default);
+                XlsxSerializerOptions.Default);
         }
         [Fact]
         public void Serializer_Uri()
@@ -149,13 +149,13 @@ namespace FlatXlsx.Tests
             RunStringColumnTest(
                 value1, value2,
                 "http://hoge.com/fuga", "http://hoge.com/fugafuga",
-                ExcelSerializerOptions.Default);
+                XlsxSerializerOptions.Default);
         }
 #if NET6_0_OR_GREATER
         [Fact]
         public void Serializer_DateOnly()
         {
-            var option = ExcelSerializerOptions.Default;
+            var option = XlsxSerializerOptions.Default;
             var value1 = DateOnly.FromDateTime(new DateTime(2000, 1, 1));
             var value2 = DateOnly.FromDateTime(new DateTime(9999, 12, 31));
             RunColumnTest(value1, "<c t=\"d\" s=\"3\"><v>2000-01-01T00:00:00</v></c>", option);
@@ -164,7 +164,7 @@ namespace FlatXlsx.Tests
         [Fact]
         public void Serializer_TimeOnly()
         {
-            var option = ExcelSerializerOptions.Default;
+            var option = XlsxSerializerOptions.Default;
             var value1 = TimeOnly.FromDateTime(new DateTime(2000, 1, 1, 0, 0, 0));
             var value2 = TimeOnly.FromDateTime(new DateTime(9999, 12, 31, 23, 59, 59));
             RunColumnTest(value1, "<c t=\"d\" s=\"4\"><v>1900-01-01T00:00:00</v></c>", option);

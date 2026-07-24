@@ -21,21 +21,21 @@
 namespace FlatXlsx.Serializers
 {
 <# for(var i = 1; i <= MaxTupleCount; i++) { #>
-    public sealed class TupleExcelSerializer<<#= BuildTypeParameters(i) #>> : IExcelSerializer<Tuple<<#= BuildTypeParameters(i) #>>>
+    public sealed class TupleXlsxSerializer<<#= BuildTypeParameters(i) #>> : IXlsxSerializer<Tuple<<#= BuildTypeParameters(i) #>>>
 <# if(i == MaxTupleCount) { #>
         where TRest : notnull
 <# } #>
     {
-		public void WriteTitle(ref ExcelSerializerWriter writer, Tuple<<#= BuildTypeParameters(i) #>> value, ExcelSerializerOptions options, string name = "value"){
+		public void WriteTitle(XlsxWriter writer, Tuple<<#= BuildTypeParameters(i) #>> value, XlsxSerializerOptions options, string name = "value"){
             writer.EnterAndValidate();
 <# for(var j = 1; j <= i; j++) { #>
 <# if(j != 1) { #>
 <# } #>
-            options.GetRequiredSerializer<<#= BuildTypeParameter(j) #>>().WriteTitle(ref writer, value.<#= BuildGetItemProperty(j) #>, options, <#= BuildTitleParameter(j) #>);
+            options.GetRequiredSerializer<<#= BuildTypeParameter(j) #>>().WriteTitle(writer, value.<#= BuildGetItemProperty(j) #>, options, <#= BuildTitleParameter(j) #>);
 <# } #>
             writer.Exit();
         }
-        public void Serialize(ref ExcelSerializerWriter writer, Tuple<<#= BuildTypeParameters(i) #>> value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, Tuple<<#= BuildTypeParameters(i) #>> value, XlsxSerializerOptions options)
         {
             if (value == null) {
                 writer.WriteEmpty();
@@ -45,35 +45,35 @@ namespace FlatXlsx.Serializers
 <# for(var j = 1; j <= i; j++) { #>
 <# if(j != 1) { #>
 <# } #>
-            options.GetRequiredSerializer<<#= BuildTypeParameter(j) #>>().Serialize(ref writer, value.<#= BuildGetItemProperty(j) #>, options);
+            options.GetRequiredSerializer<<#= BuildTypeParameter(j) #>>().Serialize(writer, value.<#= BuildGetItemProperty(j) #>, options);
 <# } #>
             writer.Exit();
         }
     }
 
-    public sealed class ValueTupleExcelSerializer<<#= BuildTypeParameters(i) #>> : IExcelSerializer<ValueTuple<<#= BuildTypeParameters(i) #>>>
+    public sealed class ValueTupleXlsxSerializer<<#= BuildTypeParameters(i) #>> : IXlsxSerializer<ValueTuple<<#= BuildTypeParameters(i) #>>>
 <# if(i == MaxTupleCount) { #>
         where TRest : struct
 <# } #>
     {
-		public void WriteTitle(ref ExcelSerializerWriter writer, ValueTuple<<#= BuildTypeParameters(i) #>> value, ExcelSerializerOptions options, string name = "value"){
+		public void WriteTitle(XlsxWriter writer, ValueTuple<<#= BuildTypeParameters(i) #>> value, XlsxSerializerOptions options, string name = "value"){
         {
             writer.EnterAndValidate();
 <# for(var j = 1; j <= i; j++) { #>
 <# if(j != 1) { #>
 <# } #>
-            options.GetRequiredSerializer<<#= BuildTypeParameter(j) #>>().WriteTitle(ref writer, value.<#= BuildGetItemProperty(j) #>, options, <#= BuildTitleParameter(j) #>);
+            options.GetRequiredSerializer<<#= BuildTypeParameter(j) #>>().WriteTitle(writer, value.<#= BuildGetItemProperty(j) #>, options, <#= BuildTitleParameter(j) #>);
 <# } #>
             writer.Exit();
         }
         }
-        public void Serialize(ref ExcelSerializerWriter writer, ValueTuple<<#= BuildTypeParameters(i) #>> value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, ValueTuple<<#= BuildTypeParameters(i) #>> value, XlsxSerializerOptions options)
         {
             writer.EnterAndValidate();
 <# for(var j = 1; j <= i; j++) { #>
 <# if(j != 1) { #>
 <# } #>
-            options.GetRequiredSerializer<<#= BuildTypeParameter(j) #>>().Serialize(ref writer, value.<#= BuildGetItemProperty(j) #>, options);
+            options.GetRequiredSerializer<<#= BuildTypeParameter(j) #>>().Serialize(writer, value.<#= BuildGetItemProperty(j) #>, options);
 <# } #>
             writer.Exit();
         }
@@ -81,36 +81,36 @@ namespace FlatXlsx.Serializers
 
 <# } #>
 
-    internal static class TupleExcelSerializer
+    internal static class TupleXlsxSerializer
     {
-        internal static Type GetTupleExcelSerializerType(int i)
+        internal static Type GetTupleXlsxSerializerType(int i)
         {
             switch (i)
             {
 <# for(var i = 1; i <= MaxTupleCount; i++) { #>
                 case <#= i #>:
-                    return typeof(TupleExcelSerializer<<#= new string(',', i - 1) #>>);
+                    return typeof(TupleXlsxSerializer<<#= new string(',', i - 1) #>>);
 <# } #>
                 default:
                     break;
             }
 
-            throw new InvalidOperationException($"TupleExcelSerializer<T1...T{i}> is not found.");
+            throw new InvalidOperationException($"TupleXlsxSerializer<T1...T{i}> is not found.");
         }
 
-        internal static Type GetValueTupleExcelSerializerType(int i)
+        internal static Type GetValueTupleXlsxSerializerType(int i)
         {
             switch (i)
             {
 <# for(var i = 1; i <= MaxTupleCount; i++) { #>
                 case <#= i #>:
-                    return typeof(ValueTupleExcelSerializer<<#= new string(',', i - 1) #>>);
+                    return typeof(ValueTupleXlsxSerializer<<#= new string(',', i - 1) #>>);
 <# } #>
                 default:
                     break;
             }
 
-            throw new InvalidOperationException($"ValueTupleExcelSerializer<T1...T{i}> is not found.");
+            throw new InvalidOperationException($"ValueTupleXlsxSerializer<T1...T{i}> is not found.");
         }
     }
 }

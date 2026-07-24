@@ -6,16 +6,16 @@ using System.Text.Encodings.Web;
 
 namespace FlatXlsx.Serializers;
 
-public sealed class EnumStringExcelSerializer<T> : IExcelSerializer<T>
+public sealed class EnumStringXlsxSerializer<T> : IXlsxSerializer<T>
     where T : Enum
 {
     static readonly ConcurrentDictionary<T, string> stringCache = new();
     static readonly Func<T, string> toStringFactory = EnumToString;
 
-    public void WriteTitle(ref ExcelSerializerWriter writer, T value, ExcelSerializerOptions options, string name = "value")
+    public void WriteTitle(XlsxWriter writer, T value, XlsxSerializerOptions options, string name = "value")
         => writer.Write(name);
 
-    public void Serialize(ref ExcelSerializerWriter writer, T value, ExcelSerializerOptions options)
+    public void Serialize(XlsxWriter writer, T value, XlsxSerializerOptions options)
     {
         var str = stringCache.GetOrAdd(value, toStringFactory);
         writer.Write(str);
@@ -37,16 +37,16 @@ public sealed class EnumStringExcelSerializer<T> : IExcelSerializer<T>
     }
 }
 
-public sealed class EnumValueExcelSerializer<T> : IExcelSerializer<T>
+public sealed class EnumValueXlsxSerializer<T> : IXlsxSerializer<T>
     where T : Enum
 {
     static readonly ConcurrentDictionary<T, string> stringCache = new();
     static readonly Func<T, string> toStringFactory = EnumToString;
 
-    public void WriteTitle(ref ExcelSerializerWriter writer, T value, ExcelSerializerOptions options, string name = "value")
+    public void WriteTitle(XlsxWriter writer, T value, XlsxSerializerOptions options, string name = "value")
         => writer.Write(name);
 
-    public void Serialize(ref ExcelSerializerWriter writer, T value, ExcelSerializerOptions options)
+    public void Serialize(XlsxWriter writer, T value, XlsxSerializerOptions options)
     {
         var str = stringCache.GetOrAdd(value, toStringFactory);
         writer.Write(str);

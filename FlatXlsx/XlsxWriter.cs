@@ -5,7 +5,7 @@ using System.Text;
 
 namespace FlatXlsx;
 
-public class ExcelSerializerWriter : IDisposable
+public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
 {
     //const int XF_NORMAL = 0;
     const int XF_WRAP_TEXT = 1;
@@ -38,20 +38,13 @@ public class ExcelSerializerWriter : IDisposable
 #endif
 
     readonly ArrayPoolBufferWriter _writer = new();
-    readonly ExcelSerializerOptions _options;
+    readonly XlsxSerializerOptions _options = options;
 
-    bool _countingCharLength;
+    bool _countingCharLength = options.AutoFitColumns;
 
     int _columnIndex = 0;
     int _currentDepth = 0;
     int _stringIndex = 0;
-
-    public ExcelSerializerWriter(ExcelSerializerOptions options)
-    {
-        _options = options;
-        _currentDepth = 0;
-        _countingCharLength = options.AutoFitColumns;
-    }
 
     public void Dispose()
     {

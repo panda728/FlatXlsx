@@ -4,17 +4,17 @@ using System.Linq.Expressions;
 
 namespace FlatXlsx.Serializers;
 
-internal class ObjectFallbackExcelSerializer : IExcelSerializer<object>
+internal class ObjectFallbackXlsxSerializer : IXlsxSerializer<object>
 {
-    delegate void WriteTitleDelegate(ref ExcelSerializerWriter writer, object value, ExcelSerializerOptions options, string name);
+    delegate void WriteTitleDelegate(XlsxWriter writer, object value, XlsxSerializerOptions options, string name);
     static readonly ConcurrentDictionary<Type, WriteTitleDelegate> nongenericWriteTitles = new();
     static readonly Func<Type, WriteTitleDelegate> factoryWriteTitle = CompileWriteTitleDelegate;
 
-    delegate void SerializeDelegate(ref ExcelSerializerWriter writer, object value, ExcelSerializerOptions options);
+    delegate void SerializeDelegate(XlsxWriter writer, object value, XlsxSerializerOptions options);
     static readonly ConcurrentDictionary<Type, SerializeDelegate> nongenericSerializers = new();
     static readonly Func<Type, SerializeDelegate> factory = CompileSerializeDelegate;
 
-    public void WriteTitle(ref ExcelSerializerWriter writer, object value, ExcelSerializerOptions options, string name = "value")
+    public void WriteTitle(XlsxWriter writer, object value, XlsxSerializerOptions options, string name = "value")
     {
         var type = value.GetType();
         if (type == typeof(object))
@@ -24,10 +24,10 @@ internal class ObjectFallbackExcelSerializer : IExcelSerializer<object>
         }
 
         var writeTitle = nongenericWriteTitles.GetOrAdd(type, factoryWriteTitle);
-        writeTitle.Invoke(ref writer, value, options, name);
+        writeTitle.Invoke(writer, value, options, name);
     }
 
-    public void Serialize(ref ExcelSerializerWriter writer, object value, ExcelSerializerOptions options)
+    public void Serialize(XlsxWriter writer, object value, XlsxSerializerOptions options)
     {
         if (value == null)
         {
@@ -43,18 +43,18 @@ internal class ObjectFallbackExcelSerializer : IExcelSerializer<object>
         }
 
         var serializer = nongenericSerializers.GetOrAdd(type, factory);
-        serializer.Invoke(ref writer, value, options);
+        serializer.Invoke(writer, value, options);
     }
 
     static WriteTitleDelegate CompileWriteTitleDelegate(Type type)
     {
-        var writer = Expression.Parameter(typeof(ExcelSerializerWriter).MakeByRefType());
+        var writer = Expression.Parameter(typeof(XlsxWriter));
         var value = Expression.Parameter(typeof(object));
-        var options = Expression.Parameter(typeof(ExcelSerializerOptions));
+        var options = Expression.Parameter(typeof(XlsxSerializerOptions));
         var name = Expression.Parameter(typeof(string));
 
-        var getRequiredSerializer = typeof(ExcelSerializerOptions).GetMethod("GetRequiredSerializer", 1, Type.EmptyTypes)!.MakeGenericMethod(type);
-        var writeTitle = typeof(IExcelSerializer<>).MakeGenericType(type).GetMethod("WriteTitle")!;
+        var getRequiredSerializer = typeof(XlsxSerializerOptions).GetMethod("GetRequiredSerializer", 1, Type.EmptyTypes)!.MakeGenericMethod(type);
+        var writeTitle = typeof(IXlsxSerializer<>).MakeGenericType(type).GetMethod("WriteTitle")!;
         var body = Expression.Call(
             Expression.Call(options, getRequiredSerializer),
             writeTitle,
@@ -69,15 +69,15 @@ internal class ObjectFallbackExcelSerializer : IExcelSerializer<object>
 
     static SerializeDelegate CompileSerializeDelegate(Type type)
     {
-        // Serialize(ref ExcelSerializerWriter writer, object value, ExcelSerializerOptions options)
-        //   options.GetRequiredSerializer<T>().Serialize(ref writer, (T)value, options)
+        // Serialize(XlsxWriter writer, object value, XlsxSerializerOptions options)
+        //   options.GetRequiredSerializer<T>().Serialize(writer, (T)value, options)
 
-        var writer = Expression.Parameter(typeof(ExcelSerializerWriter).MakeByRefType());
+        var writer = Expression.Parameter(typeof(XlsxWriter));
         var value = Expression.Parameter(typeof(object));
-        var options = Expression.Parameter(typeof(ExcelSerializerOptions));
+        var options = Expression.Parameter(typeof(XlsxSerializerOptions));
 
-        var getRequiredSerializer = typeof(ExcelSerializerOptions).GetMethod("GetRequiredSerializer", 1, Type.EmptyTypes)!.MakeGenericMethod(type);
-        var serialize = typeof(IExcelSerializer<>).MakeGenericType(type).GetMethod("Serialize")!;
+        var getRequiredSerializer = typeof(XlsxSerializerOptions).GetMethod("GetRequiredSerializer", 1, Type.EmptyTypes)!.MakeGenericMethod(type);
+        var serialize = typeof(IXlsxSerializer<>).MakeGenericType(type).GetMethod("Serialize")!;
 
         var body = Expression.Call(
             Expression.Call(options, getRequiredSerializer),

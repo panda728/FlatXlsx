@@ -4,67 +4,67 @@ namespace FlatXlsx.Serializers;
 
 internal class BuiltinSerializers
 {
-    public sealed class StringExcelSerializer : IExcelSerializer<string?>
+    public sealed class StringXlsxSerializer : IXlsxSerializer<string?>
     {
-        public void WriteTitle(ref ExcelSerializerWriter writer, string? value, ExcelSerializerOptions options, string name = "value")
+        public void WriteTitle(XlsxWriter writer, string? value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
-        public void Serialize(ref ExcelSerializerWriter writer, string? value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, string? value, XlsxSerializerOptions options)
             => writer.Write(value);
     }
 
-    public sealed class CharExcelSerializer : IExcelSerializer<char>
+    public sealed class CharXlsxSerializer : IXlsxSerializer<char>
     {
-        public void WriteTitle(ref ExcelSerializerWriter writer, char value, ExcelSerializerOptions options, string name = "value")
+        public void WriteTitle(XlsxWriter writer, char value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
-        public void Serialize(ref ExcelSerializerWriter writer, char value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, char value, XlsxSerializerOptions options)
             => writer.Write(value);
     }
 
-    public sealed class GuidExcelSerializer : IExcelSerializer<Guid>
+    public sealed class GuidXlsxSerializer : IXlsxSerializer<Guid>
     {
-        public void WriteTitle(ref ExcelSerializerWriter writer, Guid value, ExcelSerializerOptions options, string name = "value")
+        public void WriteTitle(XlsxWriter writer, Guid value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
-        public void Serialize(ref ExcelSerializerWriter writer, Guid value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, Guid value, XlsxSerializerOptions options)
             => writer.Write($"{value}");
     }
 
-    public sealed class EnumExcelSerializer : IExcelSerializer<Enum>
+    public sealed class EnumXlsxSerializer : IXlsxSerializer<Enum>
     {
-        public void WriteTitle(ref ExcelSerializerWriter writer, Enum value, ExcelSerializerOptions options, string name = "value")
+        public void WriteTitle(XlsxWriter writer, Enum value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
-        public void Serialize(ref ExcelSerializerWriter writer, Enum value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, Enum value, XlsxSerializerOptions options)
             => writer.Write($"{value}");
     }
 
-    public sealed class DateTimeExcelSerializer : IExcelSerializer<DateTime>
+    public sealed class DateTimeXlsxSerializer : IXlsxSerializer<DateTime>
     {
-        public void WriteTitle(ref ExcelSerializerWriter writer, DateTime value, ExcelSerializerOptions options, string name = "value")
+        public void WriteTitle(XlsxWriter writer, DateTime value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
-        public void Serialize(ref ExcelSerializerWriter writer, DateTime value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, DateTime value, XlsxSerializerOptions options)
             => writer.WriteDateTime(value);
     }
 
-    public sealed class DateTimeOffsetExcelSerializer : IExcelSerializer<DateTimeOffset>
+    public sealed class DateTimeOffsetXlsxSerializer : IXlsxSerializer<DateTimeOffset>
     {
-        public void WriteTitle(ref ExcelSerializerWriter writer, DateTimeOffset value, ExcelSerializerOptions options, string name = "value")
+        public void WriteTitle(XlsxWriter writer, DateTimeOffset value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
-        public void Serialize(ref ExcelSerializerWriter writer, DateTimeOffset value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, DateTimeOffset value, XlsxSerializerOptions options)
             => writer.Write(value.ToString(options.CultureInfo));
     }
 
-    public sealed class TimeSpanExcelSerializer : IExcelSerializer<TimeSpan>
+    public sealed class TimeSpanXlsxSerializer : IXlsxSerializer<TimeSpan>
     {
-        public void WriteTitle(ref ExcelSerializerWriter writer, TimeSpan value, ExcelSerializerOptions options, string name = "value")
+        public void WriteTitle(XlsxWriter writer, TimeSpan value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
-        public void Serialize(ref ExcelSerializerWriter writer, TimeSpan value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, TimeSpan value, XlsxSerializerOptions options)
             => writer.Write(value.ToString());
     }
 
-    public sealed class UriExcelSerializer : IExcelSerializer<Uri>
+    public sealed class UriXlsxSerializer : IXlsxSerializer<Uri?>
     {
-        public void WriteTitle(ref ExcelSerializerWriter writer, Uri value, ExcelSerializerOptions options, string name = "value")
+        public void WriteTitle(XlsxWriter writer, Uri? value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
-        public void Serialize(ref ExcelSerializerWriter writer, Uri value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, Uri? value, XlsxSerializerOptions options)
         {
             if (value == null)
             {
@@ -75,11 +75,11 @@ internal class BuiltinSerializers
         }
     }
 
-    public sealed class VersionExcelSerializer : IExcelSerializer<Version>
+    public sealed class VersionXlsxSerializer : IXlsxSerializer<Version?>
     {
-        public void WriteTitle(ref ExcelSerializerWriter writer, Version value, ExcelSerializerOptions options, string name = "value")
+        public void WriteTitle(XlsxWriter writer, Version? value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
-        public void Serialize(ref ExcelSerializerWriter writer, Version value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, Version? value, XlsxSerializerOptions options)
         {
             if (value == null)
             {
@@ -90,90 +90,90 @@ internal class BuiltinSerializers
         }
     }
 
-    public sealed class BigIntegerExcelSerializer : IExcelSerializer<BigInteger>
+    public sealed class BigIntegerXlsxSerializer : IXlsxSerializer<BigInteger>
     {
-        public void WriteTitle(ref ExcelSerializerWriter writer, BigInteger value, ExcelSerializerOptions options, string name = "value")
+        public void WriteTitle(XlsxWriter writer, BigInteger value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
-        public void Serialize(ref ExcelSerializerWriter writer, BigInteger value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, BigInteger value, XlsxSerializerOptions options)
             => writer.WritePrimitive(value);
     }
 
-    public sealed class ComplexExcelSerializer : IExcelSerializer<Complex>
+    public sealed class ComplexXlsxSerializer : IXlsxSerializer<Complex>
     {
-        public void WriteTitle(ref ExcelSerializerWriter writer, Complex value, ExcelSerializerOptions options, string name = "value")
+        public void WriteTitle(XlsxWriter writer, Complex value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
-        public void Serialize(ref ExcelSerializerWriter writer, Complex value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, Complex value, XlsxSerializerOptions options)
             => writer.Write(value.ToString(options.CultureInfo));
     }
 
-    public sealed class IntPtrExcelSerializer : IExcelSerializer<IntPtr>
+    public sealed class IntPtrXlsxSerializer : IXlsxSerializer<IntPtr>
     {
-        public void WriteTitle(ref ExcelSerializerWriter writer, IntPtr value, ExcelSerializerOptions options, string name = "value")
+        public void WriteTitle(XlsxWriter writer, IntPtr value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
-        public void Serialize(ref ExcelSerializerWriter writer, IntPtr value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, IntPtr value, XlsxSerializerOptions options)
             => writer.WritePrimitive(value.ToInt64());
     }
 
-    public sealed class UIntPtrExcelSerializer : IExcelSerializer<UIntPtr>
+    public sealed class UIntPtrXlsxSerializer : IXlsxSerializer<UIntPtr>
     {
-        public void WriteTitle(ref ExcelSerializerWriter writer, UIntPtr value, ExcelSerializerOptions options, string name = "value")
+        public void WriteTitle(XlsxWriter writer, UIntPtr value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
-        public void Serialize(ref ExcelSerializerWriter writer, UIntPtr value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, UIntPtr value, XlsxSerializerOptions options)
             => writer.WritePrimitive(value.ToUInt64());
     }
 
 #if NET5_0_OR_GREATER
-    public sealed class RuneExcelSerializer : IExcelSerializer<System.Text.Rune>
+    public sealed class RuneXlsxSerializer : IXlsxSerializer<System.Text.Rune>
     {
-        public void WriteTitle(ref ExcelSerializerWriter writer, System.Text.Rune value, ExcelSerializerOptions options, string name = "value")
+        public void WriteTitle(XlsxWriter writer, System.Text.Rune value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
-        public void Serialize(ref ExcelSerializerWriter writer, System.Text.Rune value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, System.Text.Rune value, XlsxSerializerOptions options)
             => writer.Write(value.ToString());
     }
 #endif
 
 #if NET5_0_OR_GREATER
-    public sealed class HalfExcelSerializer : IExcelSerializer<Half>
+    public sealed class HalfXlsxSerializer : IXlsxSerializer<Half>
     {
-        public void WriteTitle(ref ExcelSerializerWriter writer, Half value, ExcelSerializerOptions options, string name = "value")
+        public void WriteTitle(XlsxWriter writer, Half value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
-        public void Serialize(ref ExcelSerializerWriter writer, Half value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, Half value, XlsxSerializerOptions options)
             => writer.WritePrimitive(value);
     }
 #endif
 
 #if NET7_0_OR_GREATER
-    public sealed class Int128ExcelSerializer : IExcelSerializer<Int128>
+    public sealed class Int128XlsxSerializer : IXlsxSerializer<Int128>
     {
-        public void WriteTitle(ref ExcelSerializerWriter writer, Int128 value, ExcelSerializerOptions options, string name = "value")
+        public void WriteTitle(XlsxWriter writer, Int128 value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
-        public void Serialize(ref ExcelSerializerWriter writer, Int128 value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, Int128 value, XlsxSerializerOptions options)
             => writer.WritePrimitive(value);
     }
 
-    public sealed class UInt128ExcelSerializer : IExcelSerializer<UInt128>
+    public sealed class UInt128XlsxSerializer : IXlsxSerializer<UInt128>
     {
-        public void WriteTitle(ref ExcelSerializerWriter writer, UInt128 value, ExcelSerializerOptions options, string name = "value")
+        public void WriteTitle(XlsxWriter writer, UInt128 value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
-        public void Serialize(ref ExcelSerializerWriter writer, UInt128 value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, UInt128 value, XlsxSerializerOptions options)
             => writer.WritePrimitive(value);
     }
 #endif
 
 #if NET6_0_OR_GREATER
-    public sealed class DateOnlyExcelSerializer : IExcelSerializer<DateOnly>
+    public sealed class DateOnlyXlsxSerializer : IXlsxSerializer<DateOnly>
     {
-        public void WriteTitle(ref ExcelSerializerWriter writer, DateOnly value, ExcelSerializerOptions options, string name = "value")
+        public void WriteTitle(XlsxWriter writer, DateOnly value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
-        public void Serialize(ref ExcelSerializerWriter writer, DateOnly value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, DateOnly value, XlsxSerializerOptions options)
             => writer.WriteDateTime(value);
     }
 
-    public sealed class TimeOnlyExcelSerializer : IExcelSerializer<TimeOnly>
+    public sealed class TimeOnlyXlsxSerializer : IXlsxSerializer<TimeOnly>
     {
-        public void WriteTitle(ref ExcelSerializerWriter writer, TimeOnly value, ExcelSerializerOptions options, string name = "value")
+        public void WriteTitle(XlsxWriter writer, TimeOnly value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
-        public void Serialize(ref ExcelSerializerWriter writer, TimeOnly value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, TimeOnly value, XlsxSerializerOptions options)
             => writer.WriteDateTime(value);
     }
 #endif

@@ -17,15 +17,15 @@ namespace FlatXlsx.Tests
             string value2ShouldBe,
             string value3ShouldBe,
             string titleShouldBe,
-            ExcelSerializerOptions option)
+            XlsxSerializerOptions option)
         {
             var serializer = option.GetSerializer<T>();
             Assert.NotNull(serializer);
             if (serializer == null) return;
-            var writer = new ExcelSerializerWriter(option);
+            var writer = new XlsxWriter(option);
             try
             {
-                serializer.WriteTitle(ref writer, value1, option);
+                serializer.WriteTitle(writer, value1, option);
                 Assert.Equal(3, writer.SharedStrings.Count);
 
                 var columnXml = writer.ToString();
@@ -48,16 +48,16 @@ namespace FlatXlsx.Tests
             }
         }
 
-        void RunTest<T>(T value, string value1ShouldBe, string columnXmlShouldBe, ExcelSerializerOptions option)
+        void RunTest<T>(T value, string value1ShouldBe, string columnXmlShouldBe, XlsxSerializerOptions option)
         {
             var serializer = option.GetSerializer<T>();
             Assert.NotNull(serializer);
             if (serializer == null) return;
 
-            var writer = new ExcelSerializerWriter(option);
+            var writer = new XlsxWriter(option);
             try
             {
-                serializer.WriteTitle(ref writer, value, option);
+                serializer.WriteTitle(writer, value, option);
                 Assert.NotEmpty(writer.SharedStrings);
                 var columnXml = writer.ToString();
                 var sharedString1 = writer.SharedStrings.First().Key;
@@ -85,7 +85,7 @@ namespace FlatXlsx.Tests
                 new TestData(){Title  = "Title3", Name = "Name3", Address="Address3"},
             };
 
-            var option = ExcelSerializerOptions.Default with
+            var option = XlsxSerializerOptions.Default with
             {
                 HasHeaderRecord = true,
             };
@@ -105,14 +105,14 @@ namespace FlatXlsx.Tests
             var value = (object)"key1";
             RunTest(value, "value",
                 "<c t=\"s\"><v>0</v></c>",
-                ExcelSerializerOptions.Default);
+                XlsxSerializerOptions.Default);
         }
 
         [Fact]
         public void Serializer_tuple2()
         {
             var t = Tuple.Create(1, 2);
-            RunTest(t, "value", "<c t=\"s\"><v>0</v></c><c t=\"s\"><v>1</v></c>", ExcelSerializerOptions.Default);
+            RunTest(t, "value", "<c t=\"s\"><v>0</v></c><c t=\"s\"><v>1</v></c>", XlsxSerializerOptions.Default);
         }
         [Fact]
         public void Serializer_IDictionary()
@@ -120,17 +120,17 @@ namespace FlatXlsx.Tests
             var dic = new Dictionary<string, int> { { "key1", 1 }, { "key2", 2 } };
             RunTest(dic, "key",
                 "<c t=\"s\"><v>0</v></c><c t=\"s\"><v>1</v></c><c t=\"s\"><v>0</v></c><c t=\"s\"><v>1</v></c>",
-                ExcelSerializerOptions.Default);
+                XlsxSerializerOptions.Default);
         }
     }
 
     public class TestData
     {
         [DataMember(Name = "Title Ex", Order = 2)]
-        public string Title { get; set; }
+        public string Title { get; set; } = "";
         [DataMember(Name = "Name Ex", Order = 3)]
-        public string Name { get; set; }
+        public string Name { get; set; } = "";
         [DataMember(Name = "Address Ex", Order = 1)]
-        public string Address { get; set; }
+        public string Address { get; set; } = "";
     }
 }

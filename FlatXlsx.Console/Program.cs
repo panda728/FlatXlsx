@@ -51,13 +51,13 @@ sw.Stop();
 Console.WriteLine($"testUsers.Generate count:{Users.Count:#,##0} duration:{sw.ElapsedMilliseconds:#,##0}ms");
 sw.Restart();
 
-var newConfig = ExcelSerializerOptions.Default with
+var newConfig = XlsxSerializerOptions.Default with
 {
     CultureInfo = CultureInfo.CurrentCulture,
     MaxDepth = 32,
-    Provider = ExcelSerializerProvider.Create(
+    Provider = XlsxSerializerProvider.Create(
         //new[] { new BoolZeroOneSerializer() },
-        new[] { ExcelSerializerProvider.Default }),
+        new[] { XlsxSerializerProvider.Default }),
     HasHeaderRecord = true,
     AutoFitColumns = true,
     AutoFilter = true,
@@ -67,11 +67,11 @@ var fileName = Path.Combine(Environment.CurrentDirectory, "test.xlsx");
 if (File.Exists(fileName))
     File.Delete(fileName);
 
-ExcelSerializer.ToFile(Users, fileName, newConfig);
+XlsxSerializer.ToFile(Users, fileName, newConfig);
 
 sw.Stop();
 
-Console.WriteLine($"ExcelSerializer.ToFile duration:{sw.ElapsedMilliseconds:#,##0}ms");
+Console.WriteLine($"XlsxSerializer.ToFile duration:{sw.ElapsedMilliseconds:#,##0}ms");
 Console.WriteLine($"Excel file created. Please check the file. {fileName}");
 
 Console.WriteLine();
@@ -80,28 +80,28 @@ Console.WriteLine("press any key...");
 Console.ReadLine();
 
 
-//public class BoolZeroOneSerializer : IExcelSerializer<bool>
+//public class BoolZeroOneSerializer : IXlsxSerializer<bool>
 //{
-//    public void WriteTitle(ref ExcelSerializerWriter writer, bool value, ExcelSerializerOptions options, string name = "")
+//    public void WriteTitle(XlsxWriter writer, bool value, XlsxSerializerOptions options, string name = "")
 //    {
 //        writer.Write(name);
 //    }
 
-//    public void Serialize(ref ExcelSerializerWriter writer, bool value, ExcelSerializerOptions options)
+//    public void Serialize(XlsxWriter writer, bool value, XlsxSerializerOptions options)
 //    {
 //        // true => 0, false => 1
 //        writer.WritePrimitive(value ? 0 : 1);
 //    }
 //}
 
-public class UnixSecondsSerializer : IExcelSerializer<DateTime>
+public class UnixSecondsSerializer : IXlsxSerializer<DateTime>
 {
-    public void WriteTitle(ref ExcelSerializerWriter writer, DateTime value, ExcelSerializerOptions options, string name = "")
+    public void WriteTitle(XlsxWriter writer, DateTime value, XlsxSerializerOptions options, string name = "")
     {
         writer.Write(name);
     }
 
-    public void Serialize(ref ExcelSerializerWriter writer, DateTime value, ExcelSerializerOptions options)
+    public void Serialize(XlsxWriter writer, DateTime value, XlsxSerializerOptions options)
     {
         writer.WritePrimitive(((DateTimeOffset)(value)).ToUnixTimeSeconds());
     }
@@ -137,7 +137,7 @@ public class User
     public string Avatar { get; set; }
     public Guid CartId { get; set; }
     public string SSN { get; set; }
-    [ExcelSerializer(typeof(UnixSecondsSerializer))]
+    [XlsxSerializer(typeof(UnixSecondsSerializer))]
     public DateTime TimeStamp { get; set; }
     public DateTime CreateTime { get; set; }
     public DateOnly DateOnlyValue { get; set; }

@@ -6,14 +6,9 @@ namespace FlatXlsx;
 /// Write-only <see cref="Stream"/> adapter over an <see cref="IBufferWriter{T}"/>.
 /// Lets stream-based producers (e.g. ZipArchive) emit directly into a PipeWriter or other buffer writer.
 /// </summary>
-internal sealed class BufferWriterStream : Stream
+internal sealed class BufferWriterStream(IBufferWriter<byte> writer) : Stream
 {
-    readonly IBufferWriter<byte> _writer;
-
-    public BufferWriterStream(IBufferWriter<byte> writer)
-    {
-        _writer = writer ?? throw new ArgumentNullException(nameof(writer));
-    }
+    readonly IBufferWriter<byte> _writer = writer;
 
     public override bool CanRead => false;
     public override bool CanSeek => false;

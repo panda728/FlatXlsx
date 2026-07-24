@@ -30,12 +30,12 @@
 namespace FlatXlsx.Serializers
 {
 <# foreach (var type in primitives) { #>
-    public sealed class <#= type.Name #>ExcelSerializer : IExcelSerializer<<#= type.Name #>>
+    public sealed class <#= type.Name #>XlsxSerializer : IXlsxSerializer<<#= type.Name #>>
     {        
-		public void WriteTitle(ref ExcelSerializerWriter writer, <#= type.Name #> value, ExcelSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxWriter writer, <#= type.Name #> value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(ref ExcelSerializerWriter writer, <#= type.Name #> value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, <#= type.Name #> value, XlsxSerializerOptions options)
             => writer.WritePrimitive(value);
     }
 
@@ -44,12 +44,12 @@ namespace FlatXlsx.Serializers
 
 namespace FlatXlsx.Providers
 {
-    public sealed partial class PrimitiveExcelSerializerProvider
+    public sealed partial class PrimitiveXlsxSerializerProvider
     {
         internal partial void InitPrimitives()
         {
 <# foreach (var type in primitives) { #>
-            serializers[typeof(<#= type #>)] = new FlatXlsx.Serializers.<#= type.Name #>ExcelSerializer();
+            serializers[typeof(<#= type #>)] = new FlatXlsx.Serializers.<#= type.Name #>XlsxSerializer();
 <# } #>
         }
     }

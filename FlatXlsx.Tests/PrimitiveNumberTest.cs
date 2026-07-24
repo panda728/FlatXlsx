@@ -11,35 +11,35 @@ namespace FlatXlsx.Tests
         {
             var value1 = Decimal.MinValue;
             var value2 = Decimal.MaxValue;
-            RunNumberTest(value1, value2, ExcelSerializerOptions.Default);
+            RunNumberTest(value1, value2, XlsxSerializerOptions.Default);
         }
         [Fact]
         public void Serializer_Double()
         {
             var value1 = Double.MinValue;
             var value2 = Double.MaxValue;
-            RunNumberTest(value1, value2, ExcelSerializerOptions.Default);
+            RunNumberTest(value1, value2, XlsxSerializerOptions.Default);
         }
         [Fact]
         public void Serializer_Single()
         {
             var value1 = Single.MinValue;
             var value2 = Single.MaxValue;
-            RunNumberTest(value1, value2, ExcelSerializerOptions.Default);
+            RunNumberTest(value1, value2, XlsxSerializerOptions.Default);
         }
         [Fact]
         public void Serializer_Int16()
         {
             var value1 = Int16.MinValue;
             var value2 = Int16.MaxValue;
-            RunNumberTest(value1, value2, ExcelSerializerOptions.Default);
+            RunNumberTest(value1, value2, XlsxSerializerOptions.Default);
         }
         [Fact]
         public void Serializer_UInt16()
         {
             var value1 = UInt16.MinValue;
             var value2 = UInt16.MaxValue;
-            RunNumberTest(value1, value2, ExcelSerializerOptions.Default);
+            RunNumberTest(value1, value2, XlsxSerializerOptions.Default);
         }
     }
 }

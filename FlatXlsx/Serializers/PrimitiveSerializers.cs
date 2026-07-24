@@ -4,111 +4,111 @@
 #nullable enable
 namespace FlatXlsx.Serializers
 {
-    public sealed class BooleanExcelSerializer : IExcelSerializer<Boolean>
+    public sealed class BooleanXlsxSerializer : IXlsxSerializer<Boolean>
     {        
-		public void WriteTitle(ref ExcelSerializerWriter writer, Boolean value, ExcelSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxWriter writer, Boolean value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(ref ExcelSerializerWriter writer, Boolean value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, Boolean value, XlsxSerializerOptions options)
             => writer.WritePrimitive(value);
     }
 
-    public sealed class ByteExcelSerializer : IExcelSerializer<Byte>
+    public sealed class ByteXlsxSerializer : IXlsxSerializer<Byte>
     {        
-		public void WriteTitle(ref ExcelSerializerWriter writer, Byte value, ExcelSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxWriter writer, Byte value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(ref ExcelSerializerWriter writer, Byte value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, Byte value, XlsxSerializerOptions options)
             => writer.WritePrimitive(value);
     }
 
-    public sealed class SByteExcelSerializer : IExcelSerializer<SByte>
+    public sealed class SByteXlsxSerializer : IXlsxSerializer<SByte>
     {        
-		public void WriteTitle(ref ExcelSerializerWriter writer, SByte value, ExcelSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxWriter writer, SByte value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(ref ExcelSerializerWriter writer, SByte value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, SByte value, XlsxSerializerOptions options)
             => writer.WritePrimitive(value);
     }
 
-    public sealed class DecimalExcelSerializer : IExcelSerializer<Decimal>
+    public sealed class DecimalXlsxSerializer : IXlsxSerializer<Decimal>
     {        
-		public void WriteTitle(ref ExcelSerializerWriter writer, Decimal value, ExcelSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxWriter writer, Decimal value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(ref ExcelSerializerWriter writer, Decimal value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, Decimal value, XlsxSerializerOptions options)
             => writer.WritePrimitive(value);
     }
 
-    public sealed class DoubleExcelSerializer : IExcelSerializer<Double>
+    public sealed class DoubleXlsxSerializer : IXlsxSerializer<Double>
     {        
-		public void WriteTitle(ref ExcelSerializerWriter writer, Double value, ExcelSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxWriter writer, Double value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(ref ExcelSerializerWriter writer, Double value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, Double value, XlsxSerializerOptions options)
             => writer.WritePrimitive(value);
     }
 
-    public sealed class SingleExcelSerializer : IExcelSerializer<Single>
+    public sealed class SingleXlsxSerializer : IXlsxSerializer<Single>
     {        
-		public void WriteTitle(ref ExcelSerializerWriter writer, Single value, ExcelSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxWriter writer, Single value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(ref ExcelSerializerWriter writer, Single value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, Single value, XlsxSerializerOptions options)
             => writer.WritePrimitive(value);
     }
 
-    public sealed class Int32ExcelSerializer : IExcelSerializer<Int32>
+    public sealed class Int32XlsxSerializer : IXlsxSerializer<Int32>
     {        
-		public void WriteTitle(ref ExcelSerializerWriter writer, Int32 value, ExcelSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxWriter writer, Int32 value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(ref ExcelSerializerWriter writer, Int32 value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, Int32 value, XlsxSerializerOptions options)
             => writer.WritePrimitive(value);
     }
 
-    public sealed class UInt32ExcelSerializer : IExcelSerializer<UInt32>
+    public sealed class UInt32XlsxSerializer : IXlsxSerializer<UInt32>
     {        
-		public void WriteTitle(ref ExcelSerializerWriter writer, UInt32 value, ExcelSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxWriter writer, UInt32 value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(ref ExcelSerializerWriter writer, UInt32 value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, UInt32 value, XlsxSerializerOptions options)
             => writer.WritePrimitive(value);
     }
 
-    public sealed class Int64ExcelSerializer : IExcelSerializer<Int64>
+    public sealed class Int64XlsxSerializer : IXlsxSerializer<Int64>
     {        
-		public void WriteTitle(ref ExcelSerializerWriter writer, Int64 value, ExcelSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxWriter writer, Int64 value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(ref ExcelSerializerWriter writer, Int64 value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, Int64 value, XlsxSerializerOptions options)
             => writer.WritePrimitive(value);
     }
 
-    public sealed class UInt64ExcelSerializer : IExcelSerializer<UInt64>
+    public sealed class UInt64XlsxSerializer : IXlsxSerializer<UInt64>
     {        
-		public void WriteTitle(ref ExcelSerializerWriter writer, UInt64 value, ExcelSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxWriter writer, UInt64 value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(ref ExcelSerializerWriter writer, UInt64 value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, UInt64 value, XlsxSerializerOptions options)
             => writer.WritePrimitive(value);
     }
 
-    public sealed class Int16ExcelSerializer : IExcelSerializer<Int16>
+    public sealed class Int16XlsxSerializer : IXlsxSerializer<Int16>
     {        
-		public void WriteTitle(ref ExcelSerializerWriter writer, Int16 value, ExcelSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxWriter writer, Int16 value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(ref ExcelSerializerWriter writer, Int16 value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, Int16 value, XlsxSerializerOptions options)
             => writer.WritePrimitive(value);
     }
 
-    public sealed class UInt16ExcelSerializer : IExcelSerializer<UInt16>
+    public sealed class UInt16XlsxSerializer : IXlsxSerializer<UInt16>
     {        
-		public void WriteTitle(ref ExcelSerializerWriter writer, UInt16 value, ExcelSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxWriter writer, UInt16 value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(ref ExcelSerializerWriter writer, UInt16 value, ExcelSerializerOptions options)
+        public void Serialize(XlsxWriter writer, UInt16 value, XlsxSerializerOptions options)
             => writer.WritePrimitive(value);
     }
 
@@ -116,22 +116,22 @@ namespace FlatXlsx.Serializers
 
 namespace FlatXlsx.Providers
 {
-    public sealed partial class PrimitiveExcelSerializerProvider
+    public sealed partial class PrimitiveXlsxSerializerProvider
     {
         internal partial void InitPrimitives()
         {
-            serializers[typeof(System.Boolean)] = new FlatXlsx.Serializers.BooleanExcelSerializer();
-            serializers[typeof(System.Byte)] = new FlatXlsx.Serializers.ByteExcelSerializer();
-            serializers[typeof(System.SByte)] = new FlatXlsx.Serializers.SByteExcelSerializer();
-            serializers[typeof(System.Decimal)] = new FlatXlsx.Serializers.DecimalExcelSerializer();
-            serializers[typeof(System.Double)] = new FlatXlsx.Serializers.DoubleExcelSerializer();
-            serializers[typeof(System.Single)] = new FlatXlsx.Serializers.SingleExcelSerializer();
-            serializers[typeof(System.Int32)] = new FlatXlsx.Serializers.Int32ExcelSerializer();
-            serializers[typeof(System.UInt32)] = new FlatXlsx.Serializers.UInt32ExcelSerializer();
-            serializers[typeof(System.Int64)] = new FlatXlsx.Serializers.Int64ExcelSerializer();
-            serializers[typeof(System.UInt64)] = new FlatXlsx.Serializers.UInt64ExcelSerializer();
-            serializers[typeof(System.Int16)] = new FlatXlsx.Serializers.Int16ExcelSerializer();
-            serializers[typeof(System.UInt16)] = new FlatXlsx.Serializers.UInt16ExcelSerializer();
+            serializers[typeof(System.Boolean)] = new FlatXlsx.Serializers.BooleanXlsxSerializer();
+            serializers[typeof(System.Byte)] = new FlatXlsx.Serializers.ByteXlsxSerializer();
+            serializers[typeof(System.SByte)] = new FlatXlsx.Serializers.SByteXlsxSerializer();
+            serializers[typeof(System.Decimal)] = new FlatXlsx.Serializers.DecimalXlsxSerializer();
+            serializers[typeof(System.Double)] = new FlatXlsx.Serializers.DoubleXlsxSerializer();
+            serializers[typeof(System.Single)] = new FlatXlsx.Serializers.SingleXlsxSerializer();
+            serializers[typeof(System.Int32)] = new FlatXlsx.Serializers.Int32XlsxSerializer();
+            serializers[typeof(System.UInt32)] = new FlatXlsx.Serializers.UInt32XlsxSerializer();
+            serializers[typeof(System.Int64)] = new FlatXlsx.Serializers.Int64XlsxSerializer();
+            serializers[typeof(System.UInt64)] = new FlatXlsx.Serializers.UInt64XlsxSerializer();
+            serializers[typeof(System.Int16)] = new FlatXlsx.Serializers.Int16XlsxSerializer();
+            serializers[typeof(System.UInt16)] = new FlatXlsx.Serializers.UInt16XlsxSerializer();
         }
     }
 }

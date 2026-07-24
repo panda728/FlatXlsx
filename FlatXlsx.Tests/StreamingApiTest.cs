@@ -1,4 +1,4 @@
-using System.Buffers;
+﻿using System.Buffers;
 using System.IO.Compression;
 using System.Xml.Linq;
 using FluentAssertions;
@@ -42,7 +42,7 @@ namespace FlatXlsx.Tests
         public void ToStream_WritesValidWorkbook()
         {
             using var ms = new MemoryStream();
-            ExcelSerializer.ToStream(_rows, ms, ExcelSerializerOptions.Default);
+            XlsxSerializer.ToStream(_rows, ms, XlsxSerializerOptions.Default);
             ms.Position = 0;
 
             var entries = ReadEntries(ms);
@@ -66,7 +66,7 @@ namespace FlatXlsx.Tests
         {
             using var inner = new MemoryStream();
             using (var forwardOnly = new WriteOnlyStream(inner))
-                ExcelSerializer.ToStream(_rows, forwardOnly, ExcelSerializerOptions.Default);
+                XlsxSerializer.ToStream(_rows, forwardOnly, XlsxSerializerOptions.Default);
 
             using var readBack = new MemoryStream(inner.ToArray());
             var entries = ReadEntries(readBack);
@@ -77,13 +77,13 @@ namespace FlatXlsx.Tests
         public void To_BufferWriter_ProducesSameEntriesAsToStream()
         {
             var buffer = new ArrayBufferWriter<byte>();
-            ExcelSerializer.To(_rows, buffer, ExcelSerializerOptions.Default);
+            XlsxSerializer.To(_rows, buffer, XlsxSerializerOptions.Default);
 
             using var fromBuffer = new MemoryStream(buffer.WrittenSpan.ToArray());
             var bufferEntries = ReadEntries(fromBuffer);
 
             using var ms = new MemoryStream();
-            ExcelSerializer.ToStream(_rows, ms, ExcelSerializerOptions.Default);
+            XlsxSerializer.ToStream(_rows, ms, XlsxSerializerOptions.Default);
             ms.Position = 0;
             var streamEntries = ReadEntries(ms);
 
@@ -96,7 +96,7 @@ namespace FlatXlsx.Tests
             var path = Path.Combine(Path.GetTempPath(), $"flatxlsx_test_{Guid.NewGuid():N}.xlsx");
             try
             {
-                ExcelSerializer.ToFile(_rows, path, ExcelSerializerOptions.Default);
+                XlsxSerializer.ToFile(_rows, path, XlsxSerializerOptions.Default);
                 using var fs = File.OpenRead(path);
                 var entries = ReadEntries(fs);
                 entries.Keys.Should().BeEquivalentTo(_expectedEntries);
@@ -111,7 +111,7 @@ namespace FlatXlsx.Tests
         public void ToStream_EmptyRows_WritesNothing()
         {
             using var ms = new MemoryStream();
-            ExcelSerializer.ToStream(Array.Empty<Portal>(), ms, ExcelSerializerOptions.Default);
+            XlsxSerializer.ToStream(Array.Empty<Portal>(), ms, XlsxSerializerOptions.Default);
             ms.Length.Should().Be(0);
         }
 

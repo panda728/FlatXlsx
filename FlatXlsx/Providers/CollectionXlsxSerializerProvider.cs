@@ -2,40 +2,40 @@
 
 namespace FlatXlsx.Providers;
 
-public sealed class CollectionExcelSerializerProvider : IExcelSerializerProvider
+public sealed class CollectionXlsxSerializerProvider : IXlsxSerializerProvider
 {
-    public static IExcelSerializerProvider Instance { get; } = new CollectionExcelSerializerProvider();
+    public static IXlsxSerializerProvider Instance { get; } = new CollectionXlsxSerializerProvider();
 
-    CollectionExcelSerializerProvider()
+    CollectionXlsxSerializerProvider()
     {
 
     }
 
-    public IExcelSerializer<T>? GetSerializer<T>()
+    public IXlsxSerializer<T>? GetSerializer<T>()
     {
         return Cache<T>.Serializer;
     }
 
-    static IExcelSerializer? CreateSerializer(Type type)
+    static IXlsxSerializer? CreateSerializer(Type type)
     {
         try
         {
             // Wellknown specialized types
             if (type == typeof(Dictionary<string, string>))
             {
-                return new DictionaryExcelSerializer<Dictionary<string, string>, string, string>();
+                return new DictionaryXlsxSerializer<Dictionary<string, string>, string, string>();
             }
             else if (type == typeof(Dictionary<string, object>))
             {
-                return new DictionaryExcelSerializer<Dictionary<string, object>, string, object>();
+                return new DictionaryXlsxSerializer<Dictionary<string, object>, string, object>();
             }
             else if (type == typeof(KeyValuePair<string, string>[]))
             {
-                return new EnumerableKeyValuePairExcelSerializer<KeyValuePair<string, string>[], string, string>();
+                return new EnumerableKeyValuePairXlsxSerializer<KeyValuePair<string, string>[], string, string>();
             }
             else if (type == typeof(KeyValuePair<string, object>[]))
             {
-                return new EnumerableKeyValuePairExcelSerializer<KeyValuePair<string, object>[], string, object>();
+                return new EnumerableKeyValuePairXlsxSerializer<KeyValuePair<string, object>[], string, object>();
             }
 
             if (type.IsGenericType || type.IsArray)
@@ -46,7 +46,7 @@ public sealed class CollectionExcelSerializerProvider : IExcelSerializerProvider
                 {
                     var keyType = dictionaryDef.GenericTypeArguments[0];
                     var valueType = dictionaryDef.GenericTypeArguments[1];
-                    return CreateInstance(typeof(DictionaryExcelSerializer<,,>), new[] { type, keyType, valueType });
+                    return CreateInstance(typeof(DictionaryXlsxSerializer<,,>), new[] { type, keyType, valueType });
                 }
 
                 // Generic Collections
@@ -58,11 +58,11 @@ public sealed class CollectionExcelSerializerProvider : IExcelSerializerProvider
                     {
                         var keyType = elementType.GenericTypeArguments[0];
                         var valueType = elementType.GenericTypeArguments[1];
-                        return CreateInstance(typeof(EnumerableKeyValuePairExcelSerializer<,,>), new[] { type, keyType, valueType });
+                        return CreateInstance(typeof(EnumerableKeyValuePairXlsxSerializer<,,>), new[] { type, keyType, valueType });
                     }
                     else
                     {
-                        return CreateInstance(typeof(EnumerableExcelSerializer<,>), new[] { type, elementType });
+                        return CreateInstance(typeof(EnumerableXlsxSerializer<,>), new[] { type, elementType });
                     }
                 }
             }
@@ -75,13 +75,13 @@ public sealed class CollectionExcelSerializerProvider : IExcelSerializerProvider
         }
     }
 
-    static IExcelSerializer? CreateInstance(Type genericType, Type[] genericTypeArguments, params object[] arguments)
+    static IXlsxSerializer? CreateInstance(Type genericType, Type[] genericTypeArguments, params object[] arguments)
     {
-        return (IExcelSerializer?)Activator.CreateInstance(genericType.MakeGenericType(genericTypeArguments), arguments);
+        return (IXlsxSerializer?)Activator.CreateInstance(genericType.MakeGenericType(genericTypeArguments), arguments);
     }
 
     static class Cache<T>
     {
-        public static readonly IExcelSerializer<T>? Serializer = (IExcelSerializer<T>?)CreateSerializer(typeof(T));
+        public static readonly IXlsxSerializer<T>? Serializer = (IXlsxSerializer<T>?)CreateSerializer(typeof(T));
     }
 }

@@ -23,7 +23,7 @@ public partial class TupleSerializersTest
     public void Serializer_tuple<#= BuildArgParameter(i) #>()
     {
         var t = Tuple.Create(<#= BuildArgsParameters(i) #>);
-        RunTest(t, "<#= BuildXmlParameters(i) #>", ExcelSerializerOptions.Default);
+        RunTest(t, "<#= BuildXmlParameters(i) #>", XlsxSerializerOptions.Default);
     }
 <# } #>
 }

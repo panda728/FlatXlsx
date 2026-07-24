@@ -1,7 +1,7 @@
 ﻿# FlatXlsx
 Convert object to Excel file (.xlsx) [Open XML SpreadsheetML File Format]
 
-FlatXlsx is the successor of [FakeExcelSerializer](https://github.com/panda728/FakeExcelSerializer), renamed and updated for .NET 10.
+FlatXlsx is the successor of [FakeXlsxSerializer](https://github.com/panda728/FakeXlsxSerializer), renamed and updated for .NET 10.
 
 ## Getting Started
 Supported platforms: .NET Standard 2.0 / 2.1 (.NET Framework 4.6.2+, .NET 5/6/7), .NET 8, and .NET 10.
@@ -11,10 +11,10 @@ PM> Install-Package FlatXlsx
 ~~~
 
 ## Usage
-You can use `ExcelSerializer.ToFile` to create .xlsx file.
+You can use `XlsxSerializer.ToFile` to create .xlsx file.
 
 ~~~csharp
-ExcelSerializer.ToFile(Users, "test.xlsx", ExcelSerializerOptions.Default);
+XlsxSerializer.ToFile(Users, "test.xlsx", XlsxSerializerOptions.Default);
 ~~~
 
 `ToStream` writes to any `Stream` (it does not need to be seekable), and `To` writes to any
@@ -23,13 +23,13 @@ no temporary files or working folder are used.
 
 ~~~csharp
 // Stream
-ExcelSerializer.ToStream(Users, stream, ExcelSerializerOptions.Default);
+XlsxSerializer.ToStream(Users, stream, XlsxSerializerOptions.Default);
 
 // ASP.NET Core: write directly to the response without buffering a file
 app.MapGet("/users.xlsx", (HttpResponse response) =>
 {
     response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-    ExcelSerializer.To(GetUsers(), response.BodyWriter, ExcelSerializerOptions.Default);
+    XlsxSerializer.To(GetUsers(), response.BodyWriter, XlsxSerializerOptions.Default);
     return Task.CompletedTask;
 });
 ~~~
@@ -55,7 +55,7 @@ but Excel displays numbers with at most 15 digits of precision.
 ## Notice
 
 Output is streamed directly to the destination; no working folder is used.
-(`ExcelSerializerOptions.WorkPath` is obsolete and ignored.)
+(`XlsxSerializerOptions.WorkPath` is obsolete and ignored.)
 
 ## Benchmark
 
@@ -67,7 +67,7 @@ FlatXlsx 1.0.0 on .NET 10 (ShortRun, N = 100 lines):
 | FlatXlsx | 10  | 21.49 ms |  672.48 KB |
 | FlatXlsx | 100 | 48.71 ms | 6,022.02 KB |
 
-Reference (FakeExcelSerializer 1.3.4 on .NET 6), N = 100 lines:
+Reference (FakeXlsxSerializer 1.3.4 on .NET 6), N = 100 lines:
 
 |              Method |   N |        Mean |     Error |    StdDev | Ratio |      Gen 0 |      Gen 1 |     Gen 2 |  Allocated |
 |-------------------- |---- |------------:|----------:|----------:|------:|-----------:|-----------:|----------:|-----------:|
@@ -84,7 +84,7 @@ Reference (FakeExcelSerializer 1.3.4 on .NET 6), N = 100 lines:
 If you pass an object, it will be converted to an Excel file.  
 ![image](https://user-images.githubusercontent.com/16958552/185727609-79b574e8-b40c-46dc-83c9-74b078a1f44a.png)
 ~~~
-ExcelSerializer.ToFile(new string[] { "test", "test2" }, @"c:\test\test.xlsx", ExcelSerializerOptions.Default);
+XlsxSerializer.ToFile(new string[] { "test", "test2" }, @"c:\test\test.xlsx", XlsxSerializerOptions.Default);
 ~~~
 
 ## Example-2
@@ -104,7 +104,7 @@ var potals = new Portal[] {
     new Portal { Name = "Portal3", Owner = "panda728", Level = 2 },
 };
 
-ExcelSerializer.ToFile(potals, @"c:\test\potals.xlsx", ExcelSerializerOptions.Default);
+XlsxSerializer.ToFile(potals, @"c:\test\potals.xlsx", XlsxSerializerOptions.Default);
 ~~~
 ## Example-3
 By setting attributes on the class, you can specify the name of the title or change the order of the columns.  
@@ -126,37 +126,37 @@ var potals = new Portal[] {
     new Portal { Name = "Portal3", Owner = "panda728", Level = 2 },
 };
 
-var newConfig = ExcelSerializerOptions.Default with
+var newConfig = XlsxSerializerOptions.Default with
 {
     HasHeaderRecord = true,
 };
-ExcelSerializer.ToFile(potals, @"c:\test\potalsEx.xlsx", newConfig);
+XlsxSerializer.ToFile(potals, @"c:\test\potalsEx.xlsx", newConfig);
 ~~~
 ## Example-4
 Options can be set to display a title line and automatically adjust column widths.  
 ![image](https://user-images.githubusercontent.com/16958552/185727708-18201283-bb0b-46ba-a413-dbe34c20f3a3.png)
 ~~~
-var newConfig = ExcelSerializerOptions.Default with
+var newConfig = XlsxSerializerOptions.Default with
 {
     CultureInfo = CultureInfo.InvariantCulture,
     HasHeaderRecord = true,
     HeaderTitles = new string[] { "Name", "Owner", "Level" },
     AutoFitColumns = true,
 };
-ExcelSerializer.ToFile(potals, @"c:\test\potalsOp.xlsx", newConfig);
+XlsxSerializer.ToFile(potals, @"c:\test\potalsOp.xlsx", newConfig);
 ~~~
 
 ## Example-5
 Optionally supports Autofilter.  
 
-var newConfig = ExcelSerializerOptions.Default with
+var newConfig = XlsxSerializerOptions.Default with
 {
     CultureInfo = CultureInfo.InvariantCulture,
     HasHeaderRecord = true,
     HeaderTitles = new string[] { "Name", "Owner", "Level" },
     AutoFitlter = true,
 };
-ExcelSerializer.ToFile(potals, @"c:\test\potalsOp.xlsx", newConfig);
+XlsxSerializer.ToFile(potals, @"c:\test\potalsOp.xlsx", newConfig);
 
 ## Note
 For the method of retrieving values from IEnumerable\<T\>, Cysharp's WebSerializer method is used.

@@ -4,9 +4,9 @@ using System.Text;
 
 namespace FlatXlsx;
 
-public record ExcelSerializerOptions(IExcelSerializerProvider Provider)
+public record XlsxSerializerOptions(IXlsxSerializerProvider Provider)
 {
-    public static ExcelSerializerOptions Default { get; } = new ExcelSerializerOptions(ExcelSerializerProvider.Default);
+    public static XlsxSerializerOptions Default { get; } = new XlsxSerializerOptions(XlsxSerializerProvider.Default);
 
     public CultureInfo? CultureInfo { get; init; }
 
@@ -28,10 +28,10 @@ public record ExcelSerializerOptions(IExcelSerializerProvider Provider)
     public bool HasHeaderRecord { get; init; } = false;
     public string[]? HeaderTitles { get; init; }
 
-    public IExcelSerializer<T>? GetSerializer<T>()
+    public IXlsxSerializer<T>? GetSerializer<T>()
         => Provider.GetSerializer<T>();
 
-    public IExcelSerializer<T> GetRequiredSerializer<T>()
+    public IXlsxSerializer<T> GetRequiredSerializer<T>()
     {
         var serializer = Provider.GetSerializer<T>();
         if (serializer == null) Throw(typeof(T));

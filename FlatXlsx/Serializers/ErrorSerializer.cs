@@ -3,20 +3,16 @@ using System.Runtime.ExceptionServices;
 
 namespace FlatXlsx.Serializers;
 
-public sealed class ErrorSerializer<T> : IExcelSerializer<T>
+public sealed class ErrorSerializer<T>(Exception exception) : IXlsxSerializer<T>
 {
-    readonly ExceptionDispatchInfo exception;
+    readonly ExceptionDispatchInfo exception = ExceptionDispatchInfo.Capture(exception);
 
-    public ErrorSerializer(Exception exception)
-    {
-        this.exception = ExceptionDispatchInfo.Capture(exception);
-    }
-    public void WriteTitle(ref ExcelSerializerWriter writer, T value, ExcelSerializerOptions options, string name = "value")
+    public void WriteTitle(XlsxWriter writer, T value, XlsxSerializerOptions options, string name = "value")
     {
         exception.Throw();
     }
 
-    public void Serialize(ref ExcelSerializerWriter writer, T value, ExcelSerializerOptions options)
+    public void Serialize(XlsxWriter writer, T value, XlsxSerializerOptions options)
     {
         exception.Throw();
     }
@@ -24,8 +20,8 @@ public sealed class ErrorSerializer<T> : IExcelSerializer<T>
 
 public static class ErrorSerializer
 {
-    public static IExcelSerializer Create(Type type, Exception exception)
+    public static IXlsxSerializer Create(Type type, Exception exception)
     {
-        return (IExcelSerializer)Activator.CreateInstance(typeof(ErrorSerializer<>).MakeGenericType(type), exception)!;
+        return (IXlsxSerializer)Activator.CreateInstance(typeof(ErrorSerializer<>).MakeGenericType(type), exception)!;
     }
 }

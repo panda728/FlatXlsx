@@ -251,12 +251,12 @@ namespace BenchmarkSample
         [Benchmark]
         public void FlatXlsx()
         {
-            var customOptions = ExcelSerializerOptions.Default with
+            var customOptions = XlsxSerializerOptions.Default with
             {
                 HeaderTitles = new string[] { "行番号", "ヘッダID", "明細ID", "明細データ", "ヘッダ1", "ヘッダ2", "ヘッダ3", "ヘッダ4", "ヘッダ5", "ヘッダ6", "ヘッダ7", "フッタ1", "フッタ2", "フッタ3", "フッタ4", "フッタ5", "フッタ6", "フッタ7", "フッタ8" },
                 HasHeaderRecord = true,
             };
-            ExcelSerializer.ToFile(rows, fakeExcelFileName, customOptions);
+            XlsxSerializer.ToFile(rows, fakeExcelFileName, customOptions);
         }
         #endregion
     }

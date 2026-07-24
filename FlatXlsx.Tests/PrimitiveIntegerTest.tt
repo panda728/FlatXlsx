@@ -31,7 +31,7 @@ namespace FlatXlsx.Tests
         {
             var value1 = <#= type.Name #>.MinValue;
             var value2 = <#= type.Name #>.MaxValue;
-            RunIntegerTest(value1, value2, ExcelSerializerOptions.Default);
+            RunIntegerTest(value1, value2, XlsxSerializerOptions.Default);
         }
 <# } #>
     }
