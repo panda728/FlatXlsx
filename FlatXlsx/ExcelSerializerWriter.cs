@@ -307,6 +307,8 @@ public class ExcelSerializerWriter : IDisposable
     public void WritePrimitive(Int128 value) => WriterFormatted(value, _colStartInteger);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WritePrimitive(UInt128 value) => WriterFormatted(value, _colStartInteger);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WritePrimitive(System.Numerics.BigInteger value) => WriterFormatted(value, _colStartInteger);
 #else
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WritePrimitive(byte value) => WriterInteger($"{value}".AsSpan());
@@ -340,6 +342,8 @@ public class ExcelSerializerWriter : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WritePrimitive(UInt128 value) => WriterInteger($"{value}".AsSpan());
 #endif
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WritePrimitive(System.Numerics.BigInteger value) => WriterInteger($"{value}".AsSpan());
 #endif
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

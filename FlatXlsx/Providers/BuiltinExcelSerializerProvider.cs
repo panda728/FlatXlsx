@@ -15,6 +15,14 @@ public sealed class BuiltinExcelSerializerProvider : IExcelSerializerProvider
             { typeof(DateTimeOffset), new  BuiltinSerializers.DateTimeOffsetExcelSerializer() },
             { typeof(TimeSpan), new  BuiltinSerializers.TimeSpanExcelSerializer() },
             { typeof(Uri), new  BuiltinSerializers.UriExcelSerializer() },
+            { typeof(Version), new  BuiltinSerializers.VersionExcelSerializer() },
+            { typeof(System.Numerics.BigInteger), new  BuiltinSerializers.BigIntegerExcelSerializer() },
+            { typeof(System.Numerics.Complex), new  BuiltinSerializers.ComplexExcelSerializer() },
+            { typeof(IntPtr), new  BuiltinSerializers.IntPtrExcelSerializer() },
+            { typeof(UIntPtr), new  BuiltinSerializers.UIntPtrExcelSerializer() },
+#if NET5_0_OR_GREATER
+            { typeof(System.Text.Rune), new  BuiltinSerializers.RuneExcelSerializer() },
+#endif
 #if NET5_0_OR_GREATER
             { typeof(Half), new  BuiltinSerializers.HalfExcelSerializer() },
 #endif

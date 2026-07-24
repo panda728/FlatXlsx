@@ -19,14 +19,21 @@ ExcelSerializer.ToFile(Users, "test.xlsx", ExcelSerializerOptions.Default);
 
 ## Supported types
 
-In addition to the standard primitives, `string`, `Guid`, `Enum`, `DateTime`, `DateTimeOffset`, `TimeSpan`, and `Uri`,
-the following newer .NET types are supported when running on a modern target framework:
+| Category | Types | Available on |
+|---|---|---|
+| Numeric primitives | `bool` `byte` `sbyte` `short` `ushort` `int` `uint` `long` `ulong` `float` `double` `decimal` | all targets |
+| Native-size integers | `nint` (`IntPtr`) / `nuint` (`UIntPtr`) | all targets |
+| System.Numerics | `BigInteger` `Complex` | all targets |
+| Text | `string` `char` | all targets |
+| Common structs/classes | `Guid` `Enum` `DateTime` `DateTimeOffset` `TimeSpan` `Uri` `Version` | all targets |
+| .NET Core 3.0+ types | `Rune` | .NET 8+ |
+| .NET 5+ types | `Half` | .NET 8+ |
+| .NET 6+ types | `DateOnly` `TimeOnly` | .NET 8+ |
+| .NET 7+ types | `Int128` `UInt128` | .NET 8+ |
 
-| Type | Available on |
-|---|---|
-| `DateOnly` / `TimeOnly` | .NET 8+ |
-| `Half` | .NET 8+ |
-| `Int128` / `UInt128` | .NET 8+ |
+`Nullable<T>` of any supported struct, tuples, and object graphs (classes/records with public properties/fields) are also supported.
+Values of `BigInteger` / `Int128` / `UInt128` exceeding 15 significant digits are stored in full in the cell,
+but Excel displays numbers with at most 15 digits of precision.
 
 ## Notice
 
