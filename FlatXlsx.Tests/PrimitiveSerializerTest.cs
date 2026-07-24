@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-
+﻿
 namespace FlatXlsx.Tests
 {
     public partial class PrimitiveSerializerTest
@@ -15,7 +14,7 @@ namespace FlatXlsx.Tests
                 serializer.Serialize(writer, value1, option);
                 serializer.Serialize(writer, value2, option);
                 Assert.Empty(writer.SharedStrings);
-                writer.ToString().Should().Be($"<c t=\"n\" s=\"5\"><v>{value1}</v></c><c t=\"n\" s=\"5\"><v>{value2}</v></c>");
+                Assert.Equal($"<c t=\"n\" s=\"5\"><v>{value1}</v></c><c t=\"n\" s=\"5\"><v>{value2}</v></c>", writer.ToString());
             }
             catch
             {
@@ -37,7 +36,7 @@ namespace FlatXlsx.Tests
                 serializer.Serialize(writer, value1, option);
                 serializer.Serialize(writer, value2, option);
                 Assert.Empty(writer.SharedStrings);
-                writer.ToString().Should().Be($"<c t=\"n\" s=\"6\"><v>{value1}</v></c><c t=\"n\" s=\"6\"><v>{value2}</v></c>");
+                Assert.Equal($"<c t=\"n\" s=\"6\"><v>{value1}</v></c><c t=\"n\" s=\"6\"><v>{value2}</v></c>", writer.ToString());
             }
             catch
             {
@@ -66,7 +65,7 @@ namespace FlatXlsx.Tests
                 serializer.Serialize(writer, value1, option);
                 serializer.Serialize(writer, value2, option);
                 Assert.Empty(writer.SharedStrings);
-                writer.ToString().Should().Be($"<c t=\"b\"><v>1</v></c><c t=\"b\"><v>0</v></c>");
+                Assert.Equal($"<c t=\"b\"><v>1</v></c><c t=\"b\"><v>0</v></c>", writer.ToString());
             }
             catch
             {

@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 
 namespace FlatXlsx.Tests
 {
@@ -19,8 +18,8 @@ namespace FlatXlsx.Tests
                 var columnXml = writer.ToString();
                 var sharedString1 = writer.SharedStrings.First().Key;
 
-                columnXml.Should().Be(columnXmlShouldBe);
-                sharedString1.Should().Be(value1ShouldBe);
+                Assert.Equal(columnXmlShouldBe, columnXml);
+                Assert.Equal(value1ShouldBe, sharedString1);
             }
             catch
             {
@@ -46,9 +45,9 @@ namespace FlatXlsx.Tests
                 var sharedString1 = writer.SharedStrings.First().Key;
                 var sharedString2 = writer.SharedStrings.Skip(1).First().Key;
 
-                columnXml.Should().Be(columnXmlShouldBe);
-                sharedString1.Should().Be(value1ShouldBe1);
-                sharedString2.Should().Be(value1ShouldBe2);
+                Assert.Equal(columnXmlShouldBe, columnXml);
+                Assert.Equal(value1ShouldBe1, sharedString1);
+                Assert.Equal(value1ShouldBe2, sharedString2);
             }
             catch
             {
@@ -120,8 +119,8 @@ namespace FlatXlsx.Tests
                 var columnXml = writer.ToString();
                 var sharedString1 = writer.SharedStrings.First().Key;
 
-                columnXml.Should().Be(columnXmlShouldBe);
-                sharedString1.Should().Be(value1ShouldBe);
+                Assert.Equal(columnXmlShouldBe, columnXml);
+                Assert.Equal(value1ShouldBe, sharedString1);
             }
             catch
             {

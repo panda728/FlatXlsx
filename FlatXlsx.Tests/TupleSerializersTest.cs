@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using Xunit.Sdk;
+﻿using Xunit.Sdk;
 
 namespace FlatXlsx.Tests
 {
@@ -17,7 +16,7 @@ namespace FlatXlsx.Tests
             {
                 serializer.Serialize(writer, value1, option);
                 Assert.Empty(writer.SharedStrings);
-                writer.ToString().Should().Be(value1ShouldBe);
+                Assert.Equal(value1ShouldBe, writer.ToString());
             }
             catch
             {

@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-
+﻿
 namespace FlatXlsx.Tests
 {
     public class NewNetTypesTest
@@ -18,7 +17,7 @@ namespace FlatXlsx.Tests
 
                 Assert.Empty(writer.SharedStrings);
 
-                writer.ToString().Should().Be(value1ShouldBe);
+                Assert.Equal(value1ShouldBe, writer.ToString());
             }
             finally
             {

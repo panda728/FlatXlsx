@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-
+﻿
 namespace FlatXlsx.Tests
 {
     public class BuiltinSerializersTest
@@ -25,9 +24,9 @@ namespace FlatXlsx.Tests
                 var sharedString1 = writer.SharedStrings.First().Key;
                 var sharedString2 = writer.SharedStrings.Skip(1).First().Key;
 
-                columnXml.Should().Be("<c t=\"s\"><v>0</v></c><c t=\"s\"><v>1</v></c><c t=\"s\"><v>0</v></c>");
-                sharedString1.Should().Be(value1ShouldBe);
-                sharedString2.Should().Be(value2ShouldBe);
+                Assert.Equal("<c t=\"s\"><v>0</v></c><c t=\"s\"><v>1</v></c><c t=\"s\"><v>0</v></c>", columnXml);
+                Assert.Equal(value1ShouldBe, sharedString1);
+                Assert.Equal(value2ShouldBe, sharedString2);
             }
             catch
             {
@@ -53,7 +52,7 @@ namespace FlatXlsx.Tests
 
                 Assert.Empty(writer.SharedStrings);
 
-                writer.ToString().Should().Be(value1ShouldBe);
+                Assert.Equal(value1ShouldBe, writer.ToString());
             }
             catch
             {

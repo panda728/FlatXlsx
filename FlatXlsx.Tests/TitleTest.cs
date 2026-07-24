@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using Microsoft.VisualBasic.FileIO;
+﻿using Microsoft.VisualBasic.FileIO;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -33,10 +32,10 @@ namespace FlatXlsx.Tests
                 var sharedString2 = writer.SharedStrings.Skip(1).First().Key;
                 var sharedString3 = writer.SharedStrings.Skip(2).First().Key;
 
-                columnXml.Should().Be(titleShouldBe);
-                sharedString1.Should().Be(value1ShouldBe);
-                sharedString2.Should().Be(value2ShouldBe);
-                sharedString3.Should().Be(value3ShouldBe);
+                Assert.Equal(titleShouldBe, columnXml);
+                Assert.Equal(value1ShouldBe, sharedString1);
+                Assert.Equal(value2ShouldBe, sharedString2);
+                Assert.Equal(value3ShouldBe, sharedString3);
             }
             catch
             {
@@ -62,8 +61,8 @@ namespace FlatXlsx.Tests
                 var columnXml = writer.ToString();
                 var sharedString1 = writer.SharedStrings.First().Key;
 
-                columnXml.Should().Be(columnXmlShouldBe);
-                sharedString1.Should().Be(value1ShouldBe);
+                Assert.Equal(columnXmlShouldBe, columnXml);
+                Assert.Equal(value1ShouldBe, sharedString1);
             }
             catch
             {

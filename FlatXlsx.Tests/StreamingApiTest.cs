@@ -1,7 +1,6 @@
 ﻿using System.Buffers;
 using System.IO.Compression;
 using System.Xml.Linq;
-using FluentAssertions;
 
 namespace FlatXlsx.Tests
 {
@@ -46,7 +45,7 @@ namespace FlatXlsx.Tests
             ms.Position = 0;
 
             var entries = ReadEntries(ms);
-            entries.Keys.Should().BeEquivalentTo(_expectedEntries);
+            Assert.Equivalent(_expectedEntries, entries.Keys);
 
             foreach (var xml in entries.Values)
                 XDocument.Parse(xml); // throws if malformed
@@ -54,11 +53,13 @@ namespace FlatXlsx.Tests
             var sheet = XDocument.Parse(entries["sheet.xml"]);
             var ns = sheet.Root!.Name.Namespace;
             var sheetRows = sheet.Root.Element(ns + "sheetData")!.Elements(ns + "row").ToArray();
-            sheetRows.Should().HaveCount(2);
+            Assert.Equal(2, sheetRows.Length);
 
             var strings = XDocument.Parse(entries["strings.xml"]);
             var shared = strings.Root!.Elements().Select(si => si.Value).ToArray();
-            shared.Should().Contain(new[] { "Portal1", "Portal2", "panda728" });
+            Assert.Contains("Portal1", shared);
+            Assert.Contains("Portal2", shared);
+            Assert.Contains("panda728", shared);
         }
 
         [Fact]
@@ -70,7 +71,7 @@ namespace FlatXlsx.Tests
 
             using var readBack = new MemoryStream(inner.ToArray());
             var entries = ReadEntries(readBack);
-            entries.Keys.Should().BeEquivalentTo(_expectedEntries);
+            Assert.Equivalent(_expectedEntries, entries.Keys);
         }
 
         [Fact]
@@ -87,7 +88,7 @@ namespace FlatXlsx.Tests
             ms.Position = 0;
             var streamEntries = ReadEntries(ms);
 
-            bufferEntries.Should().Equal(streamEntries);
+            Assert.Equal(streamEntries, bufferEntries);
         }
 
         [Fact]
@@ -99,7 +100,7 @@ namespace FlatXlsx.Tests
                 XlsxSerializer.ToFile(_rows, path, XlsxSerializerOptions.Default);
                 using var fs = File.OpenRead(path);
                 var entries = ReadEntries(fs);
-                entries.Keys.Should().BeEquivalentTo(_expectedEntries);
+                Assert.Equivalent(_expectedEntries, entries.Keys);
             }
             finally
             {
@@ -112,7 +113,7 @@ namespace FlatXlsx.Tests
         {
             using var ms = new MemoryStream();
             XlsxSerializer.ToStream(Array.Empty<Portal>(), ms, XlsxSerializerOptions.Default);
-            ms.Length.Should().Be(0);
+            Assert.Equal(0, ms.Length);
         }
 
         /// <summary>Simulates a network stream: write-only, non-seekable.</summary>
