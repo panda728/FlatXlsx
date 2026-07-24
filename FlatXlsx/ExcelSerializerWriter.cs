@@ -30,6 +30,13 @@ public class ExcelSerializerWriter : IDisposable
     static readonly byte[] _colStartString = Encoding.UTF8.GetBytes(@$"<c t=""s""><v>");
     static readonly byte[] _colEnd = Encoding.UTF8.GetBytes(@"</v></c>");
 
+#if NET8_0_OR_GREATER
+    static readonly byte[] _colStartDateTime = Encoding.UTF8.GetBytes(@$"<c t=""d"" s=""{XF_DATETIME}""><v>");
+    static readonly byte[] _colStartDate = Encoding.UTF8.GetBytes(@$"<c t=""d"" s=""{XF_DATE}""><v>");
+    static readonly byte[] _colStartTime = Encoding.UTF8.GetBytes(@$"<c t=""d"" s=""{XF_TIME}""><v>");
+    static readonly SearchValues<char> _newlineChars = SearchValues.Create("\r\n");
+#endif
+
     readonly ArrayPoolBufferWriter _writer = new();
     readonly ExcelSerializerOptions _options;
 
@@ -129,7 +136,7 @@ public class ExcelSerializerWriter : IDisposable
         if (!_countingCharLength)
             return;
 
-#if NETSTANDARD2_1_OR_GREATER
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
         if (!ColumnMaxLength.TryAdd(_columnIndex, length))
         {
             if (ColumnMaxLength[_columnIndex] < length)
@@ -158,13 +165,21 @@ public class ExcelSerializerWriter : IDisposable
             return;
         }
 
+#if NET8_0_OR_GREATER
+        _writer.Write(
+            value.AsSpan().ContainsAny(_newlineChars)
+                ? _colStartStringWrap
+                : _colStartString
+        );
+#else
         _writer.Write(
             value.Contains(Environment.NewLine)
                 ? _colStartStringWrap
                 : _colStartString
         );
+#endif
 
-#if NETSTANDARD2_1_OR_GREATER
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
         var index = SharedStrings.TryAdd(value, _stringIndex)
             ? _stringIndex++
             : SharedStrings[value];
@@ -180,7 +195,11 @@ public class ExcelSerializerWriter : IDisposable
             index = _stringIndex++;
         }
 #endif
+#if NET8_0_OR_GREATER
+        WriteUtf8Formatted(index, default);
+#else
         WriteUtf8Bytes($"{index}");
+#endif
         _writer.Write(_colEnd);
         SetMaxLength(value.Length);
     }
@@ -236,6 +255,59 @@ public class ExcelSerializerWriter : IDisposable
         SetMaxLength(chars.Length);
     }
 
+#if NET8_0_OR_GREATER
+    /// <summary>Formats the value as UTF-8 directly into the buffer without intermediate string allocation.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    int WriteUtf8Formatted<T>(T value, ReadOnlySpan<char> format) where T : IUtf8SpanFormattable
+    {
+        int written;
+        var span = _writer.GetSpan(48);
+        while (!value.TryFormat(span, out written, format, null))
+            span = _writer.GetSpan(span.Length * 2);
+        _writer.Advance(written);
+        return written;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    void WriterFormatted<T>(T value, byte[] colStart) where T : IUtf8SpanFormattable
+    {
+        _writer.Write(colStart);
+        var written = WriteUtf8Formatted(value, default);
+        _writer.Write(_colEnd);
+        SetMaxLength(written);
+    }
+#endif
+
+#if NET8_0_OR_GREATER
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WritePrimitive(byte value) => WriterFormatted(value, _colStartInteger);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WritePrimitive(sbyte value) => WriterFormatted(value, _colStartInteger);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WritePrimitive(decimal value) => WriterFormatted(value, _colStartNumber);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WritePrimitive(double value) => WriterFormatted(value, _colStartNumber);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WritePrimitive(float value) => WriterFormatted(value, _colStartNumber);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WritePrimitive(int value) => WriterFormatted(value, _colStartInteger);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WritePrimitive(uint value) => WriterFormatted(value, _colStartInteger);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WritePrimitive(long value) => WriterFormatted(value, _colStartInteger);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WritePrimitive(ulong value) => WriterFormatted(value, _colStartInteger);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WritePrimitive(short value) => WriterFormatted(value, _colStartNumber);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WritePrimitive(ushort value) => WriterFormatted(value, _colStartNumber);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WritePrimitive(Half value) => WriterFormatted(value, _colStartNumber);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WritePrimitive(Int128 value) => WriterFormatted(value, _colStartInteger);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WritePrimitive(UInt128 value) => WriterFormatted(value, _colStartInteger);
+#else
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WritePrimitive(byte value) => WriterInteger($"{value}".AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -268,20 +340,37 @@ public class ExcelSerializerWriter : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WritePrimitive(UInt128 value) => WriterInteger($"{value}".AsSpan());
 #endif
+#endif
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WriteDateTime(DateTime value)
     {
         var d = value;
-        if (d == DateTime.MinValue) WriteEmpty();
+        if (d == DateTime.MinValue)
+        {
+            WriteEmpty();
+            return;
+        }
         if (d.Hour == 0 && d.Minute == 0 && d.Second == 0)
         {
+#if NET8_0_OR_GREATER
+            _writer.Write(_colStartDate);
+            WriteUtf8Formatted(d, "yyyy-MM-ddTHH:mm:ss");
+            _writer.Write(_colEnd);
+#else
             WriteUtf8Bytes(@$"<c t=""d"" s=""{XF_DATE}""><v>{d:yyyy-MM-ddTHH:mm:ss}</v></c>");
+#endif
             SetMaxLength(LEN_DATE);
             return;
         }
 
+#if NET8_0_OR_GREATER
+        _writer.Write(_colStartDateTime);
+        WriteUtf8Formatted(d, "yyyy-MM-ddTHH:mm:ss");
+        _writer.Write(_colEnd);
+#else
         WriteUtf8Bytes(@$"<c t=""d"" s=""{XF_DATETIME}""><v>{d:yyyy-MM-ddTHH:mm:ss}</v></c>");
+#endif
         SetMaxLength(LEN_DATETIME);
     }
 
@@ -289,19 +378,33 @@ public class ExcelSerializerWriter : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WriteDateTime(DateOnly value)
     {
+#if NET8_0_OR_GREATER
+        _writer.Write(_colStartDate);
+        WriteUtf8Formatted(value, "yyyy-MM-dd");
+        _writer.Write("T00:00:00"u8);
+        _writer.Write(_colEnd);
+#else
         WriteUtf8Bytes(@$"<c t=""d"" s=""{XF_DATE}""><v>{value:yyyy-MM-dd}T00:00:00</v></c>");
+#endif
         SetMaxLength(LEN_DATE);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WriteDateTime(TimeOnly value)
     {
+#if NET8_0_OR_GREATER
+        _writer.Write(_colStartTime);
+        _writer.Write("1900-01-01T"u8);
+        WriteUtf8Formatted(value, "HH:mm:ss");
+        _writer.Write(_colEnd);
+#else
         WriteUtf8Bytes(@$"<c t=""d"" s=""{XF_TIME}""><v>1900-01-01T{value:HH:mm:ss}</v></c>");
+#endif
         SetMaxLength(LEN_TIME);
     }
 #endif
 
-#if NETSTANDARD2_1_OR_GREATER
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
     [DoesNotReturn]
 #endif
     static void ThrowReachedMaxDepth(int depth)
