@@ -89,6 +89,7 @@ public static class XlsxSerializer
     readonly static byte[] _siEnd = Encoding.UTF8.GetBytes("</t></si>");
 
     const int COLUMN_WIDTH_MARGIN = 2;
+    const int FLUSH_THRESHOLD = 32 * 1024;
     private const string CONTENT_TYPE_XML = "[Content_Types].xml";
     private const string SHEET_XML = "sheet.xml";
     private const string STRINGS_XML = "strings.xml";
@@ -119,10 +120,10 @@ public static class XlsxSerializer
 
         using var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true);
 
-        WriteEntry(archive, CONTENT_TYPE_XML, _contentTypes);
-        WriteEntry(archive, RELS + "/" + DOT_RELS, _rels);
-        WriteEntry(archive, BOOK_XML, _book);
-        WriteEntry(archive, RELS + "/" + BOOK_XML_RELS, _bookRels);
+        WriteEntry(archive, CONTENT_TYPE_XML, _contentTypes, options.CompressionLevel);
+        WriteEntry(archive, RELS + "/" + DOT_RELS, _rels, options.CompressionLevel);
+        WriteEntry(archive, BOOK_XML, _book, options.CompressionLevel);
+        WriteEntry(archive, RELS + "/" + BOOK_XML_RELS, _bookRels, options.CompressionLevel);
         WriteEntry(archive, STYLES_XML, Encoding.UTF8.GetBytes(string.Format(
             _styles,
             options.DateTimeFormat,
@@ -130,12 +131,12 @@ public static class XlsxSerializer
             options.TimeFormat,
             options.IntegerFormat,
             options.NumberFormat
-        )));
+        )), options.CompressionLevel);
 
         using var writer = new XlsxWriter(options);
-        using (var sheetStream = archive.CreateEntry(SHEET_XML).Open())
+        using (var sheetStream = archive.CreateEntry(SHEET_XML, options.CompressionLevel).Open())
             CreateSheet(rows, sheetStream, writer, options);
-        using (var stringsStream = archive.CreateEntry(STRINGS_XML).Open())
+        using (var stringsStream = archive.CreateEntry(STRINGS_XML, options.CompressionLevel).Open())
             WriteSharedStrings(stringsStream, writer);
     }
 
@@ -151,9 +152,9 @@ public static class XlsxSerializer
         ToStream(rows, stream, options);
     }
 
-    static void WriteEntry(ZipArchive archive, string entryName, byte[] bytes)
+    static void WriteEntry(ZipArchive archive, string entryName, byte[] bytes, System.IO.Compression.CompressionLevel compressionLevel)
     {
-        using var s = archive.CreateEntry(entryName).Open();
+        using var s = archive.CreateEntry(entryName, compressionLevel).Open();
         s.Write(bytes, 0, bytes.Length);
     }
 
@@ -178,10 +179,10 @@ public static class XlsxSerializer
 
         using var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true);
 
-        await WriteEntryAsync(archive, CONTENT_TYPE_XML, _contentTypes, cancellationToken).ConfigureAwait(false);
-        await WriteEntryAsync(archive, RELS + "/" + DOT_RELS, _rels, cancellationToken).ConfigureAwait(false);
-        await WriteEntryAsync(archive, BOOK_XML, _book, cancellationToken).ConfigureAwait(false);
-        await WriteEntryAsync(archive, RELS + "/" + BOOK_XML_RELS, _bookRels, cancellationToken).ConfigureAwait(false);
+        await WriteEntryAsync(archive, CONTENT_TYPE_XML, _contentTypes, options.CompressionLevel, cancellationToken).ConfigureAwait(false);
+        await WriteEntryAsync(archive, RELS + "/" + DOT_RELS, _rels, options.CompressionLevel, cancellationToken).ConfigureAwait(false);
+        await WriteEntryAsync(archive, BOOK_XML, _book, options.CompressionLevel, cancellationToken).ConfigureAwait(false);
+        await WriteEntryAsync(archive, RELS + "/" + BOOK_XML_RELS, _bookRels, options.CompressionLevel, cancellationToken).ConfigureAwait(false);
         await WriteEntryAsync(archive, STYLES_XML, Encoding.UTF8.GetBytes(string.Format(
             _styles,
             options.DateTimeFormat,
@@ -189,12 +190,12 @@ public static class XlsxSerializer
             options.TimeFormat,
             options.IntegerFormat,
             options.NumberFormat
-        )), cancellationToken).ConfigureAwait(false);
+        )), options.CompressionLevel, cancellationToken).ConfigureAwait(false);
 
         using var writer = new XlsxWriter(options);
-        using (var sheetStream = archive.CreateEntry(SHEET_XML).Open())
+        using (var sheetStream = archive.CreateEntry(SHEET_XML, options.CompressionLevel).Open())
             await CreateSheetAsync(rows, sheetStream, writer, options, cancellationToken).ConfigureAwait(false);
-        using (var stringsStream = archive.CreateEntry(STRINGS_XML).Open())
+        using (var stringsStream = archive.CreateEntry(STRINGS_XML, options.CompressionLevel).Open())
             await WriteSharedStringsAsync(stringsStream, writer, cancellationToken).ConfigureAwait(false);
     }
 
@@ -209,9 +210,9 @@ public static class XlsxSerializer
         return ToStreamAsync(rows, pipeWriter.AsStream(leaveOpen: true), options, cancellationToken);
     }
 
-    static async Task WriteEntryAsync(ZipArchive archive, string entryName, byte[] bytes, CancellationToken cancellationToken)
+    static async Task WriteEntryAsync(ZipArchive archive, string entryName, byte[] bytes, System.IO.Compression.CompressionLevel compressionLevel, CancellationToken cancellationToken)
     {
-        using var s = archive.CreateEntry(entryName).Open();
+        using var s = archive.CreateEntry(entryName, compressionLevel).Open();
         await s.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
     }
 
@@ -257,7 +258,8 @@ public static class XlsxSerializer
                 writer.WriteRaw(_rowStart);
                 serializer.Serialize(writer, row, options);
                 writer.WriteRaw(_rowEnd);
-                await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
+                if (writer.BufferedBytes >= FLUSH_THRESHOLD)
+                    await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
             }
         }
         writer.WriteRaw(_dataEnd);
@@ -427,7 +429,8 @@ public static class XlsxSerializer
             writer.WriteRaw(_rowStart);
             serializer.Serialize(writer, row, options);
             writer.WriteRaw(_rowEnd);
-            writer.CopyTo(stream);
+            if (writer.BufferedBytes >= FLUSH_THRESHOLD)
+                writer.CopyTo(stream);
         }
     }
 
@@ -444,7 +447,8 @@ public static class XlsxSerializer
             writer.WriteRaw(_rowStart);
             serializer.Serialize(writer, row, options);
             writer.WriteRaw(_rowEnd);
-            writer.CopyTo(stream);
+            if (writer.BufferedBytes >= FLUSH_THRESHOLD)
+                writer.CopyTo(stream);
         }
     }
 

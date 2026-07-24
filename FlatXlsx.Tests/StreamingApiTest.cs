@@ -116,6 +116,24 @@ namespace FlatXlsx.Tests
             Assert.Equal(0, ms.Length);
         }
 
+        [Fact]
+        public void ToStream_FastestCompression_ProducesSameContent()
+        {
+            var fastOption = XlsxSerializerOptions.Default with
+            {
+                CompressionLevel = System.IO.Compression.CompressionLevel.Fastest,
+            };
+            using var fastMs = new MemoryStream();
+            XlsxSerializer.ToStream(_rows, fastMs, fastOption);
+            fastMs.Position = 0;
+
+            using var defaultMs = new MemoryStream();
+            XlsxSerializer.ToStream(_rows, defaultMs, XlsxSerializerOptions.Default);
+            defaultMs.Position = 0;
+
+            Assert.Equal(ReadEntries(defaultMs), ReadEntries(fastMs));
+        }
+
         /// <summary>Simulates a network stream: write-only, non-seekable.</summary>
         sealed class WriteOnlyStream : Stream
         {

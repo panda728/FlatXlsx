@@ -82,15 +82,41 @@ namespace FlatXlsx.Tests
                 XlsxSerializerOptions.Default);
         }
 
+        // Guid/TimeSpan/DateTimeOffset are written as inline string cells on net8.0+:
+        // their values are unique per row, so the shared-string table adds no dedup value.
+        void RunInlineColumnTest<T>(
+            T value1, string text1,
+            T value2, string text2,
+            XlsxSerializerOptions option)
+        {
+            var serializer = option.GetSerializer<T>();
+            Assert.NotNull(serializer);
+            var writer = new XlsxWriter(option);
+            try
+            {
+                serializer!.Serialize(writer, value1, option);
+                serializer.Serialize(writer, value2, option);
+
+                Assert.Empty(writer.SharedStrings);
+                Assert.Equal(
+                    $"<c t=\"inlineStr\"><is><t>{text1}</t></is></c><c t=\"inlineStr\"><is><t>{text2}</t></is></c>",
+                    writer.ToString());
+            }
+            finally
+            {
+                writer.Dispose();
+            }
+        }
+
         [Fact]
         public void Serializer_Guid()
         {
             var guid1 = Guid.NewGuid();
             var guid2 = Guid.NewGuid();
 
-            RunStringColumnTest(
-                guid1, guid2,
-                guid1.ToString(), guid2.ToString(),
+            RunInlineColumnTest(
+                guid1, guid1.ToString(),
+                guid2, guid2.ToString(),
                 XlsxSerializerOptions.Default);
         }
 
@@ -124,9 +150,9 @@ namespace FlatXlsx.Tests
             var option = XlsxSerializerOptions.Default;
             var value1 = new DateTimeOffset(2000, 1, 1, 10, 30, 0, TimeSpan.FromHours(9));
             var value2 = new DateTimeOffset(2000, 1, 1, 10, 30, 0, TimeSpan.Zero);
-            RunStringColumnTest(
-                value1, value2,
-                value1.ToString(option.CultureInfo), value2.ToString(option.CultureInfo),
+            RunInlineColumnTest(
+                value1, value1.ToString(option.CultureInfo),
+                value2, value2.ToString(option.CultureInfo),
                 option);
         }
 
@@ -135,9 +161,9 @@ namespace FlatXlsx.Tests
         {
             var value1 = DateTime.Today.AddHours(10) - DateTime.Today;
             var value2 = DateTime.Today.AddHours(-10) - DateTime.Today;
-            RunStringColumnTest(
-                value1, value2,
-                "10:00:00", "-10:00:00",
+            RunInlineColumnTest(
+                value1, "10:00:00",
+                value2, "-10:00:00",
                 XlsxSerializerOptions.Default);
         }
         [Fact]

@@ -25,7 +25,11 @@ internal class BuiltinSerializers
         public void WriteTitle(XlsxWriter writer, Guid value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
         public void Serialize(XlsxWriter writer, Guid value, XlsxSerializerOptions options)
+#if NET8_0_OR_GREATER
+            => writer.WriteInlineString(value);
+#else
             => writer.Write($"{value}");
+#endif
     }
 
     public sealed class EnumXlsxSerializer : IXlsxSerializer<Enum>
@@ -49,7 +53,11 @@ internal class BuiltinSerializers
         public void WriteTitle(XlsxWriter writer, DateTimeOffset value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
         public void Serialize(XlsxWriter writer, DateTimeOffset value, XlsxSerializerOptions options)
+#if NET8_0_OR_GREATER
+            => writer.WriteInlineString(value, options.CultureInfo);
+#else
             => writer.Write(value.ToString(options.CultureInfo));
+#endif
     }
 
     public sealed class TimeSpanXlsxSerializer : IXlsxSerializer<TimeSpan>
@@ -57,7 +65,11 @@ internal class BuiltinSerializers
         public void WriteTitle(XlsxWriter writer, TimeSpan value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
         public void Serialize(XlsxWriter writer, TimeSpan value, XlsxSerializerOptions options)
+#if NET8_0_OR_GREATER
+            => writer.WriteInlineString(value);
+#else
             => writer.Write(value.ToString());
+#endif
     }
 
     public sealed class UriXlsxSerializer : IXlsxSerializer<Uri?>

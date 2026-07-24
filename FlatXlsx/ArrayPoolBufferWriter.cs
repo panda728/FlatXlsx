@@ -68,7 +68,8 @@ public class ArrayPoolBufferWriter : IBufferWriter<byte>, IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     void ClearHelper()
     {
-        _rentedBuffer.AsSpan(0, _written).Clear();
+        // No need to zero the buffer here: only [0.._written) is ever exposed,
+        // and the array is cleared when returned to the pool in Dispose.
         _written = 0;
     }
 

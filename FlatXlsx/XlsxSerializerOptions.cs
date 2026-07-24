@@ -19,6 +19,11 @@ public record XlsxSerializerOptions(IXlsxSerializerProvider Provider)
     [Obsolete("Output is now streamed directly; no working folder is used and this value is ignored.")]
     public string WorkPath { get; init; } = "";
 
+    /// <summary>Compression level for the xlsx (zip) container.
+    /// Use <see cref="System.IO.Compression.CompressionLevel.Fastest"/> to trade a slightly
+    /// larger file for significantly faster serialization of large data sets.</summary>
+    public System.IO.Compression.CompressionLevel CompressionLevel { get; init; } = System.IO.Compression.CompressionLevel.Optimal;
+
     public string DateTimeFormat { get; init; } = "yyyy/mm/dd hh:mm;@";
     public string DateFormat { get; init; } = "yyyy/mm/dd;@";
     public string TimeFormat { get; init; } = "hh:mm;@";

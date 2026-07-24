@@ -34,7 +34,10 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
     static readonly byte[] _colStartDateTime = Encoding.UTF8.GetBytes(@$"<c t=""d"" s=""{XF_DATETIME}""><v>");
     static readonly byte[] _colStartDate = Encoding.UTF8.GetBytes(@$"<c t=""d"" s=""{XF_DATE}""><v>");
     static readonly byte[] _colStartTime = Encoding.UTF8.GetBytes(@$"<c t=""d"" s=""{XF_TIME}""><v>");
+    static readonly byte[] _colStartInline = Encoding.UTF8.GetBytes(@"<c t=""inlineStr""><is><t>");
+    static readonly byte[] _colEndInline = Encoding.UTF8.GetBytes("</t></is></c>");
     static readonly SearchValues<char> _newlineChars = SearchValues.Create("\r\n");
+    static readonly SearchValues<byte> _xmlSpecialBytes = SearchValues.Create("<>&"u8);
 #endif
 
     readonly ArrayPoolBufferWriter _writer = new();
@@ -59,6 +62,8 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
     public ReadOnlySpan<byte> AsSpan() => _writer.OutputAsSpan;
     public ReadOnlyMemory<byte> AsMemory() => _writer.OutputAsMemory;
     public long BytesCommitted() => _writer.BytesCommitted;
+    /// <summary>Bytes currently buffered and not yet copied to the output stream.</summary>
+    public int BufferedBytes => _writer.BytesWritten;
     public override string ToString() => Encoding.UTF8.GetString(
 #if NET5_0_OR_GREATER
         _writer.OutputAsSpan);
@@ -267,6 +272,37 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
         _writer.Write(colStart);
         var written = WriteUtf8Formatted(value, default);
         _writer.Write(_colEnd);
+        SetMaxLength(written);
+    }
+
+    /// <summary>Writes the value as an inline string cell, bypassing the shared-string table.
+    /// For values that are unique per row (Guid, timestamps), the shared-string table only
+    /// adds allocations and dictionary growth without any dedup benefit.
+    /// The value's UTF-8 form must not contain XML special characters.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WriteInlineString<T>(T value) where T : IUtf8SpanFormattable
+    {
+        _writer.Write(_colStartInline);
+        var written = WriteUtf8Formatted(value, default);
+        _writer.Write(_colEndInline);
+        SetMaxLength(written);
+    }
+
+    /// <summary>Inline-string variant for culture-formatted values: falls back to the
+    /// shared-string path if the formatted text contains XML special characters.</summary>
+    public void WriteInlineString<T>(T value, IFormatProvider? provider) where T : IUtf8SpanFormattable, IFormattable
+    {
+        Span<byte> tmp = stackalloc byte[64];
+        if (!value.TryFormat(tmp, out var written, default, provider) ||
+            tmp[..written].ContainsAny(_xmlSpecialBytes))
+        {
+            Write(value.ToString(null, provider));
+            return;
+        }
+
+        _writer.Write(_colStartInline);
+        _writer.Write(tmp[..written]);
+        _writer.Write(_colEndInline);
         SetMaxLength(written);
     }
 #endif
