@@ -1,7 +1,7 @@
 ﻿# FlatXlsx
 Convert object to Excel file (.xlsx) [Open XML SpreadsheetML File Format]
 
-FlatXlsx is the successor of [FakeXlsxSerializer](https://github.com/panda728/FakeXlsxSerializer), renamed and updated for .NET 10.
+FlatXlsx is the successor of [FakeExcelSerializer](https://github.com/panda728/FakeExcelSerializer), renamed and updated for .NET 10.
 
 ## Getting Started
 Supported platforms: .NET Standard 2.0 / 2.1 (.NET Framework 4.6.2+, .NET 5/6/7), .NET 8, and .NET 10.
@@ -89,14 +89,14 @@ Output is fully streamed, so allocations stay flat (~17 KB) regardless of row co
 ## Example-1
 If you pass an object, it will be converted to an Excel file.  
 ![image](https://user-images.githubusercontent.com/16958552/185727609-79b574e8-b40c-46dc-83c9-74b078a1f44a.png)
-~~~
+~~~csharp
 XlsxSerializer.ToFile(new string[] { "test", "test2" }, @"c:\test\test.xlsx", XlsxSerializerOptions.Default);
 ~~~
 
 ## Example-2
 Passing a class expands the property into a column.  
 ![image](https://user-images.githubusercontent.com/16958552/185727657-3e41dea7-1af4-4a52-99bd-1457f895b564.png)
-~~~
+~~~csharp
 public class Portal
 {
     public string Name { get; set; }
@@ -115,7 +115,7 @@ XlsxSerializer.ToFile(potals, @"c:\test\potals.xlsx", XlsxSerializerOptions.Defa
 ## Example-3
 By setting attributes on the class, you can specify the name of the title or change the order of the columns.  
 ![image](https://user-images.githubusercontent.com/16958552/187447183-1c0af135-8407-4c79-be8d-0b4875973a79.png)
-~~~
+~~~csharp
 public class Portal
 {
     [DataMember(Name = "Name Ex", Order = 3)]
@@ -141,7 +141,7 @@ XlsxSerializer.ToFile(potals, @"c:\test\potalsEx.xlsx", newConfig);
 ## Example-4
 Options can be set to display a title line and automatically adjust column widths.  
 ![image](https://user-images.githubusercontent.com/16958552/185727708-18201283-bb0b-46ba-a413-dbe34c20f3a3.png)
-~~~
+~~~csharp
 var newConfig = XlsxSerializerOptions.Default with
 {
     CultureInfo = CultureInfo.InvariantCulture,
@@ -155,35 +155,25 @@ XlsxSerializer.ToFile(potals, @"c:\test\potalsOp.xlsx", newConfig);
 ## Example-5
 Optionally supports Autofilter.  
 
+~~~csharp
 var newConfig = XlsxSerializerOptions.Default with
 {
     CultureInfo = CultureInfo.InvariantCulture,
     HasHeaderRecord = true,
     HeaderTitles = new string[] { "Name", "Owner", "Level" },
-    AutoFitlter = true,
+    AutoFilter = true,
 };
 XlsxSerializer.ToFile(potals, @"c:\test\potalsOp.xlsx", newConfig);
+~~~
 
-## Note
-For the method of retrieving values from IEnumerable\<T\>, Cysharp's WebSerializer method is used.
+## Acknowledgements
 
-　https://github.com/Cysharp/WebSerializer
-  
-The following page provides information on how to return to OpenOfficeXml.
-
-　https://gist.github.com/iso2022jp/721df3095f4df512bfe2327503ea1119
-
-　https://docs.microsoft.com/en-us/openspecs/office_standards/ms-xlsx/2c5dee00-eff2-4b22-92b6-0738acd4475e
- 
-## Extensions Sample
-
-WindowsForm's DataGridView to .xlsx
-
-https://github.com/panda728/DataGridViewDump
-
-## Link
-CSV File output version
-　https://github.com/panda728/FakeCsvSerializer
+FlatXlsx's serialization pipeline is a direct descendant of
+[Cysharp/WebSerializer](https://github.com/Cysharp/WebSerializer).
+The original FakeExcelSerializer ported WebSerializer's architecture —
+provider-based serializer resolution and compiled member accessors over `IEnumerable<T>` —
+and swapped the output layer to SpreadsheetML. If you need the same zero-allocation
+approach for query strings or form data on the web side, check out WebSerializer itself.
 
 ## License
 This library is licensed under the MIT License.
