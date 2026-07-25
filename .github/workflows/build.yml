@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [master]
 
+# Build and test need to read the source and nothing else. Stated here rather
+# than left to the repository default, which a settings change could widen.
+permissions:
+  contents: read
+
 jobs:
   build:
     strategy:
