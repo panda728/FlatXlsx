@@ -41,6 +41,14 @@ The PipeWriter overload flushes as data is produced, so pipe backpressure is hon
 tail writes are buffered and forwarded asynchronously), so an ASP.NET Core response body is a
 valid destination for either overload.
 
+An `IAsyncEnumerable<T>` source is accepted by the same three async entry points
+(on .NET 8+, .NET 10 and .NET Standard 2.1), so a query's `AsAsyncEnumerable()` or a streaming
+service response exports directly - rows are awaited as they arrive, never materialized first:
+
+~~~csharp
+await XlsxSerializer.ToFileAsync(db.Users.AsAsyncEnumerable(), "users.xlsx", cancellationToken: ct);
+~~~
+
 ~~~csharp
 await XlsxSerializer.ToFileAsync(Users, "test.xlsx", XlsxSerializerOptions.Default, cancellationToken);
 
@@ -262,6 +270,27 @@ class YesNoSerializer : IXlsxSerializer<bool>
 
 XlsxSerializer.ToFile(rows, @"c:\test\yesno.xlsx",
     new XlsxSerializerOptions { CustomSerializers = new IXlsxSerializer[] { new YesNoSerializer() } });
+~~~
+
+## Example-7
+One column can have its own number format without touching the sheet-wide ones: register the
+format code in `CustomFormats` and refer to it by index from a serializer. The display format
+changes; the stored value stays a real number.
+
+~~~csharp
+class PercentSerializer : IXlsxSerializer<double>
+{
+    public void WriteTitle(XlsxCellWriter writer, double value, XlsxSerializerOptions options, string name = "value")
+        => writer.Write(name);
+    public void Serialize(XlsxCellWriter writer, double value, XlsxSerializerOptions options)
+        => writer.Write(value, customFormat: 0);   // -> CustomFormats[0]
+}
+
+XlsxSerializer.ToFile(rows, @"c:\test\percent.xlsx", new XlsxSerializerOptions
+{
+    CustomFormats = new[] { "0.0%" },
+    CustomSerializers = new IXlsxSerializer[] { new PercentSerializer() },
+});
 ~~~
 
 ## Acknowledgements

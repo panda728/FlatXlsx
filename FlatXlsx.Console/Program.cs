@@ -37,6 +37,18 @@ using (var ms = new MemoryStream())
 await XlsxSerializer.ToFileAsync(portals, Out("usage-async.xlsx"));
 Report("Usage", "ToFileAsync (ToStreamAsync never writes synchronously)", Out("usage-async.xlsx"));
 
+// ---- Usage: an IAsyncEnumerable source streams straight in ------------------------------
+static async IAsyncEnumerable<Portal> PortalsAsync()
+{
+    for (var i = 1; i <= 3; i++)
+    {
+        await Task.Delay(1);   // rows arriving from a query or a service
+        yield return new Portal { Name = $"Portal{i}", Owner = "panda728", Level = i };
+    }
+}
+await XlsxSerializer.ToFileAsync(PortalsAsync(), Out("usage-asyncsource.xlsx"));
+Report("Usage", "IAsyncEnumerable source, rows awaited as they arrive", Out("usage-asyncsource.xlsx"));
+
 // ---- Example-1: any sequence becomes a sheet -------------------------------------------
 XlsxSerializer.ToFile(new string[] { "test", "test2" }, Out("example1.xlsx"));
 Report("Example-1", "A string array, one value per row", Out("example1.xlsx"));
@@ -81,6 +93,17 @@ XlsxSerializer.ToFile(
     Out("example6.xlsx"),
     new XlsxSerializerOptions { CustomSerializers = new IXlsxSerializer[] { new YesNoSerializer() } });
 Report("Example-6", "CustomSerializers: bool cells become YES/NO", Out("example6.xlsx"));
+
+// ---- Example-7: one column with its own number format ----------------------------------
+XlsxSerializer.ToFile(
+    new[] { (Item: "CPU", Load: 0.125), (Item: "RAM", Load: 0.5) },
+    Out("example7.xlsx"),
+    new XlsxSerializerOptions
+    {
+        CustomFormats = new[] { "0.0%" },
+        CustomSerializers = new IXlsxSerializer[] { new PercentSerializer() },
+    });
+Report("Example-7", "CustomFormats: a percent column, sheet formats untouched", Out("example7.xlsx"));
 
 // ---- Kitchen sink: every supported type in one workbook --------------------------------
 Randomizer.Seed = new Random(8675309);
@@ -165,6 +188,15 @@ public class AnnotatedPortal
     public int Level { get; set; }
     [XlsxIgnore]
     public string InternalNote { get; set; } = "";
+}
+
+/// <summary>README Example-7: a ratio shown as a percentage via CustomFormats[0].</summary>
+public class PercentSerializer : IXlsxSerializer<double>
+{
+    public void WriteTitle(XlsxCellWriter writer, double value, XlsxSerializerOptions options, string name = "value")
+        => writer.Write(name);
+    public void Serialize(XlsxCellWriter writer, double value, XlsxSerializerOptions options)
+        => writer.Write(value, customFormat: 0);
 }
 
 /// <summary>README Example-6: writes bool cells as YES/NO text.</summary>

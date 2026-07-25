@@ -266,6 +266,71 @@ public class WorkbookContractTests
         Assert.Equal("0000", sheet.Row(0)[0].NumberFormat);
     }
 
+    /// <summary>Writes a ratio with the percent format registered at CustomFormats[0].</summary>
+    class PercentSerializer : IXlsxSerializer<double>
+    {
+        public void WriteTitle(XlsxCellWriter writer, double value, XlsxSerializerOptions options, string name = "value")
+            => writer.Write(name);
+        public void Serialize(XlsxCellWriter writer, double value, XlsxSerializerOptions options)
+            => writer.Write(value, customFormat: 0);
+    }
+
+    [Fact]
+    public void A_per_cell_format_no_longer_means_hijacking_the_sheet_wide_one()
+    {
+        // Claimant: anyone with one percent column next to ordinary numbers. Before
+        // CustomFormats, the only route was repurposing NumberFormat for every double.
+        var options = new XlsxSerializerOptions
+        {
+            CustomFormats = new[] { "0.0%" },
+            CustomSerializers = new IXlsxSerializer[] { new PercentSerializer() },
+        };
+
+        var sheet = Xlsx.Read(new object[] { 0.125d, 42 }, options);
+
+        Assert.Equal("0.0%", sheet.Row(0)[0].NumberFormat);
+        Assert.Equal("0.125", sheet.Texts(0)[0]);
+        Assert.Equal(options.IntegerFormat, sheet.Row(1)[0].NumberFormat);
+    }
+
+    [Fact]
+    public void A_custom_date_format_travels_the_same_road()
+    {
+        var options = new XlsxSerializerOptions
+        {
+            CustomFormats = new[] { "yyyy\"年\"m\"月\"" },
+            CustomSerializers = new IXlsxSerializer[] { new MonthSerializer() },
+        };
+
+        var sheet = Xlsx.Read(new[] { new DateTime(2026, 7, 25, 1, 2, 3) }, options);
+
+        Assert.Equal("yyyy\"年\"m\"月\"", sheet.Row(0)[0].NumberFormat);
+        Assert.Equal("2026-07-25T01:02:03", sheet.Texts(0)[0]);
+    }
+
+    class MonthSerializer : IXlsxSerializer<DateTime>
+    {
+        public void WriteTitle(XlsxCellWriter writer, DateTime value, XlsxSerializerOptions options, string name = "value")
+            => writer.Write(name);
+        public void Serialize(XlsxCellWriter writer, DateTime value, XlsxSerializerOptions options)
+            => writer.Write(value, customFormat: 0);
+    }
+
+    [Fact]
+    public void An_undeclared_custom_format_is_refused_by_number()
+    {
+        var options = new XlsxSerializerOptions
+        {
+            CustomSerializers = new IXlsxSerializer[] { new PercentSerializer() },
+        };
+        using var ms = new MemoryStream();
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => XlsxSerializer.ToStream(new[] { 0.5d }, ms, options));
+
+        Assert.Contains("0", ex.Message);
+    }
+
     [Fact]
     public void Text_with_a_line_break_is_marked_to_wrap()
     {

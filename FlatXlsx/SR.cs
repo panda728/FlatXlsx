@@ -32,6 +32,8 @@ internal static class SR
     internal static string MemberKindNotSupported => Get(nameof(MemberKindNotSupported));
 
     internal static string CellTooLong(int limit, int length) => Format(nameof(CellTooLong), limit, length);
+    internal static string CustomFormatEmpty(int index) => Format(nameof(CustomFormatEmpty), index);
+    internal static string CustomFormatOutOfRange(int index, int count) => Format(nameof(CustomFormatOutOfRange), index, count);
     internal static string MaxDepthReached(int depth) => Format(nameof(MaxDepthReached), depth);
     internal static string SerializerNotFound(Type type) => Format(nameof(SerializerNotFound), type);
     internal static string SheetNameInvalid(string name) => Format(nameof(SheetNameInvalid), name);

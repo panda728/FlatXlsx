@@ -40,6 +40,13 @@ public class XlsxCellWriter(XlsxSerializerOptions options) : IDisposable
     static readonly byte[] _colStartInlineWrap = Encoding.UTF8.GetBytes(@$"<c t=""inlineStr"" s=""{XF_WRAP_TEXT}""><is><t>");
     static readonly byte[] _colEndInline = Encoding.UTF8.GetBytes("</t></is></c>");
 
+    // Cells that use a format from XlsxSerializerOptions.CustomFormats; the style index is
+    // written per call because it depends on which format the serializer asked for.
+    const int XF_CUSTOM_BASE = 7;
+    static readonly byte[] _colStartNumberCustom = Encoding.UTF8.GetBytes(@"<c t=""n"" s=""");
+    static readonly byte[] _colStartDateCustom = Encoding.UTF8.GetBytes(@"<c t=""d"" s=""");
+    static readonly byte[] _colStartClose = Encoding.UTF8.GetBytes(@"""><v>");
+
 #if NET8_0_OR_GREATER
     static readonly byte[] _colStartDateTime = Encoding.UTF8.GetBytes(@$"<c t=""d"" s=""{XF_DATETIME}""><v>");
     static readonly byte[] _colStartDate = Encoding.UTF8.GetBytes(@$"<c t=""d"" s=""{XF_DATE}""><v>");
@@ -440,6 +447,98 @@ public class XlsxCellWriter(XlsxSerializerOptions options) : IDisposable
     public void Write(System.Numerics.BigInteger value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
 #endif
 
+    /// <summary>Writes a number cell displayed with
+    /// <see cref="XlsxSerializerOptions.CustomFormats"/>[<paramref name="customFormat"/>],
+    /// leaving the sheet-wide formats untouched.</summary>
+    public void Write(double value, int customFormat)
+    {
+        WriteCustomCellStart(_colStartNumberCustom, customFormat);
+#if NET8_0_OR_GREATER
+        var written = WriteUtf8Formatted(value, default);
+#else
+        var chars = value.ToString(CultureInfo.InvariantCulture);
+        WriteUtf8Bytes(chars);
+        var written = chars.Length;
+#endif
+        _writer.Write(_colEnd);
+        SetMaxLength(written);
+    }
+
+    /// <inheritdoc cref="Write(double, int)"/>
+    public void Write(decimal value, int customFormat)
+    {
+        WriteCustomCellStart(_colStartNumberCustom, customFormat);
+#if NET8_0_OR_GREATER
+        var written = WriteUtf8Formatted(value, default);
+#else
+        var chars = value.ToString(CultureInfo.InvariantCulture);
+        WriteUtf8Bytes(chars);
+        var written = chars.Length;
+#endif
+        _writer.Write(_colEnd);
+        SetMaxLength(written);
+    }
+
+    /// <inheritdoc cref="Write(double, int)"/>
+    public void Write(int value, int customFormat)
+    {
+        WriteCustomCellStart(_colStartNumberCustom, customFormat);
+#if NET8_0_OR_GREATER
+        var written = WriteUtf8Formatted(value, default);
+#else
+        var chars = value.ToString(CultureInfo.InvariantCulture);
+        WriteUtf8Bytes(chars);
+        var written = chars.Length;
+#endif
+        _writer.Write(_colEnd);
+        SetMaxLength(written);
+    }
+
+    /// <inheritdoc cref="Write(double, int)"/>
+    public void Write(long value, int customFormat)
+    {
+        WriteCustomCellStart(_colStartNumberCustom, customFormat);
+#if NET8_0_OR_GREATER
+        var written = WriteUtf8Formatted(value, default);
+#else
+        var chars = value.ToString(CultureInfo.InvariantCulture);
+        WriteUtf8Bytes(chars);
+        var written = chars.Length;
+#endif
+        _writer.Write(_colEnd);
+        SetMaxLength(written);
+    }
+
+    /// <summary>Writes a date cell displayed with
+    /// <see cref="XlsxSerializerOptions.CustomFormats"/>[<paramref name="customFormat"/>]
+    /// instead of the sheet-wide date formats.</summary>
+    public void Write(DateTime value, int customFormat)
+    {
+        WriteCustomCellStart(_colStartDateCustom, customFormat);
+#if NET8_0_OR_GREATER
+        WriteUtf8Formatted(value, "yyyy-MM-ddTHH:mm:ss");
+#else
+        WriteUtf8Bytes(value.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture));
+#endif
+        _writer.Write(_colEnd);
+        SetMaxLength(LEN_DATETIME);
+    }
+
+    void WriteCustomCellStart(byte[] typePrefix, int customFormat)
+    {
+        var count = _options.CustomFormats?.Length ?? 0;
+        if ((uint)customFormat >= (uint)count)
+            ThrowCustomFormatOutOfRange(customFormat, count);
+
+        _writer.Write(typePrefix);
+#if NET8_0_OR_GREATER
+        WriteUtf8Formatted(XF_CUSTOM_BASE + customFormat, default);
+#else
+        WriteUtf8Bytes((XF_CUSTOM_BASE + customFormat).ToString(CultureInfo.InvariantCulture));
+#endif
+        _writer.Write(_colStartClose);
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Write(DateTime value)
     {
@@ -527,4 +626,10 @@ public class XlsxCellWriter(XlsxSerializerOptions options) : IDisposable
 #endif
     static void ThrowCellTooLong(int length)
         => throw new InvalidOperationException(SR.CellTooLong(MAX_CELL_LENGTH, length));
+
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
+    [DoesNotReturn]
+#endif
+    static void ThrowCustomFormatOutOfRange(int customFormat, int count)
+        => throw new InvalidOperationException(SR.CustomFormatOutOfRange(customFormat, count));
 }
