@@ -228,7 +228,7 @@ XlsxSerializer.ToFile(potals, "potals.xlsx", XlsxSerializerOptions.Default);
 ## Example-3
 To add a header row with your own titles, set `HeaderTitles` — that one setting is the whole ask.
 To use the member names as titles instead, set `HasHeaderRow = true`.
-![image](https://user-images.githubusercontent.com/16958552/187447183-1c0af135-8407-4c79-be8d-0b4875973a79.png)
+
 ~~~csharp
 XlsxSerializer.ToFile(potals, "potals.xlsx",
     new XlsxSerializerOptions { HeaderTitles = new[] { "Name", "Owner", "Level" } });
@@ -252,6 +252,9 @@ public class Portal
 XlsxSerializer.ToFile(potals, "potalsEx.xlsx",
     new XlsxSerializerOptions { HasHeaderRow = true });
 ~~~
+
+![image](https://user-images.githubusercontent.com/16958552/187447183-1c0af135-8407-4c79-be8d-0b4875973a79.png)
+
 ## Example-4
 Options can be set to display a title line and automatically adjust column widths.  
 ![image](https://user-images.githubusercontent.com/16958552/185727708-18201283-bb0b-46ba-a413-dbe34c20f3a3.png)
