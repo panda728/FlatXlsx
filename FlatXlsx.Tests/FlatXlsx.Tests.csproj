@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CsCheck" Version="4.7.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageReference Include="xunit.v3" Version="3.2.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
@@ -24,43 +25,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FlatXlsx\FlatXlsx.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="PrimitiveIntegerTest.cs">
-      <DependentUpon>PrimitiveIntegerTest.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Update="PrimitiveNumberTest.cs">
-      <DependentUpon>PrimitiveNumberTest.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Update="TupleTest.cs">
-      <DependentUpon>TupleTest.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="PrimitiveIntegerTest.tt">
-      <LastGenOutput>PrimitiveIntegerTest.cs</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
-    <None Update="PrimitiveNumberTest.tt">
-      <LastGenOutput>PrimitiveNumberTest.cs</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
-    <None Update="TupleTest.tt">
-      <LastGenOutput>TupleTest.cs</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
   </ItemGroup>
 
 </Project>

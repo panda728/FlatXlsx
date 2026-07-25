@@ -17,6 +17,7 @@ internal static class XmlEscape
     static readonly byte[] _amp = Encoding.UTF8.GetBytes("&amp;");
     static readonly byte[] _lt = Encoding.UTF8.GetBytes("&lt;");
     static readonly byte[] _gt = Encoding.UTF8.GetBytes("&gt;");
+    static readonly byte[] _cr = Encoding.UTF8.GetBytes("&#13;");
 
     public static void WriteEscaped(string value, ArrayPoolBufferWriter writer)
     {
@@ -24,7 +25,7 @@ internal static class XmlEscape
         for (var i = 0; i < value.Length; i++)
         {
             var c = value[i];
-            if (c != '&' && c != '<' && c != '>' && !IsForbidden(c))
+            if (c != '&' && c != '<' && c != '>' && c != '\r' && !IsForbidden(c))
                 continue;
 
             WriteSegment(value, start, i - start, writer);
@@ -35,6 +36,9 @@ internal static class XmlEscape
                 case '&': writer.Write(_amp); break;
                 case '<': writer.Write(_lt); break;
                 case '>': writer.Write(_gt); break;
+                // A literal carriage return would be normalised to a line feed when the file is
+                // read back (XML 1.0 line-end handling), silently altering the exported value.
+                case '\r': writer.Write(_cr); break;
                 // Forbidden characters are dropped.
             }
         }

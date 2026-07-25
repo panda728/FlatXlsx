@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -245,7 +246,7 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
 #if NET8_0_OR_GREATER
         WriteUtf8Formatted(index, default);
 #else
-        WriteUtf8Bytes($"{index}");
+        WriteUtf8Bytes(index.ToString(CultureInfo.InvariantCulture));
 #endif
         _writer.Write(_colEnd);
         SetMaxLength(value.Length);
@@ -326,7 +327,7 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
     {
         int written;
         var span = _writer.GetSpan(48);
-        while (!value.TryFormat(span, out written, format, null))
+        while (!value.TryFormat(span, out written, format, CultureInfo.InvariantCulture))
             span = _writer.GetSpan(span.Length * 2);
         _writer.Advance(written);
         return written;
@@ -351,7 +352,7 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
     public void WriteInlineString<T>(T value) where T : IUtf8SpanFormattable
     {
         Span<byte> tmp = stackalloc byte[128];
-        if (!value.TryFormat(tmp, out var written, default, null) || NeedsEscaping(tmp[..written]))
+        if (!value.TryFormat(tmp, out var written, default, CultureInfo.InvariantCulture) || NeedsEscaping(tmp[..written]))
         {
             Write(value.ToString());
             return;
@@ -417,39 +418,39 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
     public void WritePrimitive(System.Numerics.BigInteger value) => WriterFormatted(value, _colStartInteger);
 #else
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(byte value) => WriterInteger($"{value}".AsSpan());
+    public void WritePrimitive(byte value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(sbyte value) => WriterInteger($"{value}".AsSpan());
+    public void WritePrimitive(sbyte value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(decimal value) => WriterNumber($"{value}".AsSpan());
+    public void WritePrimitive(decimal value) => WriterNumber(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(double value) => WriterNumber($"{value}".AsSpan());
+    public void WritePrimitive(double value) => WriterNumber(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(float value) => WriterNumber($"{value}".AsSpan());
+    public void WritePrimitive(float value) => WriterNumber(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(int value) => WriterInteger($"{value}".AsSpan());
+    public void WritePrimitive(int value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(uint value) => WriterInteger($"{value}".AsSpan());
+    public void WritePrimitive(uint value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(long value) => WriterInteger($"{value}".AsSpan());
+    public void WritePrimitive(long value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(ulong value) => WriterInteger($"{value}".AsSpan());
+    public void WritePrimitive(ulong value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(short value) => WriterNumber($"{value}".AsSpan());
+    public void WritePrimitive(short value) => WriterNumber(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(ushort value) => WriterNumber($"{value}".AsSpan());
+    public void WritePrimitive(ushort value) => WriterNumber(value.ToString(CultureInfo.InvariantCulture).AsSpan());
 #if NET5_0_OR_GREATER
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(Half value) => WriterNumber($"{value}".AsSpan());
+    public void WritePrimitive(Half value) => WriterNumber(value.ToString(CultureInfo.InvariantCulture).AsSpan());
 #endif
 #if NET7_0_OR_GREATER
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(Int128 value) => WriterInteger($"{value}".AsSpan());
+    public void WritePrimitive(Int128 value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(UInt128 value) => WriterInteger($"{value}".AsSpan());
+    public void WritePrimitive(UInt128 value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
 #endif
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(System.Numerics.BigInteger value) => WriterInteger($"{value}".AsSpan());
+    public void WritePrimitive(System.Numerics.BigInteger value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
 #endif
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -468,7 +469,7 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
             WriteUtf8Formatted(d, "yyyy-MM-ddTHH:mm:ss");
             _writer.Write(_colEnd);
 #else
-            WriteUtf8Bytes(@$"<c t=""d"" s=""{XF_DATE}""><v>{d:yyyy-MM-ddTHH:mm:ss}</v></c>");
+            WriteUtf8Bytes(@$"<c t=""d"" s=""{XF_DATE}""><v>{d.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture)}</v></c>");
 #endif
             SetMaxLength(LEN_DATE);
             return;
@@ -479,7 +480,7 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
         WriteUtf8Formatted(d, "yyyy-MM-ddTHH:mm:ss");
         _writer.Write(_colEnd);
 #else
-        WriteUtf8Bytes(@$"<c t=""d"" s=""{XF_DATETIME}""><v>{d:yyyy-MM-ddTHH:mm:ss}</v></c>");
+        WriteUtf8Bytes(@$"<c t=""d"" s=""{XF_DATETIME}""><v>{d.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture)}</v></c>");
 #endif
         SetMaxLength(LEN_DATETIME);
     }
@@ -494,7 +495,7 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
         _writer.Write("T00:00:00"u8);
         _writer.Write(_colEnd);
 #else
-        WriteUtf8Bytes(@$"<c t=""d"" s=""{XF_DATE}""><v>{value:yyyy-MM-dd}T00:00:00</v></c>");
+        WriteUtf8Bytes(@$"<c t=""d"" s=""{XF_DATE}""><v>{value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}T00:00:00</v></c>");
 #endif
         SetMaxLength(LEN_DATE);
     }
@@ -508,7 +509,7 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
         WriteUtf8Formatted(value, "HH:mm:ss");
         _writer.Write(_colEnd);
 #else
-        WriteUtf8Bytes(@$"<c t=""d"" s=""{XF_TIME}""><v>1900-01-01T{value:HH:mm:ss}</v></c>");
+        WriteUtf8Bytes(@$"<c t=""d"" s=""{XF_TIME}""><v>1900-01-01T{value.ToString("HH:mm:ss", CultureInfo.InvariantCulture)}</v></c>");
 #endif
         SetMaxLength(LEN_TIME);
     }
