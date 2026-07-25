@@ -18,9 +18,9 @@ just work.
 XlsxSerializer.ToFile(Users, "test.xlsx");
 ~~~
 
-`ToStream` writes to any `Stream` (it does not need to be seekable), and `To` writes to any
-`IBufferWriter<byte>` — including `System.IO.Pipelines.PipeWriter`. Output is fully streamed;
-no temporary files or working folder are used.
+Every entry point is named after its destination: `ToFile`, `ToStream` (any `Stream`, seekable
+or not), `ToBufferWriter` (any `IBufferWriter<byte>`), and `ToPipeWriterAsync`. Output is fully
+streamed; no temporary files or working folder are used.
 
 ~~~csharp
 // Stream
@@ -30,12 +30,12 @@ XlsxSerializer.ToStream(Users, stream);
 app.MapGet("/users.xlsx", (HttpResponse response) =>
 {
     response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-    XlsxSerializer.To(GetUsers(), response.BodyWriter, XlsxSerializerOptions.Default);
+    XlsxSerializer.ToBufferWriter(GetUsers(), response.BodyWriter, XlsxSerializerOptions.Default);
     return Task.CompletedTask;
 });
 ~~~
 
-Async variants are available: `ToFileAsync`, `ToStreamAsync`, and `ToAsync(PipeWriter)`.
+Async variants are available: `ToFileAsync`, `ToStreamAsync`, and `ToPipeWriterAsync`.
 The PipeWriter overload flushes as data is produced, so pipe backpressure is honored.
 
 ~~~csharp
@@ -45,7 +45,7 @@ await XlsxSerializer.ToFileAsync(Users, "test.xlsx", XlsxSerializerOptions.Defau
 app.MapGet("/users.xlsx", async (HttpResponse response, CancellationToken ct) =>
 {
     response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-    await XlsxSerializer.ToAsync(GetUsers(), response.BodyWriter, XlsxSerializerOptions.Default, ct);
+    await XlsxSerializer.ToPipeWriterAsync(GetUsers(), response.BodyWriter, XlsxSerializerOptions.Default, ct);
 });
 ~~~
 
@@ -66,6 +66,18 @@ app.MapGet("/users.xlsx", async (HttpResponse response, CancellationToken ct) =>
 `Nullable<T>` of any supported struct, tuples, and object graphs (classes/records with public properties/fields) are also supported.
 Values of `BigInteger` / `Int128` / `UInt128` exceeding 15 significant digits are stored in full in the cell,
 but Excel displays numbers with at most 15 digits of precision.
+
+## Out of scope
+
+FlatXlsx converts one flat sequence of rows into one worksheet, fast. The following are out of
+scope by design — if the export needs them, reach for a full spreadsheet library such as
+ClosedXML instead of looking for a hidden option here:
+
+- Multiple worksheets per workbook
+- Styling beyond the built-in number/date formats, wrap and header freeze
+  (fonts, colors, borders, merged cells)
+- Formulas, charts, images, pivot tables
+- Reading or editing existing workbooks (FlatXlsx is write-only)
 
 ## Notice
 
@@ -109,7 +121,7 @@ from producing a broken or dangerous workbook:
 | High-cardinality strings | The shared-string table is capped by `MaxSharedStrings` (default 1,000,000); beyond it, values are written as inline strings, so memory stays bounded. |
 
 The row source is enumerated exactly once, so a query or forward-only reader can be passed
-directly. With `AutoFitColumns` the first `AutoFitDepth` rows (default 200) are buffered to
+directly. With `AutoFitColumns` the first `AutoFitSampleRows` rows (default 200) are buffered to
 measure widths — bounded, never the whole sequence.
 
 `XlsxWriter` instances are not thread-safe; serializer providers and their caches are.

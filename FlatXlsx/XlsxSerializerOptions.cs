@@ -41,10 +41,19 @@ public record XlsxSerializerOptions
     /// which costs file size but never fails.</summary>
     public int MaxSharedStrings { get; init; } = 1_000_000;
 
+    /// <summary>Adds an Excel auto-filter covering the header and every row written.</summary>
     public bool AutoFilter { get; init; } = false;
+
+    /// <summary>Sizes each column to its content, approximated by character count.</summary>
     public bool AutoFitColumns { get; init; } = false;
-    public int AutoFitDepth { get; init; } = 200;
-    public int AutoFitWidthMax { get; init; } = 100;
+
+    /// <summary>How many leading rows are measured for <see cref="AutoFitColumns"/>. Widths are
+    /// written before the data, so measuring is bounded to this sample rather than buffering
+    /// the whole sequence; a longer value in a later row does not widen the column.</summary>
+    public int AutoFitSampleRows { get; init; } = 200;
+
+    /// <summary>Upper bound for an auto-fitted column's width, in characters.</summary>
+    public int AutoFitMaxWidth { get; init; } = 100;
 
     /// <summary>Compression level for the xlsx (zip) container.
     /// Use <see cref="System.IO.Compression.CompressionLevel.Fastest"/> to trade a slightly

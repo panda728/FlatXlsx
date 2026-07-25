@@ -45,7 +45,7 @@ public class OutputTargetTests
     {
         var buffer = new ArrayBufferWriter<byte>();
 
-        XlsxSerializer.To(_rows, buffer, XlsxSerializerOptions.Default);
+        XlsxSerializer.ToBufferWriter(_rows, buffer, XlsxSerializerOptions.Default);
 
         var viaBuffer = Workbook.Read(buffer.WrittenSpan.ToArray());
         var viaStream = Workbook.Read(Xlsx.Write(_rows, XlsxSerializerOptions.Default));
@@ -64,7 +64,7 @@ public class OutputTargetTests
 
         var writing = Task.Run(async () =>
         {
-            await XlsxSerializer.ToAsync(_rows, pipe.Writer, XlsxSerializerOptions.Default, cancellation);
+            await XlsxSerializer.ToPipeWriterAsync(_rows, pipe.Writer, XlsxSerializerOptions.Default, cancellation);
             await pipe.Writer.CompleteAsync();
         }, cancellation);
 

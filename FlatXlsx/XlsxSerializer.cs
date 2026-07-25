@@ -188,7 +188,7 @@ public static class XlsxSerializer
     /// <summary>Writes .xlsx content to an <see cref="IBufferWriter{T}"/> such as
     /// System.IO.Pipelines.PipeWriter (e.g. ASP.NET Core's Response.BodyWriter).
     /// Flushing the underlying pipe is left to the caller.</summary>
-    public static void To<T>(IEnumerable<T> rows, IBufferWriter<byte> bufferWriter, XlsxSerializerOptions? options = null)
+    public static void ToBufferWriter<T>(IEnumerable<T> rows, IBufferWriter<byte> bufferWriter, XlsxSerializerOptions? options = null)
     {
         if (bufferWriter == null)
             throw new ArgumentNullException(nameof(bufferWriter));
@@ -268,7 +268,7 @@ public static class XlsxSerializer
     /// <summary>Writes .xlsx content to a <see cref="System.IO.Pipelines.PipeWriter"/>
     /// (e.g. ASP.NET Core's Response.BodyWriter). Data is flushed to the pipe as it is
     /// produced, so backpressure is honored.</summary>
-    public static Task ToAsync<T>(IEnumerable<T> rows, System.IO.Pipelines.PipeWriter pipeWriter, XlsxSerializerOptions? options = null, CancellationToken cancellationToken = default)
+    public static Task ToPipeWriterAsync<T>(IEnumerable<T> rows, System.IO.Pipelines.PipeWriter pipeWriter, XlsxSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         if (pipeWriter == null)
             throw new ArgumentNullException(nameof(pipeWriter));
@@ -300,13 +300,13 @@ public static class XlsxSerializer
 
         // When the caller found a first row it has already advanced to it. Auto-fit has to
         // measure rows before <cols> is written, so it buffers them - but never more than
-        // AutoFitDepth, and the source is still enumerated exactly once.
+        // AutoFitSampleRows, and the source is still enumerated exactly once.
         var buffered = new List<T>();
         if (hasRows)
             buffered.Add(rows.Current);
         if (options.AutoFitColumns && serializer != null)
         {
-            while (hasRows && buffered.Count < options.AutoFitDepth && rows.MoveNext())
+            while (hasRows && buffered.Count < options.AutoFitSampleRows && rows.MoveNext())
                 buffered.Add(rows.Current);
             await WriteCellWidthAsync(buffered, stream, writer, options, cancellationToken).ConfigureAwait(false);
         }
@@ -402,7 +402,7 @@ public static class XlsxSerializer
         foreach (var pair in writer.ColumnMaxLength)
         {
             var id = pair.Key + 1;
-            var width = Math.Min(options.AutoFitWidthMax, pair.Value + COLUMN_WIDTH_MARGIN);
+            var width = Math.Min(options.AutoFitMaxWidth, pair.Value + COLUMN_WIDTH_MARGIN);
 
             WriteUtf8Bytes(@$"<col min=""{id}"" max =""{id}"" width =""{width:0.0}"" bestFit =""1"" customWidth =""1"" />", buffer);
         }
@@ -441,13 +441,13 @@ public static class XlsxSerializer
 
         // When the caller found a first row it has already advanced to it. Auto-fit has to
         // measure rows before <cols> is written, so it buffers them - but never more than
-        // AutoFitDepth, and the source is still enumerated exactly once.
+        // AutoFitSampleRows, and the source is still enumerated exactly once.
         var buffered = new List<T>();
         if (hasRows)
             buffered.Add(rows.Current);
         if (options.AutoFitColumns && serializer != null)
         {
-            while (hasRows && buffered.Count < options.AutoFitDepth && rows.MoveNext())
+            while (hasRows && buffered.Count < options.AutoFitSampleRows && rows.MoveNext())
                 buffered.Add(rows.Current);
             WriteCellWidth(buffered, stream, writer, options);
         }
@@ -594,7 +594,7 @@ public static class XlsxSerializer
         foreach (var pair in writer.ColumnMaxLength)
         {
             var id = pair.Key + 1;
-            var width = Math.Min(options.AutoFitWidthMax, pair.Value + COLUMN_WIDTH_MARGIN);
+            var width = Math.Min(options.AutoFitMaxWidth, pair.Value + COLUMN_WIDTH_MARGIN);
 
             WriteUtf8Bytes(@$"<col min=""{id}"" max =""{id}"" width =""{width:0.0}"" bestFit =""1"" customWidth =""1"" />", buffer);
         }
