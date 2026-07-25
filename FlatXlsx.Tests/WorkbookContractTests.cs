@@ -61,6 +61,72 @@ public class WorkbookContractTests
         Assert.Equal(new[] { "Owner", "Portal", "Lv" }, sheet.Texts(0));
     }
 
+    [Fact]
+    public void Options_can_be_omitted_entirely()
+    {
+        // The smallest possible call must not require learning that a Default instance exists.
+        using var ms = new MemoryStream();
+
+        XlsxSerializer.ToStream(_portals, ms);
+
+        var sheet = Workbook.Read(ms.ToArray());
+        Assert.Equal(new[] { "panda728", "Portal1", "8" }, sheet.Texts(0));
+    }
+
+    /// <summary>Writes bool cells as YES/NO text instead of the built-in boolean cell.</summary>
+    class YesNoSerializer : IXlsxSerializer<bool>
+    {
+        public void WriteTitle(XlsxWriter writer, bool value, XlsxSerializerOptions options, string name = "value")
+            => writer.Write(name);
+        public void Serialize(XlsxWriter writer, bool value, XlsxSerializerOptions options)
+            => writer.Write(value ? "YES" : "NO");
+    }
+
+    [Fact]
+    public void A_custom_serializer_is_one_setting_with_no_provider_wiring()
+    {
+        // Overriding how one type is written used to require composing providers by hand.
+        var options = new XlsxSerializerOptions
+        {
+            CustomSerializers = new IXlsxSerializer[] { new YesNoSerializer() },
+        };
+
+        var sheet = Xlsx.Read(new[] { (true, 7), (false, 8) }, options);
+
+        Assert.Equal(new[] { "YES", "7" }, sheet.Texts(0));
+        Assert.Equal(new[] { "NO", "8" }, sheet.Texts(1));
+    }
+
+    [Fact]
+    public void The_shipped_numeric_enum_serializer_plugs_in_the_same_way()
+    {
+        var options = new XlsxSerializerOptions
+        {
+            CustomSerializers = new IXlsxSerializer[] { new Serializers.EnumValueXlsxSerializer<DayOfWeek>() },
+        };
+
+        var sheet = Xlsx.Read(new[] { DayOfWeek.Friday }, options);
+
+        Assert.Equal("5", sheet.Texts(0)[0]);
+    }
+
+    [Fact]
+    public void Custom_serializers_survive_a_with_copy()
+    {
+        // Records copy their fields on `with`; a cached provider taken from the original must
+        // not make the copy ignore its own serializer list.
+        var plain = XlsxSerializerOptions.Default;
+        Assert.NotNull(plain.GetSerializer<bool>());
+
+        var customized = plain with
+        {
+            CustomSerializers = new IXlsxSerializer[] { new YesNoSerializer() },
+        };
+
+        var sheet = Xlsx.Read(new[] { true }, customized);
+        Assert.Equal("YES", sheet.Texts(0)[0]);
+    }
+
     class Employee
     {
         [XlsxColumn("部署", Order = 1)]

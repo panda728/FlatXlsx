@@ -98,8 +98,9 @@ public static class XlsxSerializer
     private const string DOT_RELS = ".rels";
 
     /// <summary>Creates an .xlsx file. The output is streamed; no working folder is used.</summary>
-    public static void ToFile<T>(IEnumerable<T> rows, string fileName, XlsxSerializerOptions options)
+    public static void ToFile<T>(IEnumerable<T> rows, string fileName, XlsxSerializerOptions? options = null)
     {
+        options ??= XlsxSerializerOptions.Default;
         if (rows == null)
             return;
 
@@ -114,8 +115,9 @@ public static class XlsxSerializer
 
     /// <summary>Writes .xlsx content to the stream. The stream does not need to be seekable
     /// (network streams are fine); it is left open after writing.</summary>
-    public static void ToStream<T>(IEnumerable<T> rows, Stream stream, XlsxSerializerOptions options)
+    public static void ToStream<T>(IEnumerable<T> rows, Stream stream, XlsxSerializerOptions? options = null)
     {
+        options ??= XlsxSerializerOptions.Default;
         if (stream == null)
             throw new ArgumentNullException(nameof(stream));
         if (rows == null)
@@ -155,7 +157,7 @@ public static class XlsxSerializer
     /// <summary>Writes .xlsx content to an <see cref="IBufferWriter{T}"/> such as
     /// System.IO.Pipelines.PipeWriter (e.g. ASP.NET Core's Response.BodyWriter).
     /// Flushing the underlying pipe is left to the caller.</summary>
-    public static void To<T>(IEnumerable<T> rows, IBufferWriter<byte> bufferWriter, XlsxSerializerOptions options)
+    public static void To<T>(IEnumerable<T> rows, IBufferWriter<byte> bufferWriter, XlsxSerializerOptions? options = null)
     {
         if (bufferWriter == null)
             throw new ArgumentNullException(nameof(bufferWriter));
@@ -171,8 +173,9 @@ public static class XlsxSerializer
     }
 
     /// <summary>Creates an .xlsx file asynchronously. The output is streamed; no working folder is used.</summary>
-    public static async Task ToFileAsync<T>(IEnumerable<T> rows, string fileName, XlsxSerializerOptions options, CancellationToken cancellationToken = default)
+    public static async Task ToFileAsync<T>(IEnumerable<T> rows, string fileName, XlsxSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
+        options ??= XlsxSerializerOptions.Default;
         if (rows == null)
             return;
 
@@ -186,8 +189,9 @@ public static class XlsxSerializer
 
     /// <summary>Writes .xlsx content to the stream asynchronously. The stream does not need to be
     /// seekable (network streams are fine); it is left open after writing.</summary>
-    public static async Task ToStreamAsync<T>(IEnumerable<T> rows, Stream stream, XlsxSerializerOptions options, CancellationToken cancellationToken = default)
+    public static async Task ToStreamAsync<T>(IEnumerable<T> rows, Stream stream, XlsxSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
+        options ??= XlsxSerializerOptions.Default;
         if (stream == null)
             throw new ArgumentNullException(nameof(stream));
         if (rows == null)
@@ -227,7 +231,7 @@ public static class XlsxSerializer
     /// <summary>Writes .xlsx content to a <see cref="System.IO.Pipelines.PipeWriter"/>
     /// (e.g. ASP.NET Core's Response.BodyWriter). Data is flushed to the pipe as it is
     /// produced, so backpressure is honored.</summary>
-    public static Task ToAsync<T>(IEnumerable<T> rows, System.IO.Pipelines.PipeWriter pipeWriter, XlsxSerializerOptions options, CancellationToken cancellationToken = default)
+    public static Task ToAsync<T>(IEnumerable<T> rows, System.IO.Pipelines.PipeWriter pipeWriter, XlsxSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         if (pipeWriter == null)
             throw new ArgumentNullException(nameof(pipeWriter));

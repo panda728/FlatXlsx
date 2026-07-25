@@ -9,11 +9,23 @@ public record XlsxSerializerOptions
     public static XlsxSerializerOptions Default { get; } = new();
 
     /// <summary>Resolves the serializer for each type. The default provider covers the
-    /// supported built-in types plus object graphs; replace it only to plug in custom
-    /// serializers.</summary>
+    /// supported built-in types plus object graphs. To add or replace serializers for a few
+    /// types, <see cref="CustomSerializers"/> is the simpler road; replace the provider only
+    /// for full control over resolution.</summary>
     public IXlsxSerializerProvider Provider { get; init; } = XlsxSerializerProvider.Default;
 
-    public CultureInfo? CultureInfo { get; init; }
+    /// <summary>Serializers consulted before the built-in ones, matched by their value type.
+    /// Setting this is sufficient on its own - no provider wiring is needed.</summary>
+    /// <remarks><code>
+    /// new XlsxSerializerOptions { CustomSerializers = new IXlsxSerializer[] { new MoneySerializer() } }
+    /// </code></remarks>
+    public IXlsxSerializer[]? CustomSerializers { get; init; }
+
+    /// <summary>Formats the few types whose text is culture-defined: DateTimeOffset and
+    /// Complex. Everything else - numbers, dates, times - is always stored culture-invariantly,
+    /// so the same code produces the same file on every machine. Set this only to deliberately
+    /// localize those two types' text.</summary>
+    public CultureInfo CultureInfo { get; init; } = CultureInfo.InvariantCulture;
 
     /// <summary>Guards against circular references and deeply nested object graphs.</summary>
     public int MaxDepth { get; init; } = 64;
@@ -55,12 +67,40 @@ public record XlsxSerializerOptions
     /// for the row to exist would be two settings for one intention.</summary>
     internal bool HasHeader => HasHeaderRow || HeaderTitles is { Length: > 0 };
 
+    // The composed provider is rebuilt whenever the inputs are observed to have changed rather
+    // than cached unconditionally: `with` copies fields, so an unconditional cache taken from
+    // the original record would leak into copies that carry different serializers.
+    IXlsxSerializerProvider? _effective;
+    IXlsxSerializer[]? _effectiveSerializers;
+    IXlsxSerializerProvider? _effectiveBase;
+
+    IXlsxSerializerProvider EffectiveProvider
+    {
+        get
+        {
+            if (CustomSerializers is not { Length: > 0 })
+                return Provider;
+
+            var effective = _effective;
+            if (effective == null
+                || !ReferenceEquals(_effectiveSerializers, CustomSerializers)
+                || !ReferenceEquals(_effectiveBase, Provider))
+            {
+                effective = XlsxSerializerProvider.Create(CustomSerializers, new[] { Provider });
+                _effectiveSerializers = CustomSerializers;
+                _effectiveBase = Provider;
+                _effective = effective;
+            }
+            return effective;
+        }
+    }
+
     public IXlsxSerializer<T>? GetSerializer<T>()
-        => Provider.GetSerializer<T>();
+        => EffectiveProvider.GetSerializer<T>();
 
     public IXlsxSerializer<T> GetRequiredSerializer<T>()
     {
-        var serializer = Provider.GetSerializer<T>();
+        var serializer = EffectiveProvider.GetSerializer<T>();
         if (serializer == null) Throw(typeof(T));
         return serializer!;
     }

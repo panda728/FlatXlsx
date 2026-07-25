@@ -11,10 +11,11 @@ PM> Install-Package FlatXlsx
 ~~~
 
 ## Usage
-You can use `XlsxSerializer.ToFile` to create .xlsx file.
+You can use `XlsxSerializer.ToFile` to create .xlsx file. Options are optional; the defaults
+just work.
 
 ~~~csharp
-XlsxSerializer.ToFile(Users, "test.xlsx", XlsxSerializerOptions.Default);
+XlsxSerializer.ToFile(Users, "test.xlsx");
 ~~~
 
 `ToStream` writes to any `Stream` (it does not need to be seekable), and `To` writes to any
@@ -23,7 +24,7 @@ no temporary files or working folder are used.
 
 ~~~csharp
 // Stream
-XlsxSerializer.ToStream(Users, stream, XlsxSerializerOptions.Default);
+XlsxSerializer.ToStream(Users, stream);
 
 // ASP.NET Core: write directly to the response without buffering a file
 app.MapGet("/users.xlsx", (HttpResponse response) =>
@@ -79,9 +80,10 @@ restores alongside it.
 - Nothing to configure: on a Japanese system the messages are Japanese.
 - An untranslated language falls back to English, as does an application that trims or omits the
   satellite assemblies.
-- This is separate from `XlsxSerializerOptions.CultureInfo`, which decides how *data* is
-  formatted. Numbers and dates are always stored in the invariant form regardless of either
-  setting, so the same code produces the same file on every machine.
+- This is separate from `XlsxSerializerOptions.CultureInfo`, which affects only the types whose
+  text is culture-defined (`DateTimeOffset`, `Complex`) and itself defaults to the invariant
+  culture. Numbers, dates and times are always stored invariantly, so the same code produces
+  the same file on every machine.
 
 To add a language, copy `FlatXlsx/Resources/Strings.resx` to `Strings.<culture>.resx`, translate
 the `<value>` elements, and rebuild - the satellite assembly is produced automatically.
@@ -139,7 +141,7 @@ trades a slightly larger file for even faster serialization.
 If you pass an object, it will be converted to an Excel file.  
 ![image](https://user-images.githubusercontent.com/16958552/185727609-79b574e8-b40c-46dc-83c9-74b078a1f44a.png)
 ~~~csharp
-XlsxSerializer.ToFile(new string[] { "test", "test2" }, @"c:\test\test.xlsx", XlsxSerializerOptions.Default);
+XlsxSerializer.ToFile(new string[] { "test", "test2" }, @"c:\test\test.xlsx");
 ~~~
 
 ## Example-2
@@ -210,6 +212,24 @@ var newConfig = XlsxSerializerOptions.Default with
     AutoFilter = true,
 };
 XlsxSerializer.ToFile(potals, @"c:\test\potalsOp.xlsx", newConfig);
+~~~
+
+## Example-6
+To change how one type is written, set `CustomSerializers` — matched by value type, consulted
+before the built-in serializers, no provider wiring needed. The shipped
+`EnumValueXlsxSerializer<T>` (numeric enums) plugs in the same way.
+
+~~~csharp
+class YesNoSerializer : IXlsxSerializer<bool>
+{
+    public void WriteTitle(XlsxWriter writer, bool value, XlsxSerializerOptions options, string name = "value")
+        => writer.Write(name);
+    public void Serialize(XlsxWriter writer, bool value, XlsxSerializerOptions options)
+        => writer.Write(value ? "YES" : "NO");
+}
+
+XlsxSerializer.ToFile(rows, @"c:\test\yesno.xlsx",
+    new XlsxSerializerOptions { CustomSerializers = new IXlsxSerializer[] { new YesNoSerializer() } });
 ~~~
 
 ## Acknowledgements

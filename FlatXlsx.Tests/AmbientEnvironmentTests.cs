@@ -57,4 +57,44 @@ public class AmbientEnvironmentTests
 
         Assert.Equal("2023-01-02T00:00:00", sheet.Texts(0)[0]);
     }
+
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("de-DE")]
+    [InlineData("ar-SA")]
+    public void A_DateTimeOffset_is_stored_invariantly_unless_a_culture_is_chosen(string culture)
+    {
+        // These were the last two types whose text still followed the machine: the
+        // options culture used to default to null, which means "whatever host this runs on".
+        var value = new DateTimeOffset(2000, 1, 1, 10, 30, 0, TimeSpan.FromHours(9));
+
+        var sheet = Culture.Under(culture, null, () => Xlsx.Read(new[] { value }, XlsxSerializerOptions.Default));
+
+        Assert.Equal("01/01/2000 10:30:00 +09:00", sheet.Texts(0)[0]);
+    }
+
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("de-DE")]
+    public void A_Complex_is_stored_invariantly_unless_a_culture_is_chosen(string culture)
+    {
+        var value = new System.Numerics.Complex(1.5, 2);
+
+        var sheet = Culture.Under(culture, null, () => Xlsx.Read(new[] { value }, XlsxSerializerOptions.Default));
+
+        Assert.Equal(value.ToString(System.Globalization.CultureInfo.InvariantCulture), sheet.Texts(0)[0]);
+    }
+
+    [Fact]
+    public void Choosing_a_culture_localizes_only_the_culture_defined_types()
+    {
+        // The opt-in exists, and opting in must not leak into the machine-readable cells.
+        var options = new XlsxSerializerOptions { CultureInfo = new System.Globalization.CultureInfo("de-DE") };
+        var offset = new DateTimeOffset(2000, 1, 1, 10, 30, 0, TimeSpan.FromHours(9));
+
+        var sheet = Xlsx.Read(new object[] { offset, 12.5d }, options);
+
+        Assert.Equal(offset.ToString(new System.Globalization.CultureInfo("de-DE")), sheet.Texts(0)[0]);
+        Assert.Equal("12.5", sheet.Texts(1)[0]);
+    }
 }
