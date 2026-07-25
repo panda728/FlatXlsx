@@ -203,7 +203,7 @@ workbook that exercises every supported type at once.
 If you pass an object, it will be converted to an Excel file.  
 ![image](https://user-images.githubusercontent.com/16958552/185727609-79b574e8-b40c-46dc-83c9-74b078a1f44a.png)
 ~~~csharp
-XlsxSerializer.ToFile(new string[] { "test", "test2" }, @"c:\test\test.xlsx");
+XlsxSerializer.ToFile(new string[] { "test", "test2" }, "test.xlsx");
 ~~~
 
 ## Example-2
@@ -223,14 +223,14 @@ var potals = new Portal[] {
     new Portal { Name = "Portal3", Owner = "panda728", Level = 2 },
 };
 
-XlsxSerializer.ToFile(potals, @"c:\test\potals.xlsx", XlsxSerializerOptions.Default);
+XlsxSerializer.ToFile(potals, "potals.xlsx", XlsxSerializerOptions.Default);
 ~~~
 ## Example-3
 To add a header row with your own titles, set `HeaderTitles` — that one setting is the whole ask.
 To use the member names as titles instead, set `HasHeaderRow = true`.
 ![image](https://user-images.githubusercontent.com/16958552/187447183-1c0af135-8407-4c79-be8d-0b4875973a79.png)
 ~~~csharp
-XlsxSerializer.ToFile(potals, @"c:\test\potals.xlsx",
+XlsxSerializer.ToFile(potals, "potals.xlsx",
     new XlsxSerializerOptions { HeaderTitles = new[] { "Name", "Owner", "Level" } });
 ~~~
 
@@ -249,7 +249,7 @@ public class Portal
     public string InternalNote { get; set; }
 }
 
-XlsxSerializer.ToFile(potals, @"c:\test\potalsEx.xlsx",
+XlsxSerializer.ToFile(potals, "potalsEx.xlsx",
     new XlsxSerializerOptions { HasHeaderRow = true });
 ~~~
 ## Example-4
@@ -261,7 +261,7 @@ var newConfig = XlsxSerializerOptions.Default with
     HeaderTitles = new[] { "Name", "Owner", "Level" },
     AutoFitColumns = true,
 };
-XlsxSerializer.ToFile(potals, @"c:\test\potalsOp.xlsx", newConfig);
+XlsxSerializer.ToFile(potals, "potalsOp.xlsx", newConfig);
 ~~~
 
 ## Example-5
@@ -273,7 +273,7 @@ var newConfig = XlsxSerializerOptions.Default with
     HeaderTitles = new[] { "Name", "Owner", "Level" },
     AutoFilter = true,
 };
-XlsxSerializer.ToFile(potals, @"c:\test\potalsOp.xlsx", newConfig);
+XlsxSerializer.ToFile(potals, "potalsOp.xlsx", newConfig);
 ~~~
 
 ## Example-6
@@ -290,7 +290,7 @@ class YesNoSerializer : IXlsxSerializer<bool>
         => writer.Write(value ? "YES" : "NO");
 }
 
-XlsxSerializer.ToFile(rows, @"c:\test\yesno.xlsx",
+XlsxSerializer.ToFile(rows, "yesno.xlsx",
     new XlsxSerializerOptions { CustomSerializers = new IXlsxSerializer[] { new YesNoSerializer() } });
 ~~~
 
@@ -323,7 +323,7 @@ public class ServerLoad
     public double Uptime { get; set; }    // sheet-wide number format
 }
 
-XlsxSerializer.ToFile(rows, @"c:\test\servers.xlsx");
+XlsxSerializer.ToFile(rows, "servers.xlsx");
 ~~~
 
 ## Acknowledgements
