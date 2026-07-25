@@ -1,5 +1,4 @@
-﻿using System.Buffers;
-using System.Runtime.ExceptionServices;
+﻿using System.Runtime.ExceptionServices;
 
 namespace FlatXlsx.Serializers;
 

@@ -1,8 +1,6 @@
-﻿using System.Buffers;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.Serialization;
-using System.Text.Encodings.Web;
 
 namespace FlatXlsx.Serializers;
 

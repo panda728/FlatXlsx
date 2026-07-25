@@ -1,6 +1,5 @@
 ﻿using BenchmarkDotNet.Running;
 using BenchmarkSample;
-using System.Diagnostics;
 
 var workPath = "work";
 if (Directory.Exists(workPath))

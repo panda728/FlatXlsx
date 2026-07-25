@@ -1,5 +1,4 @@
-﻿using System.Buffers;
-
+﻿
 namespace FlatXlsx;
 
 public interface IXlsxSerializer { }
