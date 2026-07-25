@@ -7,8 +7,8 @@ namespace FlatXlsx.Serializers;
 
 internal sealed class CompiledObjectGraphXlsxSerializer<T> : IXlsxSerializer<T>
 {
-    delegate void WriteTitleMethod(XlsxWriter writer, IXlsxSerializer?[]? alternateSerializers, T value, XlsxSerializerOptions options);
-    delegate void SerializeMethod(XlsxWriter writer, IXlsxSerializer?[]? alternateSerializers, T value, XlsxSerializerOptions options);
+    delegate void WriteTitleMethod(XlsxCellWriter writer, IXlsxSerializer?[]? alternateSerializers, T value, XlsxSerializerOptions options);
+    delegate void SerializeMethod(XlsxCellWriter writer, IXlsxSerializer?[]? alternateSerializers, T value, XlsxSerializerOptions options);
 
     static readonly IXlsxSerializer?[]? alternateSerializers;
     static readonly WriteTitleMethod writeTitle;
@@ -36,14 +36,14 @@ internal sealed class CompiledObjectGraphXlsxSerializer<T> : IXlsxSerializer<T>
         serialize = CompileSerializer(typeof(T), members);
     }
 
-    public void WriteTitle(XlsxWriter writer, T value, XlsxSerializerOptions options, string name = "value")
+    public void WriteTitle(XlsxCellWriter writer, T value, XlsxSerializerOptions options, string name = "value")
     {
         writer.EnterNested();
         writeTitle(writer, alternateSerializers, value, options);
         writer.ExitNested();
     }
 
-    public void Serialize(XlsxWriter writer, T value, XlsxSerializerOptions options)
+    public void Serialize(XlsxCellWriter writer, T value, XlsxSerializerOptions options)
     {
         if (isReferenceType)
         {
@@ -63,7 +63,7 @@ internal sealed class CompiledObjectGraphXlsxSerializer<T> : IXlsxSerializer<T>
     {
         // foreach(members)
         //     options.GetRequiredSerializer<T>() || ((IXlsxSerializer<T>)alternateSerializers[0] .WriteTitle(writer, value.Foo, options, propertyName)
-        var argWriter = Expression.Parameter(typeof(XlsxWriter));
+        var argWriter = Expression.Parameter(typeof(XlsxCellWriter));
         var argAlternateSerializers = Expression.Parameter(typeof(IXlsxSerializer[]));
         var argValue = Expression.Parameter(valueType);
         var argOptions = Expression.Parameter(typeof(XlsxSerializerOptions));
@@ -104,7 +104,7 @@ internal sealed class CompiledObjectGraphXlsxSerializer<T> : IXlsxSerializer<T>
         //     options.GetRequiredSerializer<T>() || ((IXlsxSerializer<T>)alternateSerializers[0] .Serialize(writer, value.Foo, options)
         //   else
         //     writer.WriteEmpty();
-        var argWriter = Expression.Parameter(typeof(XlsxWriter));
+        var argWriter = Expression.Parameter(typeof(XlsxCellWriter));
         var argAlternateSerializers = Expression.Parameter(typeof(IXlsxSerializer[]));
         var argValue = Expression.Parameter(valueType);
         var argOptions = Expression.Parameter(typeof(XlsxSerializerOptions));
@@ -153,7 +153,7 @@ internal sealed class CompiledObjectGraphXlsxSerializer<T> : IXlsxSerializer<T>
 
     internal static class ReflectionInfos
     {
-        internal static MethodInfo Writer_Empty { get; } = typeof(XlsxWriter).GetMethod("WriteEmpty")!;
+        internal static MethodInfo Writer_Empty { get; } = typeof(XlsxCellWriter).GetMethod("WriteEmpty")!;
         internal static MethodInfo XlsxSerializerOptions_GetRequiredSerializer(Type type) => typeof(XlsxSerializerOptions).GetMethod("GetRequiredSerializer", 1, Type.EmptyTypes)!.MakeGenericMethod(type);
         internal static MethodInfo IXlsxSerializer_Serialize(Type type) => typeof(IXlsxSerializer<>).MakeGenericType(type).GetMethod("Serialize")!;
         internal static MethodInfo IXlsxSerializer_WriteTitle(Type type) => typeof(IXlsxSerializer<>).MakeGenericType(type).GetMethod("WriteTitle")!;

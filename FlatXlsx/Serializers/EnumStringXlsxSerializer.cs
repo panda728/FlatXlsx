@@ -10,10 +10,10 @@ public sealed class EnumStringXlsxSerializer<T> : IXlsxSerializer<T>
     static readonly ConcurrentDictionary<T, string> stringCache = new();
     static readonly Func<T, string> toStringFactory = EnumToString;
 
-    public void WriteTitle(XlsxWriter writer, T value, XlsxSerializerOptions options, string name = "value")
+    public void WriteTitle(XlsxCellWriter writer, T value, XlsxSerializerOptions options, string name = "value")
         => writer.Write(name);
 
-    public void Serialize(XlsxWriter writer, T value, XlsxSerializerOptions options)
+    public void Serialize(XlsxCellWriter writer, T value, XlsxSerializerOptions options)
     {
         var str = stringCache.GetOrAdd(value, toStringFactory);
         writer.Write(str);
@@ -35,16 +35,16 @@ public sealed class EnumStringXlsxSerializer<T> : IXlsxSerializer<T>
     }
 }
 
-public sealed class EnumValueXlsxSerializer<T> : IXlsxSerializer<T>
+public sealed class EnumNumberXlsxSerializer<T> : IXlsxSerializer<T>
     where T : Enum
 {
     static readonly ConcurrentDictionary<T, string> stringCache = new();
     static readonly Func<T, string> toStringFactory = EnumToString;
 
-    public void WriteTitle(XlsxWriter writer, T value, XlsxSerializerOptions options, string name = "value")
+    public void WriteTitle(XlsxCellWriter writer, T value, XlsxSerializerOptions options, string name = "value")
         => writer.Write(name);
 
-    public void Serialize(XlsxWriter writer, T value, XlsxSerializerOptions options)
+    public void Serialize(XlsxCellWriter writer, T value, XlsxSerializerOptions options)
     {
         var str = stringCache.GetOrAdd(value, toStringFactory);
         writer.Write(str);

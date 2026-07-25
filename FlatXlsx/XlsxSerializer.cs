@@ -176,7 +176,7 @@ public static class XlsxSerializer
             options.NumberFormat
         )), options.CompressionLevel);
 
-        using var writer = new XlsxWriter(options);
+        using var writer = new XlsxCellWriter(options);
         using (var sheetStream = archive.CreateEntry(SHEET_XML, options.CompressionLevel).Open())
             CreateSheet(rows, hasRows, sheetStream, writer, options);
         using (var stringsStream = archive.CreateEntry(STRINGS_XML, options.CompressionLevel).Open())
@@ -256,7 +256,7 @@ public static class XlsxSerializer
             options.NumberFormat
         )), options.CompressionLevel, cancellationToken).ConfigureAwait(false);
 
-        using var writer = new XlsxWriter(options);
+        using var writer = new XlsxCellWriter(options);
         using (var sheetStream = archive.CreateEntry(SHEET_XML, options.CompressionLevel).Open())
             await CreateSheetAsync(rows, hasRows, sheetStream, writer, options, cancellationToken).ConfigureAwait(false);
         using (var stringsStream = archive.CreateEntry(STRINGS_XML, options.CompressionLevel).Open())
@@ -284,7 +284,7 @@ public static class XlsxSerializer
         IEnumerator<T> rows,
         bool hasRows,
         Stream stream,
-        XlsxWriter writer,
+        XlsxCellWriter writer,
         XlsxSerializerOptions options,
         CancellationToken cancellationToken
     )
@@ -374,7 +374,7 @@ public static class XlsxSerializer
     static async Task WriteCellWidthAsync<T>(
         List<T> rows,
         Stream stream,
-        XlsxWriter writer,
+        XlsxCellWriter writer,
         XlsxSerializerOptions options,
         CancellationToken cancellationToken
     )
@@ -408,7 +408,7 @@ public static class XlsxSerializer
         await buffer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
     }
 
-    static async Task WriteSharedStringsAsync(Stream stream, XlsxWriter writer, CancellationToken cancellationToken)
+    static async Task WriteSharedStringsAsync(Stream stream, XlsxCellWriter writer, CancellationToken cancellationToken)
     {
         await stream.WriteAsync(_sstStart, 0, _sstStart.Length, cancellationToken).ConfigureAwait(false);
         using var buffer = new ArrayPoolBufferWriter();
@@ -426,7 +426,7 @@ public static class XlsxSerializer
         IEnumerator<T> rows,
         bool hasRows,
         Stream stream,
-        XlsxWriter writer,
+        XlsxCellWriter writer,
         XlsxSerializerOptions options
     )
     {
@@ -527,7 +527,7 @@ public static class XlsxSerializer
     static void WriteRowsSpan<T>(
         Span<T> rows,
         Stream stream,
-        XlsxWriter writer,
+        XlsxCellWriter writer,
         IXlsxSerializer<T> serializer,
         XlsxSerializerOptions options
     )
@@ -546,7 +546,7 @@ public static class XlsxSerializer
     static void WriteRows<T>(
         IEnumerable<T> rows,
         Stream stream,
-        XlsxWriter writer,
+        XlsxCellWriter writer,
         IXlsxSerializer<T> serializer,
         XlsxSerializerOptions options
     )
@@ -565,7 +565,7 @@ public static class XlsxSerializer
     static void WriteCellWidth<T>(
         List<T> rows,
         Stream stream,
-        XlsxWriter writer,
+        XlsxCellWriter writer,
         XlsxSerializerOptions options
     )
     {
@@ -600,7 +600,7 @@ public static class XlsxSerializer
         buffer.CopyTo(stream);
     }
 
-    static void WriteSharedStrings(Stream stream, XlsxWriter writer)
+    static void WriteSharedStrings(Stream stream, XlsxCellWriter writer)
     {
         stream.Write(_sstStart, 0, _sstStart.Length);
         using var buffer = new ArrayPoolBufferWriter();

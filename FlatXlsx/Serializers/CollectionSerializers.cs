@@ -3,7 +3,7 @@
 public sealed class EnumerableXlsxSerializer<TCollection, TElement> : IXlsxSerializer<TCollection>
     where TCollection : IEnumerable<TElement>
 {
-    public void WriteTitle(XlsxWriter writer, TCollection value, XlsxSerializerOptions options, string name = "value")
+    public void WriteTitle(XlsxCellWriter writer, TCollection value, XlsxSerializerOptions options, string name = "value")
     {
         if (value == null)
         {
@@ -20,7 +20,7 @@ public sealed class EnumerableXlsxSerializer<TCollection, TElement> : IXlsxSeria
         writer.ExitNested();
     }
 
-    public void Serialize(XlsxWriter writer, TCollection value, XlsxSerializerOptions options)
+    public void Serialize(XlsxCellWriter writer, TCollection value, XlsxSerializerOptions options)
     {
         if (value == null)
         {
@@ -41,7 +41,7 @@ public sealed class EnumerableXlsxSerializer<TCollection, TElement> : IXlsxSeria
 public sealed class DictionaryXlsxSerializer<TDictionary, TKey, TValue> : IXlsxSerializer<TDictionary>
     where TDictionary : IDictionary<TKey, TValue>
 {
-    public void WriteTitle(XlsxWriter writer, TDictionary value, XlsxSerializerOptions options, string name = "value")
+    public void WriteTitle(XlsxCellWriter writer, TDictionary value, XlsxSerializerOptions options, string name = "value")
     {
         if (value == null)
         {
@@ -60,7 +60,7 @@ public sealed class DictionaryXlsxSerializer<TDictionary, TKey, TValue> : IXlsxS
         writer.ExitNested();
     }
 
-    public void Serialize(XlsxWriter writer, TDictionary value, XlsxSerializerOptions options)
+    public void Serialize(XlsxCellWriter writer, TDictionary value, XlsxSerializerOptions options)
     {
         if (value == null)
         {
@@ -90,7 +90,7 @@ public sealed class DictionaryXlsxSerializer<TDictionary, TKey, TValue> : IXlsxS
 public sealed class EnumerableKeyValuePairXlsxSerializer<TCollection, TKey, TValue> : IXlsxSerializer<TCollection>
     where TCollection : IEnumerable<KeyValuePair<TKey, TValue>>
 {
-    public void WriteTitle(XlsxWriter writer, TCollection value, XlsxSerializerOptions options, string name = "value")
+    public void WriteTitle(XlsxCellWriter writer, TCollection value, XlsxSerializerOptions options, string name = "value")
     {
         if (value == null)
         {
@@ -109,7 +109,7 @@ public sealed class EnumerableKeyValuePairXlsxSerializer<TCollection, TKey, TVal
         writer.ExitNested();
     }
 
-    public void Serialize(XlsxWriter writer, TCollection value, XlsxSerializerOptions options)
+    public void Serialize(XlsxCellWriter writer, TCollection value, XlsxSerializerOptions options)
     {
         if (value == null)
         {

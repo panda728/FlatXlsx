@@ -5,15 +5,15 @@ namespace FlatXlsx.Serializers;
 
 internal class ObjectFallbackXlsxSerializer : IXlsxSerializer<object>
 {
-    delegate void WriteTitleDelegate(XlsxWriter writer, object value, XlsxSerializerOptions options, string name);
+    delegate void WriteTitleDelegate(XlsxCellWriter writer, object value, XlsxSerializerOptions options, string name);
     static readonly ConcurrentDictionary<Type, WriteTitleDelegate> nongenericWriteTitles = new();
     static readonly Func<Type, WriteTitleDelegate> factoryWriteTitle = CompileWriteTitleDelegate;
 
-    delegate void SerializeDelegate(XlsxWriter writer, object value, XlsxSerializerOptions options);
+    delegate void SerializeDelegate(XlsxCellWriter writer, object value, XlsxSerializerOptions options);
     static readonly ConcurrentDictionary<Type, SerializeDelegate> nongenericSerializers = new();
     static readonly Func<Type, SerializeDelegate> factory = CompileSerializeDelegate;
 
-    public void WriteTitle(XlsxWriter writer, object value, XlsxSerializerOptions options, string name = "value")
+    public void WriteTitle(XlsxCellWriter writer, object value, XlsxSerializerOptions options, string name = "value")
     {
         if (value == null)
         {
@@ -32,7 +32,7 @@ internal class ObjectFallbackXlsxSerializer : IXlsxSerializer<object>
         writeTitle.Invoke(writer, value, options, name);
     }
 
-    public void Serialize(XlsxWriter writer, object value, XlsxSerializerOptions options)
+    public void Serialize(XlsxCellWriter writer, object value, XlsxSerializerOptions options)
     {
         if (value == null)
         {
@@ -53,7 +53,7 @@ internal class ObjectFallbackXlsxSerializer : IXlsxSerializer<object>
 
     static WriteTitleDelegate CompileWriteTitleDelegate(Type type)
     {
-        var writer = Expression.Parameter(typeof(XlsxWriter));
+        var writer = Expression.Parameter(typeof(XlsxCellWriter));
         var value = Expression.Parameter(typeof(object));
         var options = Expression.Parameter(typeof(XlsxSerializerOptions));
         var name = Expression.Parameter(typeof(string));
@@ -74,10 +74,10 @@ internal class ObjectFallbackXlsxSerializer : IXlsxSerializer<object>
 
     static SerializeDelegate CompileSerializeDelegate(Type type)
     {
-        // Serialize(XlsxWriter writer, object value, XlsxSerializerOptions options)
+        // Serialize(XlsxCellWriter writer, object value, XlsxSerializerOptions options)
         //   options.GetRequiredSerializer<T>().Serialize(writer, (T)value, options)
 
-        var writer = Expression.Parameter(typeof(XlsxWriter));
+        var writer = Expression.Parameter(typeof(XlsxCellWriter));
         var value = Expression.Parameter(typeof(object));
         var options = Expression.Parameter(typeof(XlsxSerializerOptions));
 

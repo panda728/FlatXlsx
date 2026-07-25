@@ -6,12 +6,12 @@ namespace FlatXlsx.Serializers
 {
     public sealed class TupleXlsxSerializer<T1> : IXlsxSerializer<Tuple<T1>>
     {
-		public void WriteTitle(XlsxWriter writer, Tuple<T1> value, XlsxSerializerOptions options, string name = "value"){
+		public void WriteTitle(XlsxCellWriter writer, Tuple<T1> value, XlsxSerializerOptions options, string name = "value"){
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().WriteTitle(writer, value.Item1, options, name);
             writer.ExitNested();
         }
-        public void Serialize(XlsxWriter writer, Tuple<T1> value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, Tuple<T1> value, XlsxSerializerOptions options)
         {
             if (value == null) {
                 writer.WriteEmpty();
@@ -25,14 +25,14 @@ namespace FlatXlsx.Serializers
 
     public sealed class ValueTupleXlsxSerializer<T1> : IXlsxSerializer<ValueTuple<T1>>
     {
-		public void WriteTitle(XlsxWriter writer, ValueTuple<T1> value, XlsxSerializerOptions options, string name = "value"){
+		public void WriteTitle(XlsxCellWriter writer, ValueTuple<T1> value, XlsxSerializerOptions options, string name = "value"){
         {
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().WriteTitle(writer, value.Item1, options, name);
             writer.ExitNested();
         }
         }
-        public void Serialize(XlsxWriter writer, ValueTuple<T1> value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, ValueTuple<T1> value, XlsxSerializerOptions options)
         {
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().Serialize(writer, value.Item1, options);
@@ -42,13 +42,13 @@ namespace FlatXlsx.Serializers
 
     public sealed class TupleXlsxSerializer<T1, T2> : IXlsxSerializer<Tuple<T1, T2>>
     {
-		public void WriteTitle(XlsxWriter writer, Tuple<T1, T2> value, XlsxSerializerOptions options, string name = "value"){
+		public void WriteTitle(XlsxCellWriter writer, Tuple<T1, T2> value, XlsxSerializerOptions options, string name = "value"){
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().WriteTitle(writer, value.Item1, options, name);
             options.GetRequiredSerializer<T2>().WriteTitle(writer, value.Item2, options, $"{name}2");
             writer.ExitNested();
         }
-        public void Serialize(XlsxWriter writer, Tuple<T1, T2> value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, Tuple<T1, T2> value, XlsxSerializerOptions options)
         {
             if (value == null) {
                 writer.WriteEmpty();
@@ -63,7 +63,7 @@ namespace FlatXlsx.Serializers
 
     public sealed class ValueTupleXlsxSerializer<T1, T2> : IXlsxSerializer<ValueTuple<T1, T2>>
     {
-		public void WriteTitle(XlsxWriter writer, ValueTuple<T1, T2> value, XlsxSerializerOptions options, string name = "value"){
+		public void WriteTitle(XlsxCellWriter writer, ValueTuple<T1, T2> value, XlsxSerializerOptions options, string name = "value"){
         {
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().WriteTitle(writer, value.Item1, options, name);
@@ -71,7 +71,7 @@ namespace FlatXlsx.Serializers
             writer.ExitNested();
         }
         }
-        public void Serialize(XlsxWriter writer, ValueTuple<T1, T2> value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, ValueTuple<T1, T2> value, XlsxSerializerOptions options)
         {
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().Serialize(writer, value.Item1, options);
@@ -82,14 +82,14 @@ namespace FlatXlsx.Serializers
 
     public sealed class TupleXlsxSerializer<T1, T2, T3> : IXlsxSerializer<Tuple<T1, T2, T3>>
     {
-		public void WriteTitle(XlsxWriter writer, Tuple<T1, T2, T3> value, XlsxSerializerOptions options, string name = "value"){
+		public void WriteTitle(XlsxCellWriter writer, Tuple<T1, T2, T3> value, XlsxSerializerOptions options, string name = "value"){
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().WriteTitle(writer, value.Item1, options, name);
             options.GetRequiredSerializer<T2>().WriteTitle(writer, value.Item2, options, $"{name}2");
             options.GetRequiredSerializer<T3>().WriteTitle(writer, value.Item3, options, $"{name}3");
             writer.ExitNested();
         }
-        public void Serialize(XlsxWriter writer, Tuple<T1, T2, T3> value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, Tuple<T1, T2, T3> value, XlsxSerializerOptions options)
         {
             if (value == null) {
                 writer.WriteEmpty();
@@ -105,7 +105,7 @@ namespace FlatXlsx.Serializers
 
     public sealed class ValueTupleXlsxSerializer<T1, T2, T3> : IXlsxSerializer<ValueTuple<T1, T2, T3>>
     {
-		public void WriteTitle(XlsxWriter writer, ValueTuple<T1, T2, T3> value, XlsxSerializerOptions options, string name = "value"){
+		public void WriteTitle(XlsxCellWriter writer, ValueTuple<T1, T2, T3> value, XlsxSerializerOptions options, string name = "value"){
         {
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().WriteTitle(writer, value.Item1, options, name);
@@ -114,7 +114,7 @@ namespace FlatXlsx.Serializers
             writer.ExitNested();
         }
         }
-        public void Serialize(XlsxWriter writer, ValueTuple<T1, T2, T3> value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, ValueTuple<T1, T2, T3> value, XlsxSerializerOptions options)
         {
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().Serialize(writer, value.Item1, options);
@@ -126,7 +126,7 @@ namespace FlatXlsx.Serializers
 
     public sealed class TupleXlsxSerializer<T1, T2, T3, T4> : IXlsxSerializer<Tuple<T1, T2, T3, T4>>
     {
-		public void WriteTitle(XlsxWriter writer, Tuple<T1, T2, T3, T4> value, XlsxSerializerOptions options, string name = "value"){
+		public void WriteTitle(XlsxCellWriter writer, Tuple<T1, T2, T3, T4> value, XlsxSerializerOptions options, string name = "value"){
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().WriteTitle(writer, value.Item1, options, name);
             options.GetRequiredSerializer<T2>().WriteTitle(writer, value.Item2, options, $"{name}2");
@@ -134,7 +134,7 @@ namespace FlatXlsx.Serializers
             options.GetRequiredSerializer<T4>().WriteTitle(writer, value.Item4, options, $"{name}4");
             writer.ExitNested();
         }
-        public void Serialize(XlsxWriter writer, Tuple<T1, T2, T3, T4> value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, Tuple<T1, T2, T3, T4> value, XlsxSerializerOptions options)
         {
             if (value == null) {
                 writer.WriteEmpty();
@@ -151,7 +151,7 @@ namespace FlatXlsx.Serializers
 
     public sealed class ValueTupleXlsxSerializer<T1, T2, T3, T4> : IXlsxSerializer<ValueTuple<T1, T2, T3, T4>>
     {
-		public void WriteTitle(XlsxWriter writer, ValueTuple<T1, T2, T3, T4> value, XlsxSerializerOptions options, string name = "value"){
+		public void WriteTitle(XlsxCellWriter writer, ValueTuple<T1, T2, T3, T4> value, XlsxSerializerOptions options, string name = "value"){
         {
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().WriteTitle(writer, value.Item1, options, name);
@@ -161,7 +161,7 @@ namespace FlatXlsx.Serializers
             writer.ExitNested();
         }
         }
-        public void Serialize(XlsxWriter writer, ValueTuple<T1, T2, T3, T4> value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, ValueTuple<T1, T2, T3, T4> value, XlsxSerializerOptions options)
         {
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().Serialize(writer, value.Item1, options);
@@ -174,7 +174,7 @@ namespace FlatXlsx.Serializers
 
     public sealed class TupleXlsxSerializer<T1, T2, T3, T4, T5> : IXlsxSerializer<Tuple<T1, T2, T3, T4, T5>>
     {
-		public void WriteTitle(XlsxWriter writer, Tuple<T1, T2, T3, T4, T5> value, XlsxSerializerOptions options, string name = "value"){
+		public void WriteTitle(XlsxCellWriter writer, Tuple<T1, T2, T3, T4, T5> value, XlsxSerializerOptions options, string name = "value"){
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().WriteTitle(writer, value.Item1, options, name);
             options.GetRequiredSerializer<T2>().WriteTitle(writer, value.Item2, options, $"{name}2");
@@ -183,7 +183,7 @@ namespace FlatXlsx.Serializers
             options.GetRequiredSerializer<T5>().WriteTitle(writer, value.Item5, options, $"{name}5");
             writer.ExitNested();
         }
-        public void Serialize(XlsxWriter writer, Tuple<T1, T2, T3, T4, T5> value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, Tuple<T1, T2, T3, T4, T5> value, XlsxSerializerOptions options)
         {
             if (value == null) {
                 writer.WriteEmpty();
@@ -201,7 +201,7 @@ namespace FlatXlsx.Serializers
 
     public sealed class ValueTupleXlsxSerializer<T1, T2, T3, T4, T5> : IXlsxSerializer<ValueTuple<T1, T2, T3, T4, T5>>
     {
-		public void WriteTitle(XlsxWriter writer, ValueTuple<T1, T2, T3, T4, T5> value, XlsxSerializerOptions options, string name = "value"){
+		public void WriteTitle(XlsxCellWriter writer, ValueTuple<T1, T2, T3, T4, T5> value, XlsxSerializerOptions options, string name = "value"){
         {
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().WriteTitle(writer, value.Item1, options, name);
@@ -212,7 +212,7 @@ namespace FlatXlsx.Serializers
             writer.ExitNested();
         }
         }
-        public void Serialize(XlsxWriter writer, ValueTuple<T1, T2, T3, T4, T5> value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, ValueTuple<T1, T2, T3, T4, T5> value, XlsxSerializerOptions options)
         {
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().Serialize(writer, value.Item1, options);
@@ -226,7 +226,7 @@ namespace FlatXlsx.Serializers
 
     public sealed class TupleXlsxSerializer<T1, T2, T3, T4, T5, T6> : IXlsxSerializer<Tuple<T1, T2, T3, T4, T5, T6>>
     {
-		public void WriteTitle(XlsxWriter writer, Tuple<T1, T2, T3, T4, T5, T6> value, XlsxSerializerOptions options, string name = "value"){
+		public void WriteTitle(XlsxCellWriter writer, Tuple<T1, T2, T3, T4, T5, T6> value, XlsxSerializerOptions options, string name = "value"){
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().WriteTitle(writer, value.Item1, options, name);
             options.GetRequiredSerializer<T2>().WriteTitle(writer, value.Item2, options, $"{name}2");
@@ -236,7 +236,7 @@ namespace FlatXlsx.Serializers
             options.GetRequiredSerializer<T6>().WriteTitle(writer, value.Item6, options, $"{name}6");
             writer.ExitNested();
         }
-        public void Serialize(XlsxWriter writer, Tuple<T1, T2, T3, T4, T5, T6> value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, Tuple<T1, T2, T3, T4, T5, T6> value, XlsxSerializerOptions options)
         {
             if (value == null) {
                 writer.WriteEmpty();
@@ -255,7 +255,7 @@ namespace FlatXlsx.Serializers
 
     public sealed class ValueTupleXlsxSerializer<T1, T2, T3, T4, T5, T6> : IXlsxSerializer<ValueTuple<T1, T2, T3, T4, T5, T6>>
     {
-		public void WriteTitle(XlsxWriter writer, ValueTuple<T1, T2, T3, T4, T5, T6> value, XlsxSerializerOptions options, string name = "value"){
+		public void WriteTitle(XlsxCellWriter writer, ValueTuple<T1, T2, T3, T4, T5, T6> value, XlsxSerializerOptions options, string name = "value"){
         {
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().WriteTitle(writer, value.Item1, options, name);
@@ -267,7 +267,7 @@ namespace FlatXlsx.Serializers
             writer.ExitNested();
         }
         }
-        public void Serialize(XlsxWriter writer, ValueTuple<T1, T2, T3, T4, T5, T6> value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, ValueTuple<T1, T2, T3, T4, T5, T6> value, XlsxSerializerOptions options)
         {
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().Serialize(writer, value.Item1, options);
@@ -282,7 +282,7 @@ namespace FlatXlsx.Serializers
 
     public sealed class TupleXlsxSerializer<T1, T2, T3, T4, T5, T6, T7> : IXlsxSerializer<Tuple<T1, T2, T3, T4, T5, T6, T7>>
     {
-		public void WriteTitle(XlsxWriter writer, Tuple<T1, T2, T3, T4, T5, T6, T7> value, XlsxSerializerOptions options, string name = "value"){
+		public void WriteTitle(XlsxCellWriter writer, Tuple<T1, T2, T3, T4, T5, T6, T7> value, XlsxSerializerOptions options, string name = "value"){
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().WriteTitle(writer, value.Item1, options, name);
             options.GetRequiredSerializer<T2>().WriteTitle(writer, value.Item2, options, $"{name}2");
@@ -293,7 +293,7 @@ namespace FlatXlsx.Serializers
             options.GetRequiredSerializer<T7>().WriteTitle(writer, value.Item7, options, $"{name}7");
             writer.ExitNested();
         }
-        public void Serialize(XlsxWriter writer, Tuple<T1, T2, T3, T4, T5, T6, T7> value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, Tuple<T1, T2, T3, T4, T5, T6, T7> value, XlsxSerializerOptions options)
         {
             if (value == null) {
                 writer.WriteEmpty();
@@ -313,7 +313,7 @@ namespace FlatXlsx.Serializers
 
     public sealed class ValueTupleXlsxSerializer<T1, T2, T3, T4, T5, T6, T7> : IXlsxSerializer<ValueTuple<T1, T2, T3, T4, T5, T6, T7>>
     {
-		public void WriteTitle(XlsxWriter writer, ValueTuple<T1, T2, T3, T4, T5, T6, T7> value, XlsxSerializerOptions options, string name = "value"){
+		public void WriteTitle(XlsxCellWriter writer, ValueTuple<T1, T2, T3, T4, T5, T6, T7> value, XlsxSerializerOptions options, string name = "value"){
         {
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().WriteTitle(writer, value.Item1, options, name);
@@ -326,7 +326,7 @@ namespace FlatXlsx.Serializers
             writer.ExitNested();
         }
         }
-        public void Serialize(XlsxWriter writer, ValueTuple<T1, T2, T3, T4, T5, T6, T7> value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, ValueTuple<T1, T2, T3, T4, T5, T6, T7> value, XlsxSerializerOptions options)
         {
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().Serialize(writer, value.Item1, options);
@@ -343,7 +343,7 @@ namespace FlatXlsx.Serializers
     public sealed class TupleXlsxSerializer<T1, T2, T3, T4, T5, T6, T7, TRest> : IXlsxSerializer<Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>>
         where TRest : notnull
     {
-		public void WriteTitle(XlsxWriter writer, Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> value, XlsxSerializerOptions options, string name = "value"){
+		public void WriteTitle(XlsxCellWriter writer, Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> value, XlsxSerializerOptions options, string name = "value"){
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().WriteTitle(writer, value.Item1, options, name);
             options.GetRequiredSerializer<T2>().WriteTitle(writer, value.Item2, options, $"{name}2");
@@ -355,7 +355,7 @@ namespace FlatXlsx.Serializers
             options.GetRequiredSerializer<TRest>().WriteTitle(writer, value.Rest, options, $"{name}8");
             writer.ExitNested();
         }
-        public void Serialize(XlsxWriter writer, Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> value, XlsxSerializerOptions options)
         {
             if (value == null) {
                 writer.WriteEmpty();
@@ -377,7 +377,7 @@ namespace FlatXlsx.Serializers
     public sealed class ValueTupleXlsxSerializer<T1, T2, T3, T4, T5, T6, T7, TRest> : IXlsxSerializer<ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>>
         where TRest : struct
     {
-		public void WriteTitle(XlsxWriter writer, ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> value, XlsxSerializerOptions options, string name = "value"){
+		public void WriteTitle(XlsxCellWriter writer, ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> value, XlsxSerializerOptions options, string name = "value"){
         {
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().WriteTitle(writer, value.Item1, options, name);
@@ -391,7 +391,7 @@ namespace FlatXlsx.Serializers
             writer.ExitNested();
         }
         }
-        public void Serialize(XlsxWriter writer, ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> value, XlsxSerializerOptions options)
         {
             writer.EnterNested();
             options.GetRequiredSerializer<T1>().Serialize(writer, value.Item1, options);

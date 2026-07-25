@@ -2,7 +2,10 @@
 
 namespace FlatXlsx.Providers;
 
-public sealed class AdhocXlsxSerializerProvider : IXlsxSerializerProvider
+/// <summary>Serves a fixed list of serializer instances, matched by value type. Construction
+/// plumbing behind <see cref="XlsxSerializerProvider.Create(IXlsxSerializer[], IXlsxSerializerProvider[])"/>
+/// and <see cref="XlsxSerializerOptions.CustomSerializers"/>.</summary>
+internal sealed class AdhocXlsxSerializerProvider : IXlsxSerializerProvider
 {
     readonly IXlsxSerializer[] serializers;
     readonly ConcurrentDictionary<Type, IXlsxSerializer?> cache = new();

@@ -124,7 +124,7 @@ The row source is enumerated exactly once, so a query or forward-only reader can
 directly. With `AutoFitColumns` the first `AutoFitSampleRows` rows (default 200) are buffered to
 measure widths — bounded, never the whole sequence.
 
-`XlsxWriter` instances are not thread-safe; serializer providers and their caches are.
+`XlsxCellWriter` instances are not thread-safe; serializer providers and their caches are.
 
 ## Benchmark
 
@@ -235,14 +235,14 @@ XlsxSerializer.ToFile(potals, @"c:\test\potalsOp.xlsx", newConfig);
 ## Example-6
 To change how one type is written, set `CustomSerializers` — matched by value type, consulted
 before the built-in serializers, no provider wiring needed. The shipped
-`EnumValueXlsxSerializer<T>` (numeric enums) plugs in the same way.
+`EnumNumberXlsxSerializer<T>` (numeric enums) plugs in the same way.
 
 ~~~csharp
 class YesNoSerializer : IXlsxSerializer<bool>
 {
-    public void WriteTitle(XlsxWriter writer, bool value, XlsxSerializerOptions options, string name = "value")
+    public void WriteTitle(XlsxCellWriter writer, bool value, XlsxSerializerOptions options, string name = "value")
         => writer.Write(name);
-    public void Serialize(XlsxWriter writer, bool value, XlsxSerializerOptions options)
+    public void Serialize(XlsxCellWriter writer, bool value, XlsxSerializerOptions options)
         => writer.Write(value ? "YES" : "NO");
 }
 

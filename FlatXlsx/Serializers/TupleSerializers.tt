@@ -26,7 +26,7 @@ namespace FlatXlsx.Serializers
         where TRest : notnull
 <# } #>
     {
-		public void WriteTitle(XlsxWriter writer, Tuple<<#= BuildTypeParameters(i) #>> value, XlsxSerializerOptions options, string name = "value"){
+		public void WriteTitle(XlsxCellWriter writer, Tuple<<#= BuildTypeParameters(i) #>> value, XlsxSerializerOptions options, string name = "value"){
             writer.EnterNested();
 <# for(var j = 1; j <= i; j++) { #>
 <# if(j != 1) { #>
@@ -35,7 +35,7 @@ namespace FlatXlsx.Serializers
 <# } #>
             writer.ExitNested();
         }
-        public void Serialize(XlsxWriter writer, Tuple<<#= BuildTypeParameters(i) #>> value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, Tuple<<#= BuildTypeParameters(i) #>> value, XlsxSerializerOptions options)
         {
             if (value == null) {
                 writer.WriteEmpty();
@@ -56,7 +56,7 @@ namespace FlatXlsx.Serializers
         where TRest : struct
 <# } #>
     {
-		public void WriteTitle(XlsxWriter writer, ValueTuple<<#= BuildTypeParameters(i) #>> value, XlsxSerializerOptions options, string name = "value"){
+		public void WriteTitle(XlsxCellWriter writer, ValueTuple<<#= BuildTypeParameters(i) #>> value, XlsxSerializerOptions options, string name = "value"){
         {
             writer.EnterNested();
 <# for(var j = 1; j <= i; j++) { #>
@@ -67,7 +67,7 @@ namespace FlatXlsx.Serializers
             writer.ExitNested();
         }
         }
-        public void Serialize(XlsxWriter writer, ValueTuple<<#= BuildTypeParameters(i) #>> value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, ValueTuple<<#= BuildTypeParameters(i) #>> value, XlsxSerializerOptions options)
         {
             writer.EnterNested();
 <# for(var j = 1; j <= i; j++) { #>

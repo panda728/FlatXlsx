@@ -6,7 +6,7 @@ using System.Text;
 
 namespace FlatXlsx;
 
-public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
+public class XlsxCellWriter(XlsxSerializerOptions options) : IDisposable
 {
     const int XF_WRAP_TEXT = 1;
     const int XF_DATETIME = 2;

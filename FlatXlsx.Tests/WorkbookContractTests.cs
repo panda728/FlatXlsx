@@ -76,9 +76,9 @@ public class WorkbookContractTests
     /// <summary>Writes bool cells as YES/NO text instead of the built-in boolean cell.</summary>
     class YesNoSerializer : IXlsxSerializer<bool>
     {
-        public void WriteTitle(XlsxWriter writer, bool value, XlsxSerializerOptions options, string name = "value")
+        public void WriteTitle(XlsxCellWriter writer, bool value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
-        public void Serialize(XlsxWriter writer, bool value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, bool value, XlsxSerializerOptions options)
             => writer.Write(value ? "YES" : "NO");
     }
 
@@ -102,7 +102,7 @@ public class WorkbookContractTests
     {
         var options = new XlsxSerializerOptions
         {
-            CustomSerializers = new IXlsxSerializer[] { new Serializers.EnumValueXlsxSerializer<DayOfWeek>() },
+            CustomSerializers = new IXlsxSerializer[] { new Serializers.EnumNumberXlsxSerializer<DayOfWeek>() },
         };
 
         var sheet = Xlsx.Read(new[] { DayOfWeek.Friday }, options);

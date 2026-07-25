@@ -6,109 +6,109 @@ namespace FlatXlsx.Serializers
 {
     public sealed class BooleanXlsxSerializer : IXlsxSerializer<Boolean>
     {        
-		public void WriteTitle(XlsxWriter writer, Boolean value, XlsxSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxCellWriter writer, Boolean value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(XlsxWriter writer, Boolean value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, Boolean value, XlsxSerializerOptions options)
             => writer.Write(value);
     }
 
     public sealed class ByteXlsxSerializer : IXlsxSerializer<Byte>
     {        
-		public void WriteTitle(XlsxWriter writer, Byte value, XlsxSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxCellWriter writer, Byte value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(XlsxWriter writer, Byte value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, Byte value, XlsxSerializerOptions options)
             => writer.Write(value);
     }
 
     public sealed class SByteXlsxSerializer : IXlsxSerializer<SByte>
     {        
-		public void WriteTitle(XlsxWriter writer, SByte value, XlsxSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxCellWriter writer, SByte value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(XlsxWriter writer, SByte value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, SByte value, XlsxSerializerOptions options)
             => writer.Write(value);
     }
 
     public sealed class DecimalXlsxSerializer : IXlsxSerializer<Decimal>
     {        
-		public void WriteTitle(XlsxWriter writer, Decimal value, XlsxSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxCellWriter writer, Decimal value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(XlsxWriter writer, Decimal value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, Decimal value, XlsxSerializerOptions options)
             => writer.Write(value);
     }
 
     public sealed class DoubleXlsxSerializer : IXlsxSerializer<Double>
     {        
-		public void WriteTitle(XlsxWriter writer, Double value, XlsxSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxCellWriter writer, Double value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(XlsxWriter writer, Double value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, Double value, XlsxSerializerOptions options)
             => writer.Write(value);
     }
 
     public sealed class SingleXlsxSerializer : IXlsxSerializer<Single>
     {        
-		public void WriteTitle(XlsxWriter writer, Single value, XlsxSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxCellWriter writer, Single value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(XlsxWriter writer, Single value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, Single value, XlsxSerializerOptions options)
             => writer.Write(value);
     }
 
     public sealed class Int32XlsxSerializer : IXlsxSerializer<Int32>
     {        
-		public void WriteTitle(XlsxWriter writer, Int32 value, XlsxSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxCellWriter writer, Int32 value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(XlsxWriter writer, Int32 value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, Int32 value, XlsxSerializerOptions options)
             => writer.Write(value);
     }
 
     public sealed class UInt32XlsxSerializer : IXlsxSerializer<UInt32>
     {        
-		public void WriteTitle(XlsxWriter writer, UInt32 value, XlsxSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxCellWriter writer, UInt32 value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(XlsxWriter writer, UInt32 value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, UInt32 value, XlsxSerializerOptions options)
             => writer.Write(value);
     }
 
     public sealed class Int64XlsxSerializer : IXlsxSerializer<Int64>
     {        
-		public void WriteTitle(XlsxWriter writer, Int64 value, XlsxSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxCellWriter writer, Int64 value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(XlsxWriter writer, Int64 value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, Int64 value, XlsxSerializerOptions options)
             => writer.Write(value);
     }
 
     public sealed class UInt64XlsxSerializer : IXlsxSerializer<UInt64>
     {        
-		public void WriteTitle(XlsxWriter writer, UInt64 value, XlsxSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxCellWriter writer, UInt64 value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(XlsxWriter writer, UInt64 value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, UInt64 value, XlsxSerializerOptions options)
             => writer.Write(value);
     }
 
     public sealed class Int16XlsxSerializer : IXlsxSerializer<Int16>
     {        
-		public void WriteTitle(XlsxWriter writer, Int16 value, XlsxSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxCellWriter writer, Int16 value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(XlsxWriter writer, Int16 value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, Int16 value, XlsxSerializerOptions options)
             => writer.Write(value);
     }
 
     public sealed class UInt16XlsxSerializer : IXlsxSerializer<UInt16>
     {        
-		public void WriteTitle(XlsxWriter writer, UInt16 value, XlsxSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxCellWriter writer, UInt16 value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(XlsxWriter writer, UInt16 value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, UInt16 value, XlsxSerializerOptions options)
             => writer.Write(value);
     }
 

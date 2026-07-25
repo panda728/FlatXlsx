@@ -82,12 +82,12 @@ Console.ReadLine();
 
 //public class BoolZeroOneSerializer : IXlsxSerializer<bool>
 //{
-//    public void WriteTitle(XlsxWriter writer, bool value, XlsxSerializerOptions options, string name = "")
+//    public void WriteTitle(XlsxCellWriter writer, bool value, XlsxSerializerOptions options, string name = "")
 //    {
 //        writer.Write(name);
 //    }
 
-//    public void Serialize(XlsxWriter writer, bool value, XlsxSerializerOptions options)
+//    public void Serialize(XlsxCellWriter writer, bool value, XlsxSerializerOptions options)
 //    {
 //        // true => 0, false => 1
 //        writer.Write(value ? 0 : 1);
@@ -96,12 +96,12 @@ Console.ReadLine();
 
 public class UnixSecondsSerializer : IXlsxSerializer<DateTime>
 {
-    public void WriteTitle(XlsxWriter writer, DateTime value, XlsxSerializerOptions options, string name = "")
+    public void WriteTitle(XlsxCellWriter writer, DateTime value, XlsxSerializerOptions options, string name = "")
     {
         writer.Write(name);
     }
 
-    public void Serialize(XlsxWriter writer, DateTime value, XlsxSerializerOptions options)
+    public void Serialize(XlsxCellWriter writer, DateTime value, XlsxSerializerOptions options)
     {
         writer.Write(((DateTimeOffset)(value)).ToUnixTimeSeconds());
     }

@@ -25,7 +25,10 @@ public static class XlsxSerializerProvider
     }
 }
 
-public class DefaultXlsxSerializerProvider : IXlsxSerializerProvider
+/// <summary>The resolution chain behind <see cref="XlsxSerializerProvider.Default"/>. Internal:
+/// the instance is what callers compose with; the class itself offers nothing to construct or
+/// override.</summary>
+internal sealed class DefaultXlsxSerializerProvider : IXlsxSerializerProvider
 {
     static readonly IXlsxSerializerProvider[] providers = new[]
     {

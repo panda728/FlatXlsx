@@ -32,10 +32,10 @@ namespace FlatXlsx.Serializers
 <# foreach (var type in primitives) { #>
     public sealed class <#= type.Name #>XlsxSerializer : IXlsxSerializer<<#= type.Name #>>
     {        
-		public void WriteTitle(XlsxWriter writer, <#= type.Name #> value, XlsxSerializerOptions options, string name = "value")
+		public void WriteTitle(XlsxCellWriter writer, <#= type.Name #> value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
 
-        public void Serialize(XlsxWriter writer, <#= type.Name #> value, XlsxSerializerOptions options)
+        public void Serialize(XlsxCellWriter writer, <#= type.Name #> value, XlsxSerializerOptions options)
             => writer.Write(value);
     }
 
