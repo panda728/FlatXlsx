@@ -56,7 +56,7 @@ static class Workbook
             .ToDictionary(
                 c => int.Parse(c.Attribute("min")!.Value),
                 c => double.Parse(c.Attribute("width")!.Value, System.Globalization.CultureInfo.InvariantCulture))
-            ?? new Dictionary<int, double>();
+            ?? [];
 
         var autoFilter = sheet.Root.Element(ns + "autoFilter")?.Attribute("ref")?.Value;
         return new Sheet(rows, autoFilter, widths, sharedStrings.Length, ReadSheetName(archive));
@@ -125,7 +125,7 @@ static class Workbook
         var codes = doc.Root.Element(ns + "numFmts")?
             .Elements(ns + "numFmt")
             .ToDictionary(f => f.Attribute("numFmtId")!.Value, f => f.Attribute("formatCode")!.Value)
-            ?? new Dictionary<string, string>();
+            ?? [];
 
         return doc.Root.Element(ns + "cellXfs")!
             .Elements(ns + "xf")

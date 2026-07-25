@@ -97,7 +97,7 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
     /// <summary>
     /// Tally the maximum number of characters per column. For automatic column width adjustment
     /// </summary>
-    internal Dictionary<int, int> ColumnMaxLength { get; } = new();
+    internal Dictionary<int, int> ColumnMaxLength { get; } = [];
     internal void StopCountingCharLength() => _countingCharLength = false;
 
     /// <summary>Number of rows opened with <see cref="BeginRow"/> so far.</summary>

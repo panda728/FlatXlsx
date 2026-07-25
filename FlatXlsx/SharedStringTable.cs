@@ -11,8 +11,8 @@ namespace FlatXlsx;
 /// </remarks>
 internal sealed class SharedStringTable(int maxCount)
 {
-    readonly Dictionary<string, int> _indexes = new();
-    readonly List<string> _values = new();
+    readonly Dictionary<string, int> _indexes = [];
+    readonly List<string> _values = [];
 
     public int Count => _values.Count;
 

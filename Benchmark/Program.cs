@@ -11,9 +11,8 @@ if (Directory.Exists(workPath))
 Directory.CreateDirectory(workPath);
 
 #if DEBUG
-var ex = new ExportExcel();
+var ex = new ExportExcel { N = 1 };
 
-ex.N = 1;
 ex.GlobalSetup();
 
 var sw = Stopwatch.StartNew();

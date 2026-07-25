@@ -12,7 +12,7 @@ namespace BenchmarkSample
     [MemoryDiagnoser]
     public class ExportExcel
     {
-        readonly List<Row> rows = new();
+        readonly List<Row> rows = [];
         readonly byte[] _crlf = new[] { (byte)'\r', (byte)'\n' };
         static readonly string exePath = Assembly.GetEntryAssembly()?.Location ?? "";
         static readonly string workPath = Path.Combine(Path.GetDirectoryName(exePath) ?? "", "work");

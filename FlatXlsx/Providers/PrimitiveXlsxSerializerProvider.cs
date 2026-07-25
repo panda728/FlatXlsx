@@ -4,7 +4,7 @@ namespace FlatXlsx.Providers;
 public sealed partial class PrimitiveXlsxSerializerProvider : IXlsxSerializerProvider
 {
     public static IXlsxSerializerProvider Instance { get; } = new PrimitiveXlsxSerializerProvider();
-    readonly Dictionary<Type, IXlsxSerializer> serializers = new Dictionary<Type, IXlsxSerializer>();
+    readonly Dictionary<Type, IXlsxSerializer> serializers = [];
 
     internal partial void InitPrimitives(); // implement from PrimitiveSerializers.cs
 
