@@ -34,6 +34,7 @@ internal static class SR
     internal static string CellTooLong(int limit, int length) => Format(nameof(CellTooLong), limit, length);
     internal static string MaxDepthReached(int depth) => Format(nameof(MaxDepthReached), depth);
     internal static string SerializerNotFound(Type type) => Format(nameof(SerializerNotFound), type);
+    internal static string SheetNameInvalid(string name) => Format(nameof(SheetNameInvalid), name);
     internal static string SerializerTypeMismatch(Type declared, Type target) => Format(nameof(SerializerTypeMismatch), declared, target);
     internal static string SerializerTypeNotImplemented(Type type) => Format(nameof(SerializerTypeNotImplemented), type);
     internal static string TooManyColumns(int limit) => Format(nameof(TooManyColumns), limit);

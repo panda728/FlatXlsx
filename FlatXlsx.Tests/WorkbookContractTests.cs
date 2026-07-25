@@ -305,14 +305,94 @@ public class WorkbookContractTests
     }
 
     [Fact]
-    public void An_empty_source_produces_no_workbook_at_all()
+    public void An_empty_source_without_titles_produces_no_workbook_at_all()
     {
         // Claimant: the caller writing to a response or a file, who must not hand over a
-        // zero-row workbook that a spreadsheet application would reject as damaged.
+        // zero-row workbook that a spreadsheet application would reject as damaged. Without
+        // titles there is nothing valid to write.
         using var ms = new MemoryStream();
 
         XlsxSerializer.ToStream(Array.Empty<string>(), ms, XlsxSerializerOptions.Default);
 
         Assert.Equal(0, ms.Length);
+    }
+
+    [Fact]
+    public void An_empty_source_with_titles_still_delivers_the_header()
+    {
+        // An empty report is still a report: downstream consumers receive a workbook whose
+        // columns are named, rather than nothing at all.
+        var options = new XlsxSerializerOptions { HeaderTitles = new[] { "Name", "Level" } };
+
+        var sheet = Xlsx.Read(Array.Empty<Portal>(), options);
+
+        Assert.Single(sheet.Rows);
+        Assert.Equal(new[] { "Name", "Level" }, sheet.Texts(0));
+    }
+
+    [Fact]
+    public async Task An_empty_source_with_titles_still_delivers_the_header_asynchronously()
+    {
+        var options = new XlsxSerializerOptions { HeaderTitles = new[] { "Name", "Level" } };
+
+        var sheet = Workbook.Read(await Xlsx.WriteAsync(Array.Empty<Portal>(), options));
+
+        Assert.Single(sheet.Rows);
+        Assert.Equal(new[] { "Name", "Level" }, sheet.Texts(0));
+    }
+
+    [Fact]
+    public void A_null_source_is_refused_loudly()
+    {
+        // Silence here would hide a caller bug: they would look for an output that was never
+        // going to exist.
+        using var ms = new MemoryStream();
+
+        Assert.Throws<ArgumentNullException>(() => XlsxSerializer.ToStream<string>(null!, ms));
+        Assert.Throws<ArgumentNullException>(() => XlsxSerializer.ToFile<string>(null!, "x.xlsx"));
+    }
+
+    [Fact]
+    public void The_sheet_carries_the_name_it_was_given()
+    {
+        var options = new XlsxSerializerOptions { SheetName = "売上2026" };
+
+        var sheet = Xlsx.Read(_portals, options);
+
+        Assert.Equal("売上2026", sheet.SheetName);
+    }
+
+    [Fact]
+    public void A_sheet_name_with_markup_characters_survives_intact()
+    {
+        // & and quotes are legal in Excel sheet names, so they must be escaped into the
+        // attribute rather than corrupting book.xml.
+        var options = new XlsxSerializerOptions { SheetName = "P&L \"draft\"" };
+
+        var sheet = Xlsx.Read(_portals, options);
+
+        Assert.Equal("P&L \"draft\"", sheet.SheetName);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("a:b")]
+    [InlineData(@"a\b")]
+    [InlineData("a/b")]
+    [InlineData("a?b")]
+    [InlineData("a*b")]
+    [InlineData("a[b]")]
+    [InlineData("'starts")]
+    [InlineData("ends'")]
+    [InlineData("a-name-longer-than-thirty-one-ch")]
+    public void A_sheet_name_Excel_would_reject_is_refused_before_writing(string name)
+    {
+        // Excel's limits, enforced here so the caller learns at write time instead of from a
+        // "repair" dialog at open time.
+        var options = new XlsxSerializerOptions { SheetName = name };
+        using var ms = new MemoryStream();
+
+        Assert.Throws<InvalidOperationException>(() => XlsxSerializer.ToStream(_portals, ms, options));
     }
 }

@@ -71,6 +71,12 @@ but Excel displays numbers with at most 15 digits of precision.
 
 Output is streamed directly to the destination; no working folder is used.
 
+- `SheetName` names the (single) worksheet; Excel's naming rules are enforced at write time,
+  so an invalid name fails with a clear message instead of a workbook Excel repairs.
+- An empty source writes nothing — unless `HeaderTitles` is set, in which case a header-only
+  workbook is written so downstream consumers still receive a file.
+- A null source throws `ArgumentNullException`; silence there would only hide a caller bug.
+
 ## Message languages
 
 Exception messages follow `CultureInfo.CurrentUICulture`. English is built into the main

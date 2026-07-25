@@ -128,6 +128,27 @@ public class OutputTargetTests
     }
 
     [Fact]
+    public void An_empty_export_with_titles_still_delivers_a_file()
+    {
+        // A scheduled export that found no rows must still hand downstream a readable file;
+        // a missing file reads as a failed job.
+        var path = Path.Combine(Path.GetTempPath(), $"flatxlsx_{Guid.NewGuid():N}.xlsx");
+        try
+        {
+            XlsxSerializer.ToFile(
+                Array.Empty<string>(), path,
+                new XlsxSerializerOptions { HeaderTitles = new[] { "Name" } });
+
+            var sheet = Workbook.Read(File.ReadAllBytes(path));
+            Assert.Equal(new[] { "Name" }, sheet.Texts(0));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public async Task A_cancelled_export_stops_instead_of_finishing()
     {
         using var cts = new CancellationTokenSource();

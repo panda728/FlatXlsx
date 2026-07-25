@@ -69,7 +69,6 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
 
     int _columnIndex = 0;
     int _currentDepth = 0;
-    int _stringIndex = 0;
     int _rowCount = 0;
     int _maxColumnCount = 0;
 
@@ -80,12 +79,15 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
     }
 
     /// <summary>
-    /// Maintain a dictionary of strings. Output the same value with the same ID.
+    /// Interned cell strings, written to strings.xml after the sheet.
     /// </summary>
-    public Dictionary<string, int> SharedStrings { get; } = new();
+    internal SharedStringTable SharedStrings { get; } = new(options.MaxSharedStrings);
 
     /// <summary>Bytes currently buffered and not yet copied to the output stream.</summary>
-    public int BufferedBytes => _writer.BytesWritten;
+    internal int BufferedBytes => _writer.BytesWritten;
+
+    /// <summary>The buffered (not yet flushed) output as text - the view a custom serializer's
+    /// unit test asserts against.</summary>
     public override string ToString() => Encoding.UTF8.GetString(
 #if NET5_0_OR_GREATER
         _writer.OutputAsSpan);
@@ -95,17 +97,17 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
     /// <summary>
     /// Tally the maximum number of characters per column. For automatic column width adjustment
     /// </summary>
-    public Dictionary<int, int> ColumnMaxLength { get; } = new();
-    public void StopCountingCharLength() => _countingCharLength = false;
+    internal Dictionary<int, int> ColumnMaxLength { get; } = new();
+    internal void StopCountingCharLength() => _countingCharLength = false;
 
     /// <summary>Number of rows opened with <see cref="BeginRow"/> so far.</summary>
-    public int RowCount => _rowCount;
+    internal int RowCount => _rowCount;
 
     /// <summary>Widest row written so far, in cells.</summary>
-    public int MaxColumnCount => _maxColumnCount;
+    internal int MaxColumnCount => _maxColumnCount;
 
     /// <summary>Starts a new row and enforces the sheet's row limit.</summary>
-    public void BeginRow()
+    internal void BeginRow()
     {
         if (_rowCount == MAX_ROWS)
             ThrowTooManyRows();
@@ -113,7 +115,7 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
         _columnIndex = 0;
     }
 
-    public void Clear()
+    internal void Clear()
     {
         _columnIndex = 0;
         _currentDepth = 0;
@@ -122,7 +124,7 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
 
     /// <summary>Writes a value to the Stream</summary>
     /// <remarks>Perform one line at a time.</remarks>
-    public async Task CopyToAsync(Stream stream, CancellationToken cancellationToken = default)
+    internal async Task CopyToAsync(Stream stream, CancellationToken cancellationToken = default)
     {
         if (stream == null)
             throw new ArgumentNullException(nameof(stream));
@@ -132,7 +134,7 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
 
     /// <summary>Writes a value to the Stream</summary>
     /// <remarks>Perform one line at a time.</remarks>
-    public void CopyTo(Stream stream)
+    internal void CopyTo(Stream stream)
     {
         if (stream == null)
             throw new ArgumentNullException(nameof(stream));
@@ -154,8 +156,10 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
         _currentDepth--;
     }
 
+    // Internal: raw bytes bypass escaping, so exposing this would hand every custom serializer
+    // a way to corrupt the workbook. The pipeline uses it for the row tags only.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WriteRaw(ReadOnlySpan<byte> value) => _writer.Write(value);
+    internal void WriteRaw(ReadOnlySpan<byte> value) => _writer.Write(value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int WriteEmpty()
@@ -213,33 +217,14 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
 
         var wrap = ContainsNewLine(value);
 
-        // The shared-string table has to be held in memory until the whole sheet is written, so
-        // high-cardinality data (ids, timestamps, free text) would grow it without bound while
-        // gaining nothing from deduplication. Past the cap, values go out as inline strings.
-        if (SharedStrings.Count >= _options.MaxSharedStrings && !SharedStrings.ContainsKey(value))
+        if (!SharedStrings.TryGetOrAdd(value, out var index))
         {
+            // Table full: the value goes out inline, costing file size instead of memory.
             WriteEscapedInline(value, wrap);
             return;
         }
 
         _writer.Write(wrap ? _colStartStringWrap : _colStartString);
-
-#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
-        var index = SharedStrings.TryAdd(value, _stringIndex)
-            ? _stringIndex++
-            : SharedStrings[value];
-#else
-        var index = 0;
-        if (SharedStrings.ContainsKey(value))
-        {
-            index = SharedStrings[value];
-        }
-        else
-        {
-            SharedStrings.Add(value, _stringIndex);
-            index = _stringIndex++;
-        }
-#endif
 #if NET8_0_OR_GREATER
         WriteUtf8Formatted(index, default);
 #else

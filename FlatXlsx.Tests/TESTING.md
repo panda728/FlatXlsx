@@ -35,8 +35,9 @@ Depending on any of these is unsupported; they may change without a test turning
   that is opening the file by hand.
 - **Leading and trailing whitespace in a cell.** `xml:space="preserve"` is not emitted, so a
   reader may trim it.
-- **`XlsxWriter`'s internals.** `ToString()`, `SharedStrings` and `ColumnMaxLength` are visible
-  but are not part of what is underwritten; only whole-workbook behaviour is.
+- **`XlsxWriter`'s internals.** The public writer surface is the cell vocabulary a custom
+  serializer uses (plus `ToString()` for its unit tests); the pipeline plumbing is internal and
+  only whole-workbook behaviour is underwritten.
 - **Throughput and allocations.** Measured by the benchmark project, not defended by this suite.
 - **Thread safety of a single `XlsxWriter`.** Providers and their caches are safe to share; a
   writer is not.

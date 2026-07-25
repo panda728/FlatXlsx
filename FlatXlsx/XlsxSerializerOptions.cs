@@ -27,6 +27,11 @@ public record XlsxSerializerOptions
     /// localize those two types' text.</summary>
     public CultureInfo CultureInfo { get; init; } = CultureInfo.InvariantCulture;
 
+    /// <summary>Name of the (single) worksheet. Excel's naming rules apply: 1-31 characters,
+    /// none of <c>: \ / ? * [ ]</c>, and no leading or trailing apostrophe - violations fail
+    /// at write time rather than producing a workbook Excel rejects.</summary>
+    public string SheetName { get; init; } = "Sheet";
+
     /// <summary>Guards against circular references and deeply nested object graphs.</summary>
     public int MaxDepth { get; init; } = 64;
 

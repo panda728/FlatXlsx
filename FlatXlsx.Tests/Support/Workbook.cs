@@ -24,7 +24,8 @@ static class Workbook
         IReadOnlyList<IReadOnlyList<Cell>> Rows,
         string? AutoFilterRange,
         IReadOnlyDictionary<int, double> ColumnWidths,
-        int DistinctStoredStrings)
+        int DistinctStoredStrings,
+        string SheetName)
     {
         public IReadOnlyList<Cell> Row(int index) => Rows[index];
 
@@ -58,7 +59,14 @@ static class Workbook
             ?? new Dictionary<int, double>();
 
         var autoFilter = sheet.Root.Element(ns + "autoFilter")?.Attribute("ref")?.Value;
-        return new Sheet(rows, autoFilter, widths, sharedStrings.Length);
+        return new Sheet(rows, autoFilter, widths, sharedStrings.Length, ReadSheetName(archive));
+    }
+
+    static string ReadSheetName(ZipArchive archive)
+    {
+        var book = Parse(archive, "book.xml");
+        var ns = book.Root!.Name.Namespace;
+        return book.Root.Element(ns + "sheets")!.Element(ns + "sheet")!.Attribute("name")!.Value;
     }
 
     /// <summary>Every part must be well-formed XML; a workbook that fails this cannot be opened.</summary>

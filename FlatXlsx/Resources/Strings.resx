@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -101,5 +101,9 @@
   <data name="TupleSerializerNotFound" xml:space="preserve">
     <value>No tuple serializer is available for {0} type arguments.</value>
     <comment>{0} the number of type arguments</comment>
+  </data>
+  <data name="SheetNameInvalid" xml:space="preserve">
+    <value>The sheet name '{0}' is not valid. A sheet name must be 1-31 characters, cannot contain : \ / ? * [ ], and cannot start or end with an apostrophe.</value>
+    <comment>{0} the rejected name</comment>
   </data>
 </root>

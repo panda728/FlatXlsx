@@ -22,10 +22,34 @@ public static class XlsxSerializer
 <Relationship Id=""rId1"" Target=""book.xml"" Type=""http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument""/>
 </Relationships>");
 
-    readonly static byte[] _book = Encoding.UTF8.GetBytes(@"<workbook xmlns=""http://schemas.openxmlformats.org/spreadsheetml/2006/main"" xmlns:r=""http://schemas.openxmlformats.org/officeDocument/2006/relationships"">
+    const string _bookTemplate = @"<workbook xmlns=""http://schemas.openxmlformats.org/spreadsheetml/2006/main"" xmlns:r=""http://schemas.openxmlformats.org/officeDocument/2006/relationships"">
 <bookViews><workbookView/></bookViews>
-<sheets><sheet name=""Sheet"" sheetId=""1"" r:id=""rId1""/></sheets>
-</workbook>");
+<sheets><sheet name=""{0}"" sheetId=""1"" r:id=""rId1""/></sheets>
+</workbook>";
+    readonly static byte[] _book = Encoding.UTF8.GetBytes(string.Format(_bookTemplate, "Sheet"));
+
+    static readonly char[] _forbiddenSheetNameChars = { ':', '\\', '/', '?', '*', '[', ']' };
+
+    static byte[] BuildBook(XlsxSerializerOptions options)
+    {
+        var name = options.SheetName;
+        if (name == "Sheet")
+            return _book;
+
+        if (string.IsNullOrWhiteSpace(name)
+            || name.Length > 31
+            || name.IndexOfAny(_forbiddenSheetNameChars) >= 0
+            || name[0] == '\'' || name[name.Length - 1] == '\'')
+        {
+            throw new InvalidOperationException(SR.SheetNameInvalid(name));
+        }
+
+        return Encoding.UTF8.GetBytes(string.Format(_bookTemplate, EscapeAttribute(name)));
+    }
+
+    /// <summary>Escapes a value for use inside a double-quoted XML attribute.</summary>
+    static string EscapeAttribute(string value)
+        => value.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
     readonly static byte[] _bookRels = Encoding.UTF8.GetBytes(@"<Relationships xmlns=""http://schemas.openxmlformats.org/package/2006/relationships"">
 <Relationship Id=""rId1"" Target=""sheet.xml"" Type=""http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet""/>
 <Relationship Id=""rId2"" Target=""strings.xml"" Type=""http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings""/>
@@ -98,45 +122,52 @@ public static class XlsxSerializer
     private const string DOT_RELS = ".rels";
 
     /// <summary>Creates an .xlsx file. The output is streamed; no working folder is used.</summary>
+    /// <remarks>An empty source with <see cref="XlsxSerializerOptions.HeaderTitles"/> set still
+    /// produces a workbook with the header row, so downstream consumers receive a file; an
+    /// empty source without titles produces no file at all.</remarks>
     public static void ToFile<T>(IEnumerable<T> rows, string fileName, XlsxSerializerOptions? options = null)
     {
         options ??= XlsxSerializerOptions.Default;
         if (rows == null)
-            return;
+            throw new ArgumentNullException(nameof(rows));
 
         // The source is enumerated exactly once, so it may be a query or a forward-only reader.
         using var enumerator = rows.GetEnumerator();
-        if (!enumerator.MoveNext())
+        var hasRows = enumerator.MoveNext();
+        if (!hasRows && options.HeaderTitles is not { Length: > 0 })
             return;
 
         using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
-        ToStream(enumerator, fs, options);
+        ToStream(enumerator, hasRows, fs, options);
     }
 
     /// <summary>Writes .xlsx content to the stream. The stream does not need to be seekable
     /// (network streams are fine); it is left open after writing.</summary>
+    /// <remarks>An empty source with <see cref="XlsxSerializerOptions.HeaderTitles"/> set still
+    /// produces a workbook with the header row; an empty source without titles writes nothing.</remarks>
     public static void ToStream<T>(IEnumerable<T> rows, Stream stream, XlsxSerializerOptions? options = null)
     {
         options ??= XlsxSerializerOptions.Default;
         if (stream == null)
             throw new ArgumentNullException(nameof(stream));
         if (rows == null)
-            return;
+            throw new ArgumentNullException(nameof(rows));
 
         using var enumerator = rows.GetEnumerator();
-        if (!enumerator.MoveNext())
+        var hasRows = enumerator.MoveNext();
+        if (!hasRows && options.HeaderTitles is not { Length: > 0 })
             return;
 
-        ToStream(enumerator, stream, options);
+        ToStream(enumerator, hasRows, stream, options);
     }
 
-    static void ToStream<T>(IEnumerator<T> rows, Stream stream, XlsxSerializerOptions options)
+    static void ToStream<T>(IEnumerator<T> rows, bool hasRows, Stream stream, XlsxSerializerOptions options)
     {
         using var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true);
 
         WriteEntry(archive, CONTENT_TYPE_XML, _contentTypes, options.CompressionLevel);
         WriteEntry(archive, RELS + "/" + DOT_RELS, _rels, options.CompressionLevel);
-        WriteEntry(archive, BOOK_XML, _book, options.CompressionLevel);
+        WriteEntry(archive, BOOK_XML, BuildBook(options), options.CompressionLevel);
         WriteEntry(archive, RELS + "/" + BOOK_XML_RELS, _bookRels, options.CompressionLevel);
         WriteEntry(archive, STYLES_XML, Encoding.UTF8.GetBytes(string.Format(
             _styles,
@@ -149,7 +180,7 @@ public static class XlsxSerializer
 
         using var writer = new XlsxWriter(options);
         using (var sheetStream = archive.CreateEntry(SHEET_XML, options.CompressionLevel).Open())
-            CreateSheet(rows, sheetStream, writer, options);
+            CreateSheet(rows, hasRows, sheetStream, writer, options);
         using (var stringsStream = archive.CreateEntry(STRINGS_XML, options.CompressionLevel).Open())
             WriteSharedStrings(stringsStream, writer);
     }
@@ -173,44 +204,50 @@ public static class XlsxSerializer
     }
 
     /// <summary>Creates an .xlsx file asynchronously. The output is streamed; no working folder is used.</summary>
+    /// <remarks>An empty source with <see cref="XlsxSerializerOptions.HeaderTitles"/> set still
+    /// produces a workbook with the header row; an empty source without titles produces no file.</remarks>
     public static async Task ToFileAsync<T>(IEnumerable<T> rows, string fileName, XlsxSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         options ??= XlsxSerializerOptions.Default;
         if (rows == null)
-            return;
+            throw new ArgumentNullException(nameof(rows));
 
         using var enumerator = rows.GetEnumerator();
-        if (!enumerator.MoveNext())
+        var hasRows = enumerator.MoveNext();
+        if (!hasRows && options.HeaderTitles is not { Length: > 0 })
             return;
 
         using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
-        await ToStreamAsync(enumerator, fs, options, cancellationToken).ConfigureAwait(false);
+        await ToStreamAsync(enumerator, hasRows, fs, options, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Writes .xlsx content to the stream asynchronously. The stream does not need to be
     /// seekable (network streams are fine); it is left open after writing.</summary>
+    /// <remarks>An empty source with <see cref="XlsxSerializerOptions.HeaderTitles"/> set still
+    /// produces a workbook with the header row; an empty source without titles writes nothing.</remarks>
     public static async Task ToStreamAsync<T>(IEnumerable<T> rows, Stream stream, XlsxSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         options ??= XlsxSerializerOptions.Default;
         if (stream == null)
             throw new ArgumentNullException(nameof(stream));
         if (rows == null)
-            return;
+            throw new ArgumentNullException(nameof(rows));
 
         using var enumerator = rows.GetEnumerator();
-        if (!enumerator.MoveNext())
+        var hasRows = enumerator.MoveNext();
+        if (!hasRows && options.HeaderTitles is not { Length: > 0 })
             return;
 
-        await ToStreamAsync(enumerator, stream, options, cancellationToken).ConfigureAwait(false);
+        await ToStreamAsync(enumerator, hasRows, stream, options, cancellationToken).ConfigureAwait(false);
     }
 
-    static async Task ToStreamAsync<T>(IEnumerator<T> rows, Stream stream, XlsxSerializerOptions options, CancellationToken cancellationToken)
+    static async Task ToStreamAsync<T>(IEnumerator<T> rows, bool hasRows, Stream stream, XlsxSerializerOptions options, CancellationToken cancellationToken)
     {
         using var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true);
 
         await WriteEntryAsync(archive, CONTENT_TYPE_XML, _contentTypes, options.CompressionLevel, cancellationToken).ConfigureAwait(false);
         await WriteEntryAsync(archive, RELS + "/" + DOT_RELS, _rels, options.CompressionLevel, cancellationToken).ConfigureAwait(false);
-        await WriteEntryAsync(archive, BOOK_XML, _book, options.CompressionLevel, cancellationToken).ConfigureAwait(false);
+        await WriteEntryAsync(archive, BOOK_XML, BuildBook(options), options.CompressionLevel, cancellationToken).ConfigureAwait(false);
         await WriteEntryAsync(archive, RELS + "/" + BOOK_XML_RELS, _bookRels, options.CompressionLevel, cancellationToken).ConfigureAwait(false);
         await WriteEntryAsync(archive, STYLES_XML, Encoding.UTF8.GetBytes(string.Format(
             _styles,
@@ -223,7 +260,7 @@ public static class XlsxSerializer
 
         using var writer = new XlsxWriter(options);
         using (var sheetStream = archive.CreateEntry(SHEET_XML, options.CompressionLevel).Open())
-            await CreateSheetAsync(rows, sheetStream, writer, options, cancellationToken).ConfigureAwait(false);
+            await CreateSheetAsync(rows, hasRows, sheetStream, writer, options, cancellationToken).ConfigureAwait(false);
         using (var stringsStream = archive.CreateEntry(STRINGS_XML, options.CompressionLevel).Open())
             await WriteSharedStringsAsync(stringsStream, writer, cancellationToken).ConfigureAwait(false);
     }
@@ -247,6 +284,7 @@ public static class XlsxSerializer
 
     static async Task CreateSheetAsync<T>(
         IEnumerator<T> rows,
+        bool hasRows,
         Stream stream,
         XlsxWriter writer,
         XlsxSerializerOptions options,
@@ -260,13 +298,15 @@ public static class XlsxSerializer
 
         var serializer = options.GetSerializer<T>();
 
-        // The caller has already advanced to the first row. Auto-fit has to measure rows before
-        // <cols> is written, so it buffers them - but never more than AutoFitDepth, and the
-        // source is still enumerated exactly once.
-        var buffered = new List<T> { rows.Current };
+        // When the caller found a first row it has already advanced to it. Auto-fit has to
+        // measure rows before <cols> is written, so it buffers them - but never more than
+        // AutoFitDepth, and the source is still enumerated exactly once.
+        var buffered = new List<T>();
+        if (hasRows)
+            buffered.Add(rows.Current);
         if (options.AutoFitColumns && serializer != null)
         {
-            while (buffered.Count < options.AutoFitDepth && rows.MoveNext())
+            while (hasRows && buffered.Count < options.AutoFitDepth && rows.MoveNext())
                 buffered.Add(rows.Current);
             await WriteCellWidthAsync(buffered, stream, writer, options, cancellationToken).ConfigureAwait(false);
         }
@@ -284,7 +324,7 @@ public static class XlsxSerializer
                     foreach (var t in options.HeaderTitles)
                         writer.Write(t);
                 }
-                else
+                else if (buffered.Count > 0)
                 {
                     serializer.WriteTitle(writer, buffered[0], options);
                 }
@@ -302,7 +342,7 @@ public static class XlsxSerializer
                     await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
             }
 
-            while (rows.MoveNext())
+            while (hasRows && rows.MoveNext())
             {
                 writer.BeginRow();
                 writer.WriteRaw(_rowStart);
@@ -374,7 +414,7 @@ public static class XlsxSerializer
     {
         await stream.WriteAsync(_sstStart, 0, _sstStart.Length, cancellationToken).ConfigureAwait(false);
         using var buffer = new ArrayPoolBufferWriter();
-        foreach (var s in writer.SharedStrings.Keys)
+        foreach (var s in writer.SharedStrings.Values)
         {
             buffer.Write(_siStart);
             XmlEscape.WriteEscaped(s, buffer);
@@ -386,6 +426,7 @@ public static class XlsxSerializer
 
     static void CreateSheet<T>(
         IEnumerator<T> rows,
+        bool hasRows,
         Stream stream,
         XlsxWriter writer,
         XlsxSerializerOptions options
@@ -398,13 +439,15 @@ public static class XlsxSerializer
 
         var serializer = options.GetSerializer<T>();
 
-        // The caller has already advanced to the first row. Auto-fit has to measure rows before
-        // <cols> is written, so it buffers them - but never more than AutoFitDepth, and the
-        // source is still enumerated exactly once.
-        var buffered = new List<T> { rows.Current };
+        // When the caller found a first row it has already advanced to it. Auto-fit has to
+        // measure rows before <cols> is written, so it buffers them - but never more than
+        // AutoFitDepth, and the source is still enumerated exactly once.
+        var buffered = new List<T>();
+        if (hasRows)
+            buffered.Add(rows.Current);
         if (options.AutoFitColumns && serializer != null)
         {
-            while (buffered.Count < options.AutoFitDepth && rows.MoveNext())
+            while (hasRows && buffered.Count < options.AutoFitDepth && rows.MoveNext())
                 buffered.Add(rows.Current);
             WriteCellWidth(buffered, stream, writer, options);
         }
@@ -422,7 +465,7 @@ public static class XlsxSerializer
                     foreach (var t in options.HeaderTitles)
                         writer.Write(t);
                 }
-                else
+                else if (buffered.Count > 0)
                 {
                     serializer.WriteTitle(writer, buffered[0], options);
                 }
@@ -435,7 +478,7 @@ public static class XlsxSerializer
 #else
             WriteRows(buffered, stream, writer, serializer, options);
 #endif
-            while (rows.MoveNext())
+            while (hasRows && rows.MoveNext())
             {
                 writer.BeginRow();
                 writer.WriteRaw(_rowStart);
@@ -563,7 +606,7 @@ public static class XlsxSerializer
     {
         stream.Write(_sstStart, 0, _sstStart.Length);
         using var buffer = new ArrayPoolBufferWriter();
-        foreach (var s in writer.SharedStrings.Keys)
+        foreach (var s in writer.SharedStrings.Values)
         {
             buffer.Write(_siStart);
             XmlEscape.WriteEscaped(s, buffer);
