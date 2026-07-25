@@ -73,18 +73,30 @@ Output is streamed directly to the destination; no working folder is used.
 
 ## Benchmark
 
-FlatXlsx 1.0.0 vs ClosedXML 0.105.0, .NET 10 (BenchmarkDotNet 0.15.8, ShortRun; N = 100 lines):
+FlatXlsx 1.0.0 vs ClosedXML 0.105.0, .NET 10 (BenchmarkDotNet 0.15.8, ShortRun; N = 100 lines).
+Three variants are measured so the comparison is fair to ClosedXML:
 
-| Method    | N   | Mean        | Ratio | Gen0       | Gen1      | Gen2      | Allocated    | Alloc Ratio |
-|---------- |---- |------------:|------:|-----------:|----------:|----------:|-------------:|------------:|
-| ClosedXml | 1   |    26.64 ms |  1.00 |   600.0000 |  200.0000 |         - |   5,276.3 KB |       1.000 |
-| FlatXlsx  | 1   |     0.63 ms |  0.02 |     1.9531 |         - |         - |      17.2 KB |       0.003 |
-| ClosedXml | 10  |   182.84 ms |  1.00 |  5333.3333 |  333.3333 |         - |  48,481.2 KB |       1.000 |
-| FlatXlsx  | 10  |     1.88 ms |  0.01 |          - |         - |         - |      17.2 KB |       0.000 |
-| ClosedXml | 100 | 1,530.71 ms |  1.00 | 53000.0000 | 9000.0000 | 2000.0000 | 471,082.1 KB |       1.000 |
-| FlatXlsx  | 100 |    14.28 ms | 0.009 |          - |         - |         - |      17.2 KB |       0.000 |
+- **ClosedXmlNaive** — beginner-style code: cell-by-cell writes, per-cell number formats,
+  `ColumnsUsed().AdjustToContents()` column sizing.
+- **ClosedXmlOptimized** — tuned code: bulk `InsertData`, column-level number formats set once,
+  no `AdjustToContents` (its per-cell measurement is ClosedXML's slowest feature).
+- **FlatXlsx** — header row + approximate column auto-fit enabled (`AutoFitColumns = true`),
+  so its feature set is comparable to the naive variant.
 
-Output is fully streamed, so allocations stay flat (~17 KB) regardless of row count.
+| Method             | N   | Mean        | Ratio | Allocated    | Alloc Ratio |
+|------------------- |---- |------------:|------:|-------------:|------------:|
+| ClosedXmlNaive     | 1   |    26.19 ms |  1.00 |   5,281.1 KB |       1.000 |
+| ClosedXmlOptimized | 1   |     8.26 ms |  0.32 |   1,239.0 KB |       0.235 |
+| FlatXlsx           | 1   |     0.70 ms |  0.03 |      21.5 KB |       0.004 |
+| ClosedXmlNaive     | 10  |   155.48 ms |  1.00 |  48,536.1 KB |       1.000 |
+| ClosedXmlOptimized | 10  |    30.86 ms |  0.20 |   9,312.5 KB |       0.192 |
+| FlatXlsx           | 10  |     2.09 ms |  0.01 |      21.5 KB |       0.000 |
+| ClosedXmlNaive     | 100 | 1,904.67 ms | 1.000 | 471,629.7 KB |       1.000 |
+| ClosedXmlOptimized | 100 |   297.29 ms | 0.156 |  82,638.1 KB |       0.175 |
+| FlatXlsx           | 100 |    16.15 ms | 0.008 |      21.5 KB |       0.000 |
+
+Even against well-tuned ClosedXML, FlatXlsx is ~18x faster; output is fully streamed,
+so allocations stay flat (~21 KB) regardless of row count.
 For large data sets, `XlsxSerializerOptions.CompressionLevel = CompressionLevel.Fastest`
 trades a slightly larger file for even faster serialization.
 

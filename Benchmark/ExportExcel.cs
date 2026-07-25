@@ -19,7 +19,12 @@ namespace BenchmarkSample
         static readonly string workPath = Path.Combine(Path.GetDirectoryName(exePath) ?? "", "work");
         readonly string excelAppFileName = Path.Combine(workPath, $"excelapp-{Guid.NewGuid()}.xlsx");
         readonly string closedXmlFileName = Path.Combine(workPath, $"closedxml-{Guid.NewGuid()}.xlsx");
+        readonly string closedXmlOptFileName = Path.Combine(workPath, $"closedxml-opt-{Guid.NewGuid()}.xlsx");
         readonly string fakeExcelFileName = Path.Combine(workPath, $"FakeExcel-{Guid.NewGuid()}.xlsx");
+
+        // Column order follows Row's property declaration order so that all three
+        // benchmarks produce the same layout.
+        static readonly string[] COLUMN_TITLES = { "行番号", "ヘッダID", "明細ID", "ヘッダ1", "ヘッダ2", "ヘッダ3", "ヘッダ4", "ヘッダ5", "ヘッダ6", "ヘッダ7", "明細データ", "フッタ1", "フッタ2", "フッタ3", "フッタ4", "フッタ5", "フッタ6", "フッタ7", "フッタ8" };
         const int CALCULATION_DEFAULT = 1;
 
         public ExportExcel()
@@ -43,6 +48,9 @@ namespace BenchmarkSample
 
             if (File.Exists(closedXmlFileName))
                 File.Delete(closedXmlFileName);
+
+            if (File.Exists(closedXmlOptFileName))
+                File.Delete(closedXmlOptFileName);
 
             if (File.Exists(fakeExcelFileName))
                 File.Delete(fakeExcelFileName);
@@ -196,8 +204,10 @@ namespace BenchmarkSample
         #endregion
 
         #region ClosedXml
+        /// <summary>Straightforward beginner-style ClosedXML: cell-by-cell writes,
+        /// per-cell number formats, and AdjustToContents column sizing.</summary>
         [Benchmark(Baseline = true)]
-        public void ClosedXml()
+        public void ClosedXmlNaive()
         {
             using (var book = new XLWorkbook())
             {
@@ -211,11 +221,30 @@ namespace BenchmarkSample
             }
         }
 
+        /// <summary>Tuned ClosedXML: bulk InsertData, column-level number formats set once,
+        /// and no AdjustToContents (its per-cell measurement is ClosedXML's slowest feature).</summary>
+        [Benchmark]
+        public void ClosedXmlOptimized()
+        {
+            using (var book = new XLWorkbook())
+            {
+                var sheet = book.AddWorksheet("ClosedXml");
+                for (var i = 0; i < COLUMN_TITLES.Length; i++)
+                    sheet.Cell(1, i + 1).Value = COLUMN_TITLES[i];
+                for (var c = 4; c <= 10; c++)
+                    sheet.Column(c).Style.NumberFormat.SetFormat("@");
+                for (var c = 12; c <= 19; c++)
+                    sheet.Column(c).Style.NumberFormat.SetFormat("@");
+                sheet.Cell(2, 1).InsertData(rows);
+                sheet.SheetView.FreezeRows(1);
+                book.SaveAs(closedXmlOptFileName);
+            }
+        }
+
         int WriteTitle(IXLWorksheet sheet)
         {
-            var cols1 = new List<string> { "行番号", "ヘッダID", "明細ID", "明細データ", "ヘッダ1", "ヘッダ2", "ヘッダ3", "ヘッダ4", "ヘッダ5", "ヘッダ6", "ヘッダ7", "フッタ1", "フッタ2", "フッタ3", "フッタ4", "フッタ5", "フッタ6", "フッタ7", "フッタ8" };
             var col = 0;
-            foreach (var c in cols1)
+            foreach (var c in COLUMN_TITLES)
                 sheet.Cell(1, ++col).Value = c;
 
             return 1;
@@ -227,7 +256,6 @@ namespace BenchmarkSample
             sheet.Cell(row, col++).SetValue(r.LineNum);
             sheet.Cell(row, col++).SetValue(r.HeaderID);
             sheet.Cell(row, col++).SetValue(r.DetailID);
-            sheet.Cell(row, col++).SetValue(r.Data);
             sheet.Cell(row, col++).SetValue(r.Header01).Style.NumberFormat.SetFormat("@");
             sheet.Cell(row, col++).SetValue(r.Header02).Style.NumberFormat.SetFormat("@");
             sheet.Cell(row, col++).SetValue(r.Header03).Style.NumberFormat.SetFormat("@");
@@ -235,6 +263,7 @@ namespace BenchmarkSample
             sheet.Cell(row, col++).SetValue(r.Header05).Style.NumberFormat.SetFormat("@");
             sheet.Cell(row, col++).SetValue(r.Header06).Style.NumberFormat.SetFormat("@");
             sheet.Cell(row, col++).SetValue(r.Header07).Style.NumberFormat.SetFormat("@");
+            sheet.Cell(row, col++).SetValue(r.Data);
             sheet.Cell(row, col++).SetValue(r.Footer01).Style.NumberFormat.SetFormat("@");
             sheet.Cell(row, col++).SetValue(r.Footer02).Style.NumberFormat.SetFormat("@");
             sheet.Cell(row, col++).SetValue(r.Footer03).Style.NumberFormat.SetFormat("@");
@@ -248,13 +277,16 @@ namespace BenchmarkSample
         #endregion
 
         #region FlatXlsx
+        /// <summary>FlatXlsx with header row and approximate column auto-fit enabled,
+        /// so its feature set is comparable to the naive ClosedXML variant.</summary>
         [Benchmark]
         public void FlatXlsx()
         {
             var customOptions = XlsxSerializerOptions.Default with
             {
-                HeaderTitles = new string[] { "行番号", "ヘッダID", "明細ID", "明細データ", "ヘッダ1", "ヘッダ2", "ヘッダ3", "ヘッダ4", "ヘッダ5", "ヘッダ6", "ヘッダ7", "フッタ1", "フッタ2", "フッタ3", "フッタ4", "フッタ5", "フッタ6", "フッタ7", "フッタ8" },
+                HeaderTitles = COLUMN_TITLES,
                 HasHeaderRecord = true,
+                AutoFitColumns = true,
             };
             XlsxSerializer.ToFile(rows, fakeExcelFileName, customOptions);
         }

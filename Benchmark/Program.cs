@@ -23,9 +23,9 @@ sw.Stop();
 Console.WriteLine($"ExcelApp : {sw.ElapsedMilliseconds:#,##0}ms");
 
 sw.Restart();
-ex.ClosedXml();
+ex.ClosedXmlNaive();
 sw.Stop();
-Console.WriteLine($"ClosedXml : {sw.ElapsedMilliseconds:#,##0}ms");
+Console.WriteLine($"ClosedXmlNaive : {sw.ElapsedMilliseconds:#,##0}ms");
 
 sw.Restart();
 ex.FlatXlsx();
