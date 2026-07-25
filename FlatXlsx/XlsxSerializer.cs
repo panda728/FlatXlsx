@@ -37,7 +37,8 @@ public static class XlsxSerializer
         if (string.IsNullOrWhiteSpace(name)
             || name.Length > 31
             || name.IndexOfAny(_forbiddenSheetNameChars) >= 0
-            || name[0] == '\'' || name[name.Length - 1] == '\'')
+            || name[0] == '\'' || name[name.Length - 1] == '\''
+            || ContainsControlChar(name))
         {
             throw new InvalidOperationException(SR.SheetNameInvalid(name));
         }
@@ -45,9 +46,21 @@ public static class XlsxSerializer
         return Encoding.UTF8.GetBytes(string.Format(_bookTemplate, EscapeAttribute(name)));
     }
 
-    /// <summary>Escapes a value for use inside a double-quoted XML attribute.</summary>
+    /// <summary>Escapes a value for use inside a double-quoted XML attribute. Control
+    /// characters cannot be escaped in XML 1.0 at all, so every value that reaches this method
+    /// has been validated not to contain them.</summary>
     static string EscapeAttribute(string value)
         => value.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
+
+    static bool ContainsControlChar(string s)
+    {
+        foreach (var c in s)
+        {
+            if (c < 0x20)
+                return true;
+        }
+        return false;
+    }
     readonly static byte[] _bookRels = Encoding.UTF8.GetBytes(@"<Relationships xmlns=""http://schemas.openxmlformats.org/package/2006/relationships"">
 <Relationship Id=""rId1"" Target=""sheet.xml"" Type=""http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet""/>
 <Relationship Id=""rId2"" Target=""strings.xml"" Type=""http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings""/>
@@ -142,8 +155,18 @@ public static class XlsxSerializer
         if (!hasRows && options.HeaderTitles is not { Length: > 0 })
             return;
 
-        using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
-        ToStream(enumerator, hasRows, fs, options);
+        try
+        {
+            using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
+            ToStream(enumerator, hasRows, fs, options);
+        }
+        catch
+        {
+            // A failed export must not leave a plausible-looking corrupt workbook behind:
+            // a file that exists is a complete file, absence plus the exception is the failure.
+            TryDeletePartialFile(fileName);
+            throw;
+        }
     }
 
     /// <summary>Writes .xlsx content to the stream. The stream does not need to be seekable
@@ -201,6 +224,18 @@ public static class XlsxSerializer
         s.Write(bytes, 0, bytes.Length);
     }
 
+    static void TryDeletePartialFile(string fileName)
+    {
+        try
+        {
+            File.Delete(fileName);
+        }
+        catch
+        {
+            // The original exception is the story; a failed cleanup must not replace it.
+        }
+    }
+
     /// <summary>Creates an .xlsx file asynchronously. The output is streamed; no working folder is used.</summary>
     /// <remarks>An empty source with <see cref="XlsxSerializerOptions.HeaderTitles"/> set still
     /// produces a workbook with the header row; an empty source without titles produces no file.</remarks>
@@ -215,10 +250,18 @@ public static class XlsxSerializer
         if (!hasRows && options.HeaderTitles is not { Length: > 0 })
             return;
 
-        using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
-        await WriteContainerAsync(fs, options,
-            (s, w) => CreateSheetAsync(enumerator, hasRows, s, w, options, cancellationToken),
-            cancellationToken).ConfigureAwait(false);
+        try
+        {
+            using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
+            await WriteContainerAsync(fs, options,
+                (s, w) => CreateSheetAsync(enumerator, hasRows, s, w, options, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            TryDeletePartialFile(fileName);
+            throw;
+        }
     }
 
     /// <summary>Writes .xlsx content to the stream asynchronously. The stream does not need to be
@@ -268,10 +311,18 @@ public static class XlsxSerializer
             if (!hasRows && options.HeaderTitles is not { Length: > 0 })
                 return;
 
-            using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
-            await WriteContainerAsync(fs, options,
-                (s, w) => CreateSheetAsync(enumerator, hasRows, s, w, options, cancellationToken),
-                cancellationToken).ConfigureAwait(false);
+            try
+            {
+                using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
+                await WriteContainerAsync(fs, options,
+                    (s, w) => CreateSheetAsync(enumerator, hasRows, s, w, options, cancellationToken),
+                    cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                TryDeletePartialFile(fileName);
+                throw;
+            }
         }
     }
 

@@ -192,6 +192,50 @@ public class OutputTargetTests
         public override void SetLength(long value) => throw new NotSupportedException();
     }
 
+    static IEnumerable<string> FaultyAfterOneRow()
+    {
+        yield return "row-0";
+        throw new InvalidDataException("source failed");
+    }
+
+    [Fact]
+    public void A_failed_export_leaves_no_plausible_corpse_behind()
+    {
+        // Claimant: whoever picks the file up downstream. A file that exists is a complete
+        // file; a failure is the exception plus an absent file, never a half-written workbook
+        // wearing the right name.
+        var path = Path.Combine(Path.GetTempPath(), $"flatxlsx_{Guid.NewGuid():N}.xlsx");
+        try
+        {
+            Assert.Throws<InvalidDataException>(
+                () => XlsxSerializer.ToFile(FaultyAfterOneRow(), path));
+
+            Assert.False(File.Exists(path), "the partial file must be deleted on failure");
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task A_failed_async_export_leaves_no_plausible_corpse_behind()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"flatxlsx_{Guid.NewGuid():N}.xlsx");
+        try
+        {
+            await Assert.ThrowsAsync<InvalidDataException>(
+                () => XlsxSerializer.ToFileAsync(FaultyAfterOneRow(), path,
+                    cancellationToken: TestContext.Current.CancellationToken));
+
+            Assert.False(File.Exists(path), "the partial file must be deleted on failure");
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Fact]
     public async Task A_cancelled_export_stops_instead_of_finishing()
     {

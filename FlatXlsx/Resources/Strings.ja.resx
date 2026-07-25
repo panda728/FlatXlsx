@@ -103,10 +103,14 @@
     <comment>{0} the number of type arguments</comment>
   </data>
   <data name="SheetNameInvalid" xml:space="preserve">
-    <value>シート名 '{0}' は無効です。シート名は 1～31 文字で、: \ / ? * [ ] を含めることはできず、先頭・末尾にアポストロフィは使えません。</value>
+    <value>シート名 '{0}' は無効です。シート名は 1～31 文字で、: \ / ? * [ ] や制御文字を含めることはできず、先頭・末尾にアポストロフィは使えません。</value>
     <comment>{0} the rejected name</comment>
   </data>
-  <data name="FormatCodeEmpty" xml:space="preserve">
-    <value>数値書式コードに null または空文字列は指定できません。</value>
+  <data name="FormatCodeInvalid" xml:space="preserve">
+    <value>数値書式コードは 1～255 文字で、制御文字を含めることはできません。</value>
+  </data>
+  <data name="TooManyFormats" xml:space="preserve">
+    <value>ワークブックで使用できるカスタム数値書式は {0} 個までです。</value>
+    <comment>{0} the limit</comment>
   </data>
 </root>

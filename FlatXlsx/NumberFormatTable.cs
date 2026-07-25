@@ -8,6 +8,13 @@ namespace FlatXlsx;
 /// </summary>
 internal sealed class NumberFormatTable
 {
+    // Excel's own ceilings: roughly 200-250 custom formats per workbook depending on the
+    // edition, and 255 characters per format code. Enforcing the conservative bounds here
+    // keeps memory bounded when a code is (mistakenly) built from row data, and fails with a
+    // named limit instead of a workbook Excel rejects.
+    const int MaxFormats = 200;
+    const int MaxCodeLength = 255;
+
     readonly Dictionary<string, int> _indexes = [];
     readonly List<string> _codes = [];
 
@@ -16,15 +23,30 @@ internal sealed class NumberFormatTable
 
     public int GetOrAdd(string code)
     {
-        if (string.IsNullOrEmpty(code))
-            throw new InvalidOperationException(SR.FormatCodeEmpty);
+        if (string.IsNullOrEmpty(code) || code.Length > MaxCodeLength || ContainsControlChar(code))
+            throw new InvalidOperationException(SR.FormatCodeInvalid);
 
         if (_indexes.TryGetValue(code, out var index))
             return index;
+
+        if (_codes.Count >= MaxFormats)
+            throw new InvalidOperationException(SR.TooManyFormats(MaxFormats));
 
         index = _codes.Count;
         _indexes.Add(code, index);
         _codes.Add(code);
         return index;
+    }
+
+    // Control characters are illegal in XML 1.0 even as entities; a code carrying one could
+    // only ever produce a workbook that reports itself as damaged.
+    static bool ContainsControlChar(string s)
+    {
+        foreach (var c in s)
+        {
+            if (c < 0x20)
+                return true;
+        }
+        return false;
     }
 }

@@ -350,25 +350,69 @@ public class WorkbookContractTests
         Assert.All(sheet.Rows, row => Assert.Equal("0.0%", row[0].NumberFormat));
     }
 
-    class EmptyFormatSerializer : IXlsxSerializer<double>
+    class FixedFormatSerializer(string format) : IXlsxSerializer<double>
     {
         public void WriteTitle(XlsxCellWriter writer, double value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
         public void Serialize(XlsxCellWriter writer, double value, XlsxSerializerOptions options)
-            => writer.Write(value, "");
+            => writer.Write(value, format);
     }
 
-    [Fact]
-    public void An_empty_format_code_is_refused()
+    [Theory]
+    [InlineData("")]                 // nothing to declare
+    [InlineData("0.0%\u0001")]   // control characters are illegal in XML even escaped
+    [InlineData("0.0%\n")]
+    public void A_format_code_XML_or_Excel_cannot_carry_is_refused(string format)
     {
         var options = new XlsxSerializerOptions
         {
-            CustomSerializers = new IXlsxSerializer[] { new EmptyFormatSerializer() },
+            CustomSerializers = new IXlsxSerializer[] { new FixedFormatSerializer(format) },
         };
         using var ms = new MemoryStream();
 
         Assert.Throws<InvalidOperationException>(
             () => XlsxSerializer.ToStream(new[] { 0.5d }, ms, options));
+    }
+
+    [Fact]
+    public void A_format_code_longer_than_Excel_allows_is_refused()
+    {
+        var options = new XlsxSerializerOptions
+        {
+            CustomSerializers = new IXlsxSerializer[] { new FixedFormatSerializer("0." + new string('0', 254)) },
+        };
+        using var ms = new MemoryStream();
+
+        Assert.Throws<InvalidOperationException>(
+            () => XlsxSerializer.ToStream(new[] { 0.5d }, ms, options));
+    }
+
+    /// <summary>Builds a distinct format code per value - the shape of the mistake the format
+    /// cap exists to catch.</summary>
+    class RunawayFormatSerializer : IXlsxSerializer<int>
+    {
+        public void WriteTitle(XlsxCellWriter writer, int value, XlsxSerializerOptions options, string name = "value")
+            => writer.Write(name);
+        public void Serialize(XlsxCellWriter writer, int value, XlsxSerializerOptions options)
+            => writer.Write(value, $"0\"x{value}\"");
+    }
+
+    [Fact]
+    public void Formats_built_from_row_data_hit_a_named_ceiling_not_the_memory()
+    {
+        // Excel itself stops at roughly 200 custom formats; failing with the limit's name
+        // beats producing a workbook Excel rejects - and bounds memory the same way
+        // MaxSharedStrings does for text.
+        var options = new XlsxSerializerOptions
+        {
+            CustomSerializers = new IXlsxSerializer[] { new RunawayFormatSerializer() },
+        };
+        using var ms = new MemoryStream();
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => XlsxSerializer.ToStream(Enumerable.Range(0, 300), ms, options));
+
+        Assert.Contains("200", ex.Message);
     }
 
     [Fact]
@@ -506,6 +550,8 @@ public class WorkbookContractTests
     [InlineData("'starts")]
     [InlineData("ends'")]
     [InlineData("a-name-longer-than-thirty-one-ch")]
+    [InlineData("a\u0000b")]
+    [InlineData("a\nb")]
     public void A_sheet_name_Excel_would_reject_is_refused_before_writing(string name)
     {
         // Excel's limits, enforced here so the caller learns at write time instead of from a
