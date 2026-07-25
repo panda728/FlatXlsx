@@ -72,6 +72,15 @@ public class XlsxCellWriter(XlsxSerializerOptions options) : IDisposable
     readonly ArrayPoolBufferWriter _writer = new();
     readonly XlsxSerializerOptions _options = options;
 
+    // Validation mode: data errors are collected here instead of thrown, and the writer
+    // recovers so the scan can report every problem in one pass.
+    readonly List<XlsxDataError>? _collector;
+
+    internal XlsxCellWriter(XlsxSerializerOptions options, List<XlsxDataError> collector) : this(options)
+    {
+        _collector = collector;
+    }
+
     bool _countingCharLength = options.AutoFitColumns;
 
     int _columnIndex = 0;
@@ -122,7 +131,7 @@ public class XlsxCellWriter(XlsxSerializerOptions options) : IDisposable
     internal void BeginRow()
     {
         if (_rowCount == MAX_ROWS)
-            ThrowTooManyRows();
+            DataError(XlsxDataErrorKind.TooManyRows, _rowCount + 1, 0, MAX_ROWS, _rowCount + 1, SR.TooManyRows(MAX_ROWS));
         _rowCount++;
         _columnIndex = 0;
     }
@@ -163,7 +172,13 @@ public class XlsxCellWriter(XlsxSerializerOptions options) : IDisposable
     {
         _currentDepth++;
         if (_currentDepth >= _options.MaxDepth)
-            ThrowReachedMaxDepth(_currentDepth);
+        {
+            DataError(XlsxDataErrorKind.MaxDepthReached, _rowCount, _columnIndex + 1, _options.MaxDepth, _currentDepth,
+                SR.MaxDepthReached(_currentDepth, _rowCount));
+            // Recovery cannot continue into the cycle; unwind this row, the scan resumes
+            // with the next one.
+            throw new RowAbortedException();
+        }
     }
 
     /// <summary>Marks the end of the nested value opened by <see cref="EnterNested"/>.</summary>
@@ -213,7 +228,8 @@ public class XlsxCellWriter(XlsxSerializerOptions options) : IDisposable
         }
 
         if (_columnIndex == MAX_COLUMNS)
-            ThrowTooManyColumns();
+            DataError(XlsxDataErrorKind.TooManyColumns, _rowCount, _columnIndex + 1, MAX_COLUMNS, _columnIndex + 1,
+                SR.TooManyColumns(MAX_COLUMNS, _rowCount));
         _columnIndex++;
 
         if (_columnIndex > _maxColumnCount)
@@ -230,7 +246,12 @@ public class XlsxCellWriter(XlsxSerializerOptions options) : IDisposable
         }
 
         if (value.Length > MAX_CELL_LENGTH)
-            ThrowCellTooLong(value.Length);
+        {
+            DataError(XlsxDataErrorKind.CellTooLong, _rowCount, _columnIndex + 1, MAX_CELL_LENGTH, value.Length,
+                SR.CellTooLong(MAX_CELL_LENGTH, value.Length, _rowCount, _columnIndex + 1));
+            WriteEmpty();
+            return;
+        }
 
         var wrap = ContainsNewLine(value);
 
@@ -604,30 +625,17 @@ public class XlsxCellWriter(XlsxSerializerOptions options) : IDisposable
     }
 #endif
 
-#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
-    [DoesNotReturn]
-#endif
-    static void ThrowReachedMaxDepth(int depth)
+    /// <summary>Reports a data-driven failure. Normally it throws an
+    /// <see cref="XlsxDataException"/> carrying the location and the numbers; in validation
+    /// mode it records the same facts and returns, so the scan can report every problem in
+    /// one pass instead of one exception per run.</summary>
+    void DataError(XlsxDataErrorKind kind, int row, int column, long limit, long actual, string message)
     {
-        throw new InvalidOperationException(SR.MaxDepthReached(depth));
+        if (_collector != null)
+        {
+            _collector.Add(new XlsxDataError(kind, row, column, limit, actual, message));
+            return;
+        }
+        throw new XlsxDataException(message, kind, row, column, limit, actual);
     }
-
-#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
-    [DoesNotReturn]
-#endif
-    static void ThrowTooManyRows()
-        => throw new InvalidOperationException(SR.TooManyRows(MAX_ROWS));
-
-#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
-    [DoesNotReturn]
-#endif
-    static void ThrowTooManyColumns()
-        => throw new InvalidOperationException(SR.TooManyColumns(MAX_COLUMNS));
-
-#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
-    [DoesNotReturn]
-#endif
-    static void ThrowCellTooLong(int length)
-        => throw new InvalidOperationException(SR.CellTooLong(MAX_CELL_LENGTH, length));
-
 }

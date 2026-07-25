@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Resources;
 
 namespace FlatXlsx;
@@ -33,14 +33,14 @@ internal static class SR
 
     internal static string FormatCodeInvalid => Get(nameof(FormatCodeInvalid));
 
-    internal static string CellTooLong(int limit, int length) => Format(nameof(CellTooLong), limit, length);
+    internal static string CellTooLong(int limit, int length, int row, int column) => Format(nameof(CellTooLong), limit, length, row, column);
     internal static string TooManyFormats(int limit) => Format(nameof(TooManyFormats), limit);
-    internal static string MaxDepthReached(int depth) => Format(nameof(MaxDepthReached), depth);
+    internal static string MaxDepthReached(int depth, int row) => Format(nameof(MaxDepthReached), depth, row);
     internal static string SerializerNotFound(Type type) => Format(nameof(SerializerNotFound), type);
     internal static string SheetNameInvalid(string name) => Format(nameof(SheetNameInvalid), name);
     internal static string SerializerTypeMismatch(Type declared, Type target) => Format(nameof(SerializerTypeMismatch), declared, target);
     internal static string SerializerTypeNotImplemented(Type type) => Format(nameof(SerializerTypeNotImplemented), type);
-    internal static string TooManyColumns(int limit) => Format(nameof(TooManyColumns), limit);
+    internal static string TooManyColumns(int limit, int row) => Format(nameof(TooManyColumns), limit, row);
     internal static string TooManyRows(int limit) => Format(nameof(TooManyRows), limit);
     internal static string TupleSerializerNotFound(int typeArguments) => Format(nameof(TupleSerializerNotFound), typeArguments);
 }

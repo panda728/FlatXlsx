@@ -131,6 +131,22 @@ from producing a broken or dangerous workbook:
 | Collections expanding across columns | Excel's 16,384-column limit is enforced with an exception instead of silently emitting a corrupt file. Row (1,048,576) and cell-length (32,767) limits likewise. |
 | High-cardinality strings | The shared-string table is capped by `MaxSharedStrings` (default 1,000,000); beyond it, values are written as inline strings, so memory stays bounded. |
 
+Failures caused by the data itself throw `XlsxDataException`, carrying `Kind`, `Row`, `Column`,
+`Limit` and `Actual` as structured properties — handlers can aggregate or report them without
+parsing localized messages, and the message names the location ("row 4,832, column 7").
+The export deliberately stops at the first data error: a workbook with rows silently missing
+would look complete without being complete. To collect **every** data problem in one pass —
+before exporting, with nothing written — use the validation scan:
+
+~~~csharp
+IReadOnlyList<XlsxDataError> errors = XlsxSerializer.Validate(rows);
+// each entry: Kind, Row, Column, Limit, Actual, localized Message
+~~~
+
+`ValidateAsync` does the same for an `IAsyncEnumerable<T>` source. Configuration mistakes
+(an invalid sheet name, a bad format code, a missing serializer) still throw immediately:
+their fix is in code, not in the data.
+
 The row source is enumerated exactly once, so a query or forward-only reader can be passed
 directly. With `AutoFitColumns` the first `AutoFitSampleRows` rows (default 200) are buffered to
 measure widths — bounded, never the whole sequence.

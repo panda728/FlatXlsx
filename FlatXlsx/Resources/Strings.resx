@@ -62,14 +62,14 @@
     <value>Cannot advance past the end of the buffer.</value>
   </data>
   <data name="CellTooLong" xml:space="preserve">
-    <value>A cell cannot hold more than {0} characters, but the value has {1}.</value>
+    <value>A cell cannot hold more than {0} characters, but the value at row {2}, column {3} has {1}.</value>
     <comment>{0} the limit, {1} the length of the offending value</comment>
   </data>
   <data name="InitialCapacityOutOfRange" xml:space="preserve">
     <value>The initial capacity must be greater than zero.</value>
   </data>
   <data name="MaxDepthReached" xml:space="preserve">
-    <value>The object graph is nested more than {0} levels deep. Check for a circular reference.</value>
+    <value>The object graph is nested more than {0} levels deep at row {1}. Check for a circular reference.</value>
     <comment>{0} the configured MaxDepth</comment>
   </data>
   <data name="MemberKindNotSupported" xml:space="preserve">
@@ -91,7 +91,7 @@
     <value>The size hint cannot be negative.</value>
   </data>
   <data name="TooManyColumns" xml:space="preserve">
-    <value>A worksheet cannot hold more than {0} columns. A nested collection or object graph is likely expanding into too many cells.</value>
+    <value>A worksheet cannot hold more than {0} columns, but row {1} expands further. A nested collection or object graph is likely expanding into too many cells.</value>
     <comment>{0} the column limit</comment>
   </data>
   <data name="TooManyRows" xml:space="preserve">

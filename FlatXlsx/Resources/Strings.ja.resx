@@ -62,14 +62,14 @@
     <value>バッファーの終端を超えて書き込み位置を進めることはできません。</value>
   </data>
   <data name="CellTooLong" xml:space="preserve">
-    <value>セルに格納できる文字数は {0} 文字までですが、値の長さは {1} 文字です。</value>
+    <value>セルに格納できる文字数は {0} 文字までですが、行 {2}・列 {3} の値は {1} 文字です。</value>
     <comment>{0} the limit, {1} the length of the offending value</comment>
   </data>
   <data name="InitialCapacityOutOfRange" xml:space="preserve">
     <value>初期容量には 1 以上を指定してください。</value>
   </data>
   <data name="MaxDepthReached" xml:space="preserve">
-    <value>オブジェクトの入れ子が {0} 段を超えました。循環参照がないか確認してください。</value>
+    <value>行 {1} でオブジェクトの入れ子が {0} 段を超えました。循環参照がないか確認してください。</value>
     <comment>{0} the configured MaxDepth</comment>
   </data>
   <data name="MemberKindNotSupported" xml:space="preserve">
@@ -91,7 +91,7 @@
     <value>サイズのヒントに負の値は指定できません。</value>
   </data>
   <data name="TooManyColumns" xml:space="preserve">
-    <value>ワークシートに格納できる列数は {0} 列までです。入れ子のコレクションやオブジェクトがセルを展開しすぎている可能性があります。</value>
+    <value>ワークシートに格納できる列数は {0} 列までですが、行 {1} はそれを超えて展開されています。入れ子のコレクションやオブジェクトがセルを展開しすぎている可能性があります。</value>
     <comment>{0} the column limit</comment>
   </data>
   <data name="TooManyRows" xml:space="preserve">

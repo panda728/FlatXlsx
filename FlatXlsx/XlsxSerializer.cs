@@ -224,6 +224,75 @@ public static class XlsxSerializer
         s.Write(bytes, 0, bytes.Length);
     }
 
+    /// <summary>Scans the rows for every data problem an export would fail on - values over the
+    /// cell limit, rows past the sheet limits, circular references - and returns them all at
+    /// once with row/column locations, without producing any output.</summary>
+    /// <remarks>
+    /// <para>The export path deliberately fails on the first data error (a workbook with rows
+    /// silently missing would look complete without being complete); this is the road for
+    /// collecting the whole list up front, at the point with the most context.</para>
+    /// <para>The source is enumerated once, so pass a replayable sequence - after a clean scan
+    /// a forward-only reader would be exhausted. Configuration mistakes (an invalid sheet name,
+    /// a bad format code, a missing serializer) still throw: their addressee is the developer,
+    /// and the fix is in code, not in the data.</para>
+    /// </remarks>
+    public static IReadOnlyList<XlsxDataError> Validate<T>(IEnumerable<T> rows, XlsxSerializerOptions? options = null)
+    {
+        options ??= XlsxSerializerOptions.Default;
+        if (rows == null)
+            throw new ArgumentNullException(nameof(rows));
+
+        var errors = new List<XlsxDataError>();
+        var serializer = options.GetSerializer<T>();
+        if (serializer == null)
+            return errors;
+
+        using var writer = new XlsxCellWriter(options, errors);
+        foreach (var row in rows)
+        {
+            ValidateRow(writer, serializer, row, options);
+        }
+        return errors;
+    }
+
+#if !NETSTANDARD2_0
+    /// <inheritdoc cref="Validate{T}"/>
+    public static async Task<IReadOnlyList<XlsxDataError>> ValidateAsync<T>(IAsyncEnumerable<T> rows, XlsxSerializerOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        options ??= XlsxSerializerOptions.Default;
+        if (rows == null)
+            throw new ArgumentNullException(nameof(rows));
+
+        var errors = new List<XlsxDataError>();
+        var serializer = options.GetSerializer<T>();
+        if (serializer == null)
+            return errors;
+
+        using var writer = new XlsxCellWriter(options, errors);
+        await foreach (var row in rows.WithCancellation(cancellationToken).ConfigureAwait(false))
+        {
+            ValidateRow(writer, serializer, row, options);
+        }
+        return errors;
+    }
+#endif
+
+    static void ValidateRow<T>(XlsxCellWriter writer, IXlsxSerializer<T> serializer, T row, XlsxSerializerOptions options)
+    {
+        writer.BeginRow();
+        try
+        {
+            serializer.Serialize(writer, row, options);
+        }
+        catch (RowAbortedException)
+        {
+            // The row could not be walked further (a circular reference); its error is already
+            // recorded and the scan continues with the next row.
+        }
+        // Nothing is emitted: the buffered bytes of the scanned row are discarded.
+        writer.Clear();
+    }
+
     static void TryDeletePartialFile(string fileName)
     {
         try

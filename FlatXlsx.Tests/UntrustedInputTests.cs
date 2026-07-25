@@ -75,7 +75,7 @@ public class UntrustedInputTests
     {
         var rows = new[] { new string('a', 32_768) };
 
-        var ex = Assert.Throws<InvalidOperationException>(
+        var ex = Assert.Throws<XlsxDataException>(
             () => Xlsx.Write(rows, XlsxSerializerOptions.Default));
 
         Assert.Contains("32767", ex.Message);
@@ -103,7 +103,7 @@ public class UntrustedInputTests
         var node = new Node { Name = "a" };
         node.Child = node;
 
-        var ex = Assert.Throws<InvalidOperationException>(
+        var ex = Assert.Throws<XlsxDataException>(
             () => Xlsx.Write(new[] { node }, XlsxSerializerOptions.Default));
 
         // Asserted by the number rather than the wording: the message is translated.
@@ -117,7 +117,7 @@ public class UntrustedInputTests
         // so the caller is told which limit they hit instead of receiving a broken workbook.
         var rows = new[] { Enumerable.Range(0, 16_385).ToArray() };
 
-        var ex = Assert.Throws<InvalidOperationException>(
+        var ex = Assert.Throws<XlsxDataException>(
             () => Xlsx.Write(rows, XlsxSerializerOptions.Default));
 
         Assert.Contains("16384", ex.Message);
