@@ -1,0 +1,53 @@
+name: Release
+
+# Publishes to nuget.org via Trusted Publishing (OIDC): no stored API key.
+# The nuget.org side is a trusted publishing policy for this repository and
+# this workflow file name (release.yml).
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # OIDC token issuance for the NuGet login step
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - name: Tag must match the csproj version
+        if: github.ref_type == 'tag'
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VERSION="$(sed -n 's/.*<Version>\(.*\)<\/Version>.*/\1/p' FlatXlsx/FlatXlsx.csproj)"
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "::error::tag is v$TAG but FlatXlsx.csproj says $VERSION - retag or bump the csproj"
+            exit 1
+          fi
+      # Every build below carries ContinuousIntegrationBuild so no step can
+      # reuse a non-deterministic, unstamped output from an earlier one.
+      - name: Build
+        run: dotnet build FlatXlsx/FlatXlsx.csproj -c Release -p:ContinuousIntegrationBuild=true
+      - name: Test
+        run: dotnet test FlatXlsx.Tests/FlatXlsx.Tests.csproj -c Release -p:ContinuousIntegrationBuild=true
+      - name: Pack
+        # --no-build: a bare pack after clean misses the satellite assemblies
+        # (NU5026), and an incremental rebuild keeps a stale commit stamp.
+        run: dotnet pack FlatXlsx/FlatXlsx.csproj -c Release --no-build -o artifacts -p:ContinuousIntegrationBuild=true
+      - name: NuGet login (OIDC -> temp API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: kitaoh # nuget.org profile name, not the account email
+      - name: Push
+        # The .snupkg alongside is pushed automatically with the .nupkg.
+        run: dotnet nuget push "artifacts/*.nupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
