@@ -482,3 +482,6 @@ $RECYCLE.BIN/
 *.swp
 
 artifacts/
+
+# Case-study write-ups are kept locally, not published with the source.
+docs/
