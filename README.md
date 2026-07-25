@@ -77,14 +77,16 @@ FlatXlsx 1.0.0 vs ClosedXML 0.105.0, .NET 10 (BenchmarkDotNet 0.15.8, ShortRun; 
 
 | Method    | N   | Mean        | Ratio | Gen0       | Gen1      | Gen2      | Allocated    | Alloc Ratio |
 |---------- |---- |------------:|------:|-----------:|----------:|----------:|-------------:|------------:|
-| ClosedXml | 1   |    49.78 ms |  1.00 |   600.0000 |  200.0000 |         - |   5,269.3 KB |       1.000 |
-| FlatXlsx  | 1   |     0.75 ms |  0.02 |     1.9531 |         - |         - |      17.2 KB |       0.003 |
-| ClosedXml | 10  |   172.17 ms |  1.00 |  5333.3333 |  333.3333 |         - |  48,481.2 KB |       1.000 |
-| FlatXlsx  | 10  |     2.85 ms |  0.02 |          - |         - |         - |      17.2 KB |       0.000 |
-| ClosedXml | 100 | 1,781.70 ms |  1.00 | 53000.0000 | 9000.0000 | 2000.0000 | 471,086.1 KB |       1.000 |
-| FlatXlsx  | 100 |    22.01 ms |  0.01 |          - |         - |         - |      17.2 KB |       0.000 |
+| ClosedXml | 1   |    26.64 ms |  1.00 |   600.0000 |  200.0000 |         - |   5,276.3 KB |       1.000 |
+| FlatXlsx  | 1   |     0.63 ms |  0.02 |     1.9531 |         - |         - |      17.2 KB |       0.003 |
+| ClosedXml | 10  |   182.84 ms |  1.00 |  5333.3333 |  333.3333 |         - |  48,481.2 KB |       1.000 |
+| FlatXlsx  | 10  |     1.88 ms |  0.01 |          - |         - |         - |      17.2 KB |       0.000 |
+| ClosedXml | 100 | 1,530.71 ms |  1.00 | 53000.0000 | 9000.0000 | 2000.0000 | 471,082.1 KB |       1.000 |
+| FlatXlsx  | 100 |    14.28 ms | 0.009 |          - |         - |         - |      17.2 KB |       0.000 |
 
 Output is fully streamed, so allocations stay flat (~17 KB) regardless of row count.
+For large data sets, `XlsxSerializerOptions.CompressionLevel = CompressionLevel.Fastest`
+trades a slightly larger file for even faster serialization.
 
 ## Example-1
 If you pass an object, it will be converted to an Excel file.  
