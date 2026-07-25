@@ -13,11 +13,21 @@ public static class XlsxSerializerProvider
 {
     public static IXlsxSerializerProvider Default { get; } = new DefaultXlsxSerializerProvider();
 
+    /// <summary>Composes providers into one; earlier providers win.</summary>
     public static IXlsxSerializerProvider Create(params IXlsxSerializerProvider[] providers)
     {
         return new CompositeSerializerProvider(providers);
     }
 
+    /// <summary>These serializers first, then the default provider - no need to pass
+    /// <see cref="Default"/> yourself. Equivalent to setting
+    /// <see cref="XlsxSerializerOptions.CustomSerializers"/>.</summary>
+    public static IXlsxSerializerProvider Create(params IXlsxSerializer[] serializers)
+    {
+        return Create(serializers, new[] { Default });
+    }
+
+    /// <summary>These serializers first, then the given providers in order.</summary>
     public static IXlsxSerializerProvider Create(IXlsxSerializer[] serializers, IXlsxSerializerProvider[] providers)
     {
         var adhocProvider = new AdhocXlsxSerializerProvider(serializers);

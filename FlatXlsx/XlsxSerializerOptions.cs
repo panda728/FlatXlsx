@@ -13,9 +13,11 @@ public record XlsxSerializerOptions
     /// for full control over resolution.</summary>
     public IXlsxSerializerProvider Provider { get; init; } = XlsxSerializerProvider.Default;
 
-    /// <summary>Serializers consulted before the built-in ones, matched by their value type.
-    /// Setting this is sufficient on its own - no provider wiring is needed.</summary>
-    /// <remarks><code>
+    /// <summary>Serializers consulted before the built-in ones. Setting this is sufficient on
+    /// its own - no provider wiring is needed.</summary>
+    /// <remarks>Matching is by the serializer's exact value type: a serializer registered for a
+    /// base type is not applied to derived types.
+    /// <code>
     /// new XlsxSerializerOptions { CustomSerializers = new IXlsxSerializer[] { new MoneySerializer() } }
     /// </code></remarks>
     public IXlsxSerializer[]? CustomSerializers { get; init; }

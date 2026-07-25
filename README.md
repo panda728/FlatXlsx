@@ -37,6 +37,9 @@ app.MapGet("/users.xlsx", (HttpResponse response) =>
 
 Async variants are available: `ToFileAsync`, `ToStreamAsync`, and `ToPipeWriterAsync`.
 The PipeWriter overload flushes as data is produced, so pipe backpressure is honored.
+`ToStreamAsync` never writes the stream synchronously (the zip container's few synchronous
+tail writes are buffered and forwarded asynchronously), so an ASP.NET Core response body is a
+valid destination for either overload.
 
 ~~~csharp
 await XlsxSerializer.ToFileAsync(Users, "test.xlsx", XlsxSerializerOptions.Default, cancellationToken);

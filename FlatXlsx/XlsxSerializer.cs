@@ -221,8 +221,14 @@ public static class XlsxSerializer
 
     /// <summary>Writes .xlsx content to the stream asynchronously. The stream does not need to be
     /// seekable (network streams are fine); it is left open after writing.</summary>
-    /// <remarks>An empty source with <see cref="XlsxSerializerOptions.HeaderTitles"/> set still
-    /// produces a workbook with the header row; an empty source without titles writes nothing.</remarks>
+    /// <remarks>
+    /// <para>The stream is only ever written asynchronously - the zip container's few
+    /// synchronous tail writes are buffered and forwarded with the next asynchronous write -
+    /// so a stream that forbids synchronous IO, such as an ASP.NET Core response body, is a
+    /// valid destination.</para>
+    /// <para>An empty source with <see cref="XlsxSerializerOptions.HeaderTitles"/> set still
+    /// produces a workbook with the header row; an empty source without titles writes nothing.</para>
+    /// </remarks>
     public static async Task ToStreamAsync<T>(IEnumerable<T> rows, Stream stream, XlsxSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         options ??= XlsxSerializerOptions.Default;
@@ -241,8 +247,32 @@ public static class XlsxSerializer
 
     static async Task ToStreamAsync<T>(IEnumerator<T> rows, bool hasRows, Stream stream, XlsxSerializerOptions options, CancellationToken cancellationToken)
     {
-        using var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true);
+        // The zip machinery performs a handful of synchronous tail writes even on its async
+        // path (measured on 10.0.9: the stream ZipArchiveEntry.OpenAsync returns still closes
+        // synchronously). Buffering those keeps the caller's stream strictly asynchronous,
+        // which is what an ASP.NET Core response body demands.
+        using var buffered = new SyncWriteBufferingStream(stream);
+#if NET10_0_OR_GREATER
+        var archive = await ZipArchive.CreateAsync(buffered, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: null, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await WriteWorkbookAsync(archive, rows, hasRows, options, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            await archive.DisposeAsync().ConfigureAwait(false);
+        }
+#else
+        using (var archive = new ZipArchive(buffered, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            await WriteWorkbookAsync(archive, rows, hasRows, options, cancellationToken).ConfigureAwait(false);
+        }
+#endif
+        await buffered.FlushPendingAsync(cancellationToken).ConfigureAwait(false);
+    }
 
+    static async Task WriteWorkbookAsync<T>(ZipArchive archive, IEnumerator<T> rows, bool hasRows, XlsxSerializerOptions options, CancellationToken cancellationToken)
+    {
         await WriteEntryAsync(archive, CONTENT_TYPE_XML, _contentTypes, options.CompressionLevel, cancellationToken).ConfigureAwait(false);
         await WriteEntryAsync(archive, RELS + "/" + DOT_RELS, _rels, options.CompressionLevel, cancellationToken).ConfigureAwait(false);
         await WriteEntryAsync(archive, BOOK_XML, BuildBook(options), options.CompressionLevel, cancellationToken).ConfigureAwait(false);
@@ -257,15 +287,53 @@ public static class XlsxSerializer
         )), options.CompressionLevel, cancellationToken).ConfigureAwait(false);
 
         using var writer = new XlsxCellWriter(options);
-        using (var sheetStream = archive.CreateEntry(SHEET_XML, options.CompressionLevel).Open())
+
+        var sheetStream = await OpenEntryAsync(archive, SHEET_XML, options.CompressionLevel, cancellationToken).ConfigureAwait(false);
+        try
+        {
             await CreateSheetAsync(rows, hasRows, sheetStream, writer, options, cancellationToken).ConfigureAwait(false);
-        using (var stringsStream = archive.CreateEntry(STRINGS_XML, options.CompressionLevel).Open())
+        }
+        finally
+        {
+            await DisposeEntryAsync(sheetStream).ConfigureAwait(false);
+        }
+
+        var stringsStream = await OpenEntryAsync(archive, STRINGS_XML, options.CompressionLevel, cancellationToken).ConfigureAwait(false);
+        try
+        {
             await WriteSharedStringsAsync(stringsStream, writer, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            await DisposeEntryAsync(stringsStream).ConfigureAwait(false);
+        }
+    }
+
+    static Task<Stream> OpenEntryAsync(ZipArchive archive, string entryName, System.IO.Compression.CompressionLevel compressionLevel, CancellationToken cancellationToken)
+    {
+#if NET10_0_OR_GREATER
+        return archive.CreateEntry(entryName, compressionLevel).OpenAsync(cancellationToken);
+#else
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(archive.CreateEntry(entryName, compressionLevel).Open());
+#endif
+    }
+
+    static Task DisposeEntryAsync(Stream entryStream)
+    {
+#if NET10_0_OR_GREATER
+        return entryStream.DisposeAsync().AsTask();
+#else
+        entryStream.Dispose();
+        return Task.CompletedTask;
+#endif
     }
 
     /// <summary>Writes .xlsx content to a <see cref="System.IO.Pipelines.PipeWriter"/>
     /// (e.g. ASP.NET Core's Response.BodyWriter). Data is flushed to the pipe as it is
     /// produced, so backpressure is honored.</summary>
+    /// <remarks>The pipe is left uncompleted: ASP.NET Core completes the response pipe itself;
+    /// a hand-made <see cref="System.IO.Pipelines.Pipe"/> is completed by the caller.</remarks>
     public static Task ToPipeWriterAsync<T>(IEnumerable<T> rows, System.IO.Pipelines.PipeWriter pipeWriter, XlsxSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         if (pipeWriter == null)
@@ -276,8 +344,15 @@ public static class XlsxSerializer
 
     static async Task WriteEntryAsync(ZipArchive archive, string entryName, byte[] bytes, System.IO.Compression.CompressionLevel compressionLevel, CancellationToken cancellationToken)
     {
-        using var s = archive.CreateEntry(entryName, compressionLevel).Open();
-        await s.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
+        var s = await OpenEntryAsync(archive, entryName, compressionLevel, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await s.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            await DisposeEntryAsync(s).ConfigureAwait(false);
+        }
     }
 
     static async Task CreateSheetAsync<T>(

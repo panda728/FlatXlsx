@@ -149,6 +149,50 @@ public class OutputTargetTests
     }
 
     [Fact]
+    public async Task The_async_writer_touches_the_stream_only_asynchronously()
+    {
+        // Claimant: anyone writing to an ASP.NET Core response body, where synchronous IO is
+        // disallowed by default and a single sync write is a runtime error in production.
+        using var inner = new MemoryStream();
+        var guarded = new AsyncOnlyStream(inner);
+
+        await XlsxSerializer.ToStreamAsync(_rows, guarded, XlsxSerializerOptions.Default,
+            TestContext.Current.CancellationToken);
+
+        var sheet = Workbook.Read(inner.ToArray());
+        Assert.Equal(_rows, sheet.Rows.Select(r => r[0].Text).ToArray());
+    }
+
+    /// <summary>Stands in for a Kestrel response body: every synchronous write is an error.</summary>
+    sealed class AsyncOnlyStream(Stream inner) : Stream
+    {
+        public override bool CanRead => false;
+        public override bool CanSeek => false;
+        public override bool CanWrite => true;
+        public override long Length => throw new NotSupportedException();
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+        public override void Write(byte[] buffer, int offset, int count)
+            => throw new InvalidOperationException("Synchronous writes are disallowed.");
+        public override void Write(ReadOnlySpan<byte> buffer)
+            => throw new InvalidOperationException("Synchronous writes are disallowed.");
+        public override void Flush()
+            => throw new InvalidOperationException("Synchronous flushes are disallowed.");
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            => inner.WriteAsync(buffer, offset, count, cancellationToken);
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+            => inner.WriteAsync(buffer, cancellationToken);
+        public override Task FlushAsync(CancellationToken cancellationToken)
+            => inner.FlushAsync(cancellationToken);
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+    }
+
+    [Fact]
     public async Task A_cancelled_export_stops_instead_of_finishing()
     {
         using var cts = new CancellationTokenSource();

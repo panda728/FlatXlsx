@@ -111,6 +111,21 @@ public class WorkbookContractTests
     }
 
     [Fact]
+    public void A_serializer_list_composes_with_the_defaults_in_one_call()
+    {
+        // The provider-based road must not keep the old trap of having to re-supply the
+        // default provider by hand.
+        var options = new XlsxSerializerOptions
+        {
+            Provider = XlsxSerializerProvider.Create(new YesNoSerializer()),
+        };
+
+        var sheet = Xlsx.Read(new[] { (true, 7) }, options);
+
+        Assert.Equal(new[] { "YES", "7" }, sheet.Texts(0));
+    }
+
+    [Fact]
     public void Custom_serializers_survive_a_with_copy()
     {
         // Records copy their fields on `with`; a cached provider taken from the original must
