@@ -273,9 +273,9 @@ XlsxSerializer.ToFile(rows, @"c:\test\yesno.xlsx",
 ~~~
 
 ## Example-7
-One column can have its own number format without touching the sheet-wide ones: register the
-format code in `CustomFormats` and refer to it by index from a serializer. The display format
-changes; the stored value stays a real number.
+One column can have its own number format without touching the sheet-wide ones: pass the Excel
+format code with the value. Nothing to register — each distinct code is declared in the workbook
+automatically, and the stored value stays a real number.
 
 ~~~csharp
 class PercentSerializer : IXlsxSerializer<double>
@@ -283,14 +283,25 @@ class PercentSerializer : IXlsxSerializer<double>
     public void WriteTitle(XlsxCellWriter writer, double value, XlsxSerializerOptions options, string name = "value")
         => writer.Write(name);
     public void Serialize(XlsxCellWriter writer, double value, XlsxSerializerOptions options)
-        => writer.Write(value, customFormat: 0);   // -> CustomFormats[0]
+        => writer.Write(value, "0.0%");
+}
+~~~
+
+Scope it to a single member with the attribute — the double next to it keeps the sheet-wide
+format — or to every `double` via `CustomSerializers`:
+
+~~~csharp
+public class ServerLoad
+{
+    public string Name { get; set; }
+
+    [XlsxSerializer(typeof(PercentSerializer))]
+    public double Load { get; set; }      // shown as 12.5%
+
+    public double Uptime { get; set; }    // sheet-wide number format
 }
 
-XlsxSerializer.ToFile(rows, @"c:\test\percent.xlsx", new XlsxSerializerOptions
-{
-    CustomFormats = new[] { "0.0%" },
-    CustomSerializers = new IXlsxSerializer[] { new PercentSerializer() },
-});
+XlsxSerializer.ToFile(rows, @"c:\test\servers.xlsx");
 ~~~
 
 ## Acknowledgements

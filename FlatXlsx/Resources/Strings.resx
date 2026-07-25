@@ -106,12 +106,7 @@
     <value>The sheet name '{0}' is not valid. A sheet name must be 1-31 characters, cannot contain : \ / ? * [ ], and cannot start or end with an apostrophe.</value>
     <comment>{0} the rejected name</comment>
   </data>
-  <data name="CustomFormatEmpty" xml:space="preserve">
-    <value>CustomFormats[{0}] is null or empty.</value>
-    <comment>{0} the index of the offending entry</comment>
-  </data>
-  <data name="CustomFormatOutOfRange" xml:space="preserve">
-    <value>The custom format index {0} is out of range: CustomFormats declares {1} format(s).</value>
-    <comment>{0} the requested index, {1} the declared count</comment>
+  <data name="FormatCodeEmpty" xml:space="preserve">
+    <value>The number-format code must not be null or empty.</value>
   </data>
 </root>

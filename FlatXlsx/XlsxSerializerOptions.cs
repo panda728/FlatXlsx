@@ -61,16 +61,6 @@ public record XlsxSerializerOptions
     /// larger file for significantly faster serialization of large data sets.</summary>
     public System.IO.Compression.CompressionLevel CompressionLevel { get; init; } = System.IO.Compression.CompressionLevel.Optimal;
 
-    /// <summary>Additional Excel number-format codes, referenced from a custom serializer by
-    /// index: <c>writer.Write(value, customFormat: 0)</c> uses <c>CustomFormats[0]</c>.
-    /// The built-in formats below stay untouched, so one percent column no longer means
-    /// hijacking <see cref="NumberFormat"/> for every number in the sheet.</summary>
-    /// <remarks><code>
-    /// options = new XlsxSerializerOptions { CustomFormats = new[] { "0.0%" } };
-    /// // in a serializer:  writer.Write(ratio, customFormat: 0);
-    /// </code></remarks>
-    public string[]? CustomFormats { get; init; }
-
     public string DateTimeFormat { get; init; } = "yyyy/mm/dd hh:mm;@";
     public string DateFormat { get; init; } = "yyyy/mm/dd;@";
     public string TimeFormat { get; init; } = "hh:mm;@";

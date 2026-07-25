@@ -57,35 +57,32 @@ public static class XlsxSerializer
     // Excel reserves numFmtId values below 164 for its built-in formats; custom codes start there.
     const int CUSTOM_NUMFMT_BASE = 164;
 
-    static byte[] BuildStyles(XlsxSerializerOptions options)
+    /// <summary>Builds styles.xml from the options' sheet-wide formats plus the format codes
+    /// the cells actually used. Written after the sheet for the same reason strings.xml is:
+    /// its content is only known once the cells have been written.</summary>
+    static byte[] BuildStyles(XlsxSerializerOptions options, IReadOnlyList<string> customCodes)
     {
-        var custom = options.CustomFormats ?? Array.Empty<string>();
-
         var sb = new StringBuilder(1024);
         sb.Append(@"<styleSheet xmlns=""http://schemas.openxmlformats.org/spreadsheetml/2006/main"">");
-        sb.Append(@"<numFmts count=""").Append(5 + custom.Length).Append(@""">");
+        sb.Append(@"<numFmts count=""").Append(5 + customCodes.Count).Append(@""">");
         AppendNumFmt(sb, 1, options.DateTimeFormat);
         AppendNumFmt(sb, 2, options.DateFormat);
         AppendNumFmt(sb, 3, options.TimeFormat);
         AppendNumFmt(sb, 4, options.IntegerFormat);
         AppendNumFmt(sb, 5, options.NumberFormat);
-        for (var i = 0; i < custom.Length; i++)
-        {
-            if (string.IsNullOrEmpty(custom[i]))
-                throw new InvalidOperationException(SR.CustomFormatEmpty(i));
-            AppendNumFmt(sb, CUSTOM_NUMFMT_BASE + i, custom[i]);
-        }
+        for (var i = 0; i < customCodes.Count; i++)
+            AppendNumFmt(sb, CUSTOM_NUMFMT_BASE + i, customCodes[i]);
         sb.Append("</numFmts>");
         sb.Append("<fonts count=\"1\"><font/></fonts>");
         sb.Append("<fills count=\"1\"><fill/></fills>");
         sb.Append("<borders count=\"1\"><border/></borders>");
         sb.Append("<cellStyleXfs count=\"1\"><xf/></cellStyleXfs>");
-        sb.Append(@"<cellXfs count=""").Append(7 + custom.Length).Append(@""">");
+        sb.Append(@"<cellXfs count=""").Append(7 + customCodes.Count).Append(@""">");
         sb.Append("<xf/>");
         sb.Append(@"<xf><alignment wrapText=""true""/></xf>");
         for (var id = 1; id <= 5; id++)
             sb.Append(@"<xf numFmtId=""").Append(id).Append(@""" applyNumberFormat=""1""></xf>");
-        for (var i = 0; i < custom.Length; i++)
+        for (var i = 0; i < customCodes.Count; i++)
             sb.Append(@"<xf numFmtId=""").Append(CUSTOM_NUMFMT_BASE + i).Append(@""" applyNumberFormat=""1""></xf>");
         sb.Append("</cellXfs>");
         sb.Append("</styleSheet>");
@@ -177,14 +174,13 @@ public static class XlsxSerializer
         WriteEntry(archive, RELS + "/" + DOT_RELS, _rels, options.CompressionLevel);
         WriteEntry(archive, BOOK_XML, BuildBook(options), options.CompressionLevel);
         WriteEntry(archive, RELS + "/" + BOOK_XML_RELS, _bookRels, options.CompressionLevel);
-        WriteEntry(archive, STYLES_XML, BuildStyles(options), options.CompressionLevel);
-
 
         using var writer = new XlsxCellWriter(options);
         using (var sheetStream = archive.CreateEntry(SHEET_XML, options.CompressionLevel).Open())
             CreateSheet(rows, hasRows, sheetStream, writer, options);
         using (var stringsStream = archive.CreateEntry(STRINGS_XML, options.CompressionLevel).Open())
             WriteSharedStrings(stringsStream, writer);
+        WriteEntry(archive, STYLES_XML, BuildStyles(options, writer.Formats.Codes), options.CompressionLevel);
     }
 
     /// <summary>Writes .xlsx content to an <see cref="IBufferWriter{T}"/> such as
@@ -348,7 +344,6 @@ public static class XlsxSerializer
         await WriteEntryAsync(archive, RELS + "/" + DOT_RELS, _rels, options.CompressionLevel, cancellationToken).ConfigureAwait(false);
         await WriteEntryAsync(archive, BOOK_XML, BuildBook(options), options.CompressionLevel, cancellationToken).ConfigureAwait(false);
         await WriteEntryAsync(archive, RELS + "/" + BOOK_XML_RELS, _bookRels, options.CompressionLevel, cancellationToken).ConfigureAwait(false);
-        await WriteEntryAsync(archive, STYLES_XML, BuildStyles(options), options.CompressionLevel, cancellationToken).ConfigureAwait(false);
 
         using var writer = new XlsxCellWriter(options);
 
@@ -371,6 +366,8 @@ public static class XlsxSerializer
         {
             await DisposeEntryAsync(stringsStream).ConfigureAwait(false);
         }
+
+        await WriteEntryAsync(archive, STYLES_XML, BuildStyles(options, writer.Formats.Codes), options.CompressionLevel, cancellationToken).ConfigureAwait(false);
     }
 
     static Task<Stream> OpenEntryAsync(ZipArchive archive, string entryName, System.IO.Compression.CompressionLevel compressionLevel, CancellationToken cancellationToken)

@@ -106,12 +106,7 @@
     <value>シート名 '{0}' は無効です。シート名は 1～31 文字で、: \ / ? * [ ] を含めることはできず、先頭・末尾にアポストロフィは使えません。</value>
     <comment>{0} the rejected name</comment>
   </data>
-  <data name="CustomFormatEmpty" xml:space="preserve">
-    <value>CustomFormats[{0}] が null または空です。</value>
-    <comment>{0} the index of the offending entry</comment>
-  </data>
-  <data name="CustomFormatOutOfRange" xml:space="preserve">
-    <value>カスタム書式のインデックス {0} は範囲外です。CustomFormats に定義されている書式は {1} 件です。</value>
-    <comment>{0} the requested index, {1} the declared count</comment>
+  <data name="FormatCodeEmpty" xml:space="preserve">
+    <value>数値書式コードに null または空文字列は指定できません。</value>
   </data>
 </root>

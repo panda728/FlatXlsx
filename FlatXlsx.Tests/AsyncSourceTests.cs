@@ -104,8 +104,10 @@ public class AsyncSourceTests
         }
 
         using var ms = new MemoryStream();
+#pragma warning disable xUnit1051 // the test owns this token deliberately: it cancels it mid-stream
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
             () => XlsxSerializer.ToStreamAsync(Source(), ms, null, cts.Token));
+#pragma warning restore xUnit1051
 
         Assert.True(produced < 1_000_000, "cancellation must stop the enumeration");
     }

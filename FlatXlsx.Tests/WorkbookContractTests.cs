@@ -266,23 +266,22 @@ public class WorkbookContractTests
         Assert.Equal("0000", sheet.Row(0)[0].NumberFormat);
     }
 
-    /// <summary>Writes a ratio with the percent format registered at CustomFormats[0].</summary>
+    /// <summary>Writes a ratio with a percent format, passing the code directly.</summary>
     class PercentSerializer : IXlsxSerializer<double>
     {
         public void WriteTitle(XlsxCellWriter writer, double value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
         public void Serialize(XlsxCellWriter writer, double value, XlsxSerializerOptions options)
-            => writer.Write(value, customFormat: 0);
+            => writer.Write(value, "0.0%");
     }
 
     [Fact]
-    public void A_per_cell_format_no_longer_means_hijacking_the_sheet_wide_one()
+    public void A_per_cell_format_is_one_call_with_nothing_to_register()
     {
-        // Claimant: anyone with one percent column next to ordinary numbers. Before
-        // CustomFormats, the only route was repurposing NumberFormat for every double.
+        // Claimant: anyone with one percent column next to ordinary numbers. The format code
+        // lives in the one line that uses it - no options entry, no index to keep aligned.
         var options = new XlsxSerializerOptions
         {
-            CustomFormats = new[] { "0.0%" },
             CustomSerializers = new IXlsxSerializer[] { new PercentSerializer() },
         };
 
@@ -293,12 +292,42 @@ public class WorkbookContractTests
         Assert.Equal(options.IntegerFormat, sheet.Row(1)[0].NumberFormat);
     }
 
+    class ServerLoad
+    {
+        public string Name { get; set; } = "";
+
+        [XlsxSerializer(typeof(PercentSerializer))]
+        public double Load { get; set; }
+
+        public double Uptime { get; set; }
+    }
+
+    [Fact]
+    public void A_format_scoped_to_one_member_leaves_its_neighbours_alone()
+    {
+        // The realistic ask is one column, not every double; the member-level attribute is
+        // that road, and the double right next to it keeps the sheet-wide format.
+        var rows = new[] { new ServerLoad { Name = "web1", Load = 0.125, Uptime = 99.9 } };
+
+        var sheet = Xlsx.Read(rows, XlsxSerializerOptions.Default);
+
+        Assert.Equal("0.0%", sheet.Row(0)[1].NumberFormat);
+        Assert.Equal(XlsxSerializerOptions.Default.NumberFormat, sheet.Row(0)[2].NumberFormat);
+    }
+
+    class MonthSerializer : IXlsxSerializer<DateTime>
+    {
+        public void WriteTitle(XlsxCellWriter writer, DateTime value, XlsxSerializerOptions options, string name = "value")
+            => writer.Write(name);
+        public void Serialize(XlsxCellWriter writer, DateTime value, XlsxSerializerOptions options)
+            => writer.Write(value, "yyyy\"年\"m\"月\"");
+    }
+
     [Fact]
     public void A_custom_date_format_travels_the_same_road()
     {
         var options = new XlsxSerializerOptions
         {
-            CustomFormats = new[] { "yyyy\"年\"m\"月\"" },
             CustomSerializers = new IXlsxSerializer[] { new MonthSerializer() },
         };
 
@@ -308,27 +337,38 @@ public class WorkbookContractTests
         Assert.Equal("2026-07-25T01:02:03", sheet.Texts(0)[0]);
     }
 
-    class MonthSerializer : IXlsxSerializer<DateTime>
-    {
-        public void WriteTitle(XlsxCellWriter writer, DateTime value, XlsxSerializerOptions options, string name = "value")
-            => writer.Write(name);
-        public void Serialize(XlsxCellWriter writer, DateTime value, XlsxSerializerOptions options)
-            => writer.Write(value, customFormat: 0);
-    }
-
     [Fact]
-    public void An_undeclared_custom_format_is_refused_by_number()
+    public void The_same_format_code_is_declared_once_however_often_it_is_used()
     {
         var options = new XlsxSerializerOptions
         {
             CustomSerializers = new IXlsxSerializer[] { new PercentSerializer() },
         };
+
+        var sheet = Xlsx.Read(new[] { 0.1, 0.2, 0.3 }, options);
+
+        Assert.All(sheet.Rows, row => Assert.Equal("0.0%", row[0].NumberFormat));
+    }
+
+    class EmptyFormatSerializer : IXlsxSerializer<double>
+    {
+        public void WriteTitle(XlsxCellWriter writer, double value, XlsxSerializerOptions options, string name = "value")
+            => writer.Write(name);
+        public void Serialize(XlsxCellWriter writer, double value, XlsxSerializerOptions options)
+            => writer.Write(value, "");
+    }
+
+    [Fact]
+    public void An_empty_format_code_is_refused()
+    {
+        var options = new XlsxSerializerOptions
+        {
+            CustomSerializers = new IXlsxSerializer[] { new EmptyFormatSerializer() },
+        };
         using var ms = new MemoryStream();
 
-        var ex = Assert.Throws<InvalidOperationException>(
+        Assert.Throws<InvalidOperationException>(
             () => XlsxSerializer.ToStream(new[] { 0.5d }, ms, options));
-
-        Assert.Contains("0", ex.Message);
     }
 
     [Fact]

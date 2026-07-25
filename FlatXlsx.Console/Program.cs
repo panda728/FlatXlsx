@@ -1,4 +1,4 @@
-// Runs every example from README.md, one output file per example, so the samples
+﻿// Runs every example from README.md, one output file per example, so the samples
 // can be watched working instead of taken on faith. Finishes with a kitchen-sink
 // workbook that exercises every supported type at once.
 using Bogus;
@@ -95,15 +95,13 @@ XlsxSerializer.ToFile(
 Report("Example-6", "CustomSerializers: bool cells become YES/NO", Out("example6.xlsx"));
 
 // ---- Example-7: one column with its own number format ----------------------------------
-XlsxSerializer.ToFile(
-    new[] { (Item: "CPU", Load: 0.125), (Item: "RAM", Load: 0.5) },
-    Out("example7.xlsx"),
-    new XlsxSerializerOptions
-    {
-        CustomFormats = new[] { "0.0%" },
-        CustomSerializers = new IXlsxSerializer[] { new PercentSerializer() },
-    });
-Report("Example-7", "CustomFormats: a percent column, sheet formats untouched", Out("example7.xlsx"));
+var servers = new[] {
+    new ServerLoad { Name = "web1", Load = 0.125, Uptime = 99.9 },
+    new ServerLoad { Name = "web2", Load = 0.5, Uptime = 98.2 },
+};
+XlsxSerializer.ToFile(servers, Out("example7.xlsx"),
+    new XlsxSerializerOptions { HasHeaderRow = true });
+Report("Example-7", "[XlsxSerializer]: one percent column, neighbours untouched", Out("example7.xlsx"));
 
 // ---- Kitchen sink: every supported type in one workbook --------------------------------
 Randomizer.Seed = new Random(8675309);
@@ -190,13 +188,25 @@ public class AnnotatedPortal
     public string InternalNote { get; set; } = "";
 }
 
-/// <summary>README Example-7: a ratio shown as a percentage via CustomFormats[0].</summary>
+/// <summary>README Example-7: a ratio shown as a percentage; the format code travels with
+/// the call, nothing is registered.</summary>
 public class PercentSerializer : IXlsxSerializer<double>
 {
     public void WriteTitle(XlsxCellWriter writer, double value, XlsxSerializerOptions options, string name = "value")
         => writer.Write(name);
     public void Serialize(XlsxCellWriter writer, double value, XlsxSerializerOptions options)
-        => writer.Write(value, customFormat: 0);
+        => writer.Write(value, "0.0%");
+}
+
+/// <summary>README Example-7: the percent format scoped to one member by attribute.</summary>
+public class ServerLoad
+{
+    public string Name { get; set; } = "";
+
+    [XlsxSerializer(typeof(PercentSerializer))]
+    public double Load { get; set; }
+
+    public double Uptime { get; set; }
 }
 
 /// <summary>README Example-6: writes bool cells as YES/NO text.</summary>
