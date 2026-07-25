@@ -10,7 +10,7 @@
     <Authors>Hideyuki Kitao</Authors>
     <Company />
     <LangVersion>latest</LangVersion>
-    <Description>FlatXlsx converts object into Excel file</Description>
+    <Description>FlatXlsx converts objects into Excel (.xlsx) files - a fast, low-allocation streaming serializer for netstandard2.0 through .NET 10.</Description>
     <PackageProjectUrl>https://github.com/panda728/FlatXlsx</PackageProjectUrl>
     <Copyright>Copyright (c) Hideyuki Kitao 2022-2026</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -22,6 +22,13 @@
     <NeutralLanguage>en</NeutralLanguage>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <!-- Ship the XML docs so consumers get IntelliSense; CS1591 stays off because not every
+         public member carries one. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <!-- Debug symbols ship separately to nuget.org's symbol server. -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
