@@ -158,6 +158,17 @@ so allocations stay flat (~26 KB) regardless of row count.
 For large data sets, `XlsxSerializerOptions.CompressionLevel = CompressionLevel.Fastest`
 trades a slightly larger file for even faster serialization.
 
+## Examples
+
+Every example below is runnable:
+
+~~~bash
+dotnet run --project FlatXlsx.Console
+~~~
+
+writes each one to an `output/` folder — one workbook per example, plus a kitchen-sink
+workbook that exercises every supported type at once.
+
 ## Example-1
 If you pass an object, it will be converted to an Excel file.  
 ![image](https://user-images.githubusercontent.com/16958552/185727609-79b574e8-b40c-46dc-83c9-74b078a1f44a.png)

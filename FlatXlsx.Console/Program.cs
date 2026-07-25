@@ -1,11 +1,88 @@
-﻿using Bogus;
+// Runs every example from README.md, one output file per example, so the samples
+// can be watched working instead of taken on faith. Finishes with a kitchen-sink
+// workbook that exercises every supported type at once.
+using Bogus;
 using FlatXlsx;
 using System.Diagnostics;
 using System.Globalization;
 using static Bogus.DataSets.Name;
 
-var sw = Stopwatch.StartNew();
+var outDir = Path.Combine(Environment.CurrentDirectory, "output");
+if (Directory.Exists(outDir))
+    Directory.Delete(outDir, recursive: true);
+Directory.CreateDirectory(outDir);
 
+string Out(string name) => Path.Combine(outDir, name);
+void Report(string section, string what, string file)
+    => Console.WriteLine($"[{section,-9}] {what,-58} -> {Path.GetFileName(file)}");
+
+var portals = new Portal[] {
+    new Portal { Name = "Portal1", Owner = "panda728", Level = 8 },
+    new Portal { Name = "Portal2", Owner = "panda728", Level = 1 },
+    new Portal { Name = "Portal3", Owner = "panda728", Level = 2 },
+};
+
+// ---- Usage: the smallest possible call -------------------------------------------------
+XlsxSerializer.ToFile(portals, Out("usage.xlsx"));
+Report("Usage", "One line, no options", Out("usage.xlsx"));
+
+// ---- Usage: ToStream (any Stream; it does not need to be seekable) ---------------------
+using (var ms = new MemoryStream())
+{
+    XlsxSerializer.ToStream(portals, ms);
+    Report("Usage", $"ToStream wrote {ms.Length:#,##0} bytes into a MemoryStream", "(no file)");
+}
+
+// ---- Usage: async variant --------------------------------------------------------------
+await XlsxSerializer.ToFileAsync(portals, Out("usage-async.xlsx"));
+Report("Usage", "ToFileAsync (ToStreamAsync never writes synchronously)", Out("usage-async.xlsx"));
+
+// ---- Example-1: any sequence becomes a sheet -------------------------------------------
+XlsxSerializer.ToFile(new string[] { "test", "test2" }, Out("example1.xlsx"));
+Report("Example-1", "A string array, one value per row", Out("example1.xlsx"));
+
+// ---- Example-2: a class expands into columns -------------------------------------------
+XlsxSerializer.ToFile(portals, Out("example2.xlsx"));
+Report("Example-2", "Properties become columns", Out("example2.xlsx"));
+
+// ---- Example-3: header titles are one setting ------------------------------------------
+XlsxSerializer.ToFile(portals, Out("example3-titles.xlsx"),
+    new XlsxSerializerOptions { HeaderTitles = new[] { "Name", "Owner", "Level" } });
+Report("Example-3", "HeaderTitles alone asks for the header row", Out("example3-titles.xlsx"));
+
+// ---- Example-3: titles and order can live on the class ---------------------------------
+var annotated = new AnnotatedPortal[] {
+    new AnnotatedPortal { Name = "Portal1", Owner = "panda728", Level = 8, InternalNote = "secret" },
+    new AnnotatedPortal { Name = "Portal2", Owner = "panda728", Level = 1, InternalNote = "secret" },
+};
+XlsxSerializer.ToFile(annotated, Out("example3-attributes.xlsx"),
+    new XlsxSerializerOptions { HasHeaderRow = true });
+Report("Example-3", "[XlsxColumn] renames/orders, [XlsxIgnore] excludes", Out("example3-attributes.xlsx"));
+
+// ---- Example-4: auto-fit column widths -------------------------------------------------
+XlsxSerializer.ToFile(portals, Out("example4.xlsx"), new XlsxSerializerOptions
+{
+    HeaderTitles = new[] { "Name", "Owner", "Level" },
+    AutoFitColumns = true,
+});
+Report("Example-4", "AutoFitColumns sizes columns to their content", Out("example4.xlsx"));
+
+// ---- Example-5: auto-filter ------------------------------------------------------------
+XlsxSerializer.ToFile(portals, Out("example5.xlsx"), new XlsxSerializerOptions
+{
+    HeaderTitles = new[] { "Name", "Owner", "Level" },
+    AutoFilter = true,
+});
+Report("Example-5", "AutoFilter covers the header and every row", Out("example5.xlsx"));
+
+// ---- Example-6: a custom serializer is one setting -------------------------------------
+XlsxSerializer.ToFile(
+    new[] { (Name: "Portal1", Active: true), (Name: "Portal2", Active: false) },
+    Out("example6.xlsx"),
+    new XlsxSerializerOptions { CustomSerializers = new IXlsxSerializer[] { new YesNoSerializer() } });
+Report("Example-6", "CustomSerializers: bool cells become YES/NO", Out("example6.xlsx"));
+
+// ---- Kitchen sink: every supported type in one workbook --------------------------------
 Randomizer.Seed = new Random(8675309);
 
 var fruit = new[] { "apple", "banana", "orange", "strawberry", "kiwi" };
@@ -45,69 +122,70 @@ var testUsers = new Faker<User>()
     .RuleFor(o => o.Char, f => (char)f.Random.Int(65, 65 + 26))
     .RuleFor(o => o.Escape, f => "</>\"'&");
 
-var Users = testUsers.Generate(10);
+var users = testUsers.Generate(10);
 
-sw.Stop();
-Console.WriteLine($"testUsers.Generate count:{Users.Count:#,##0} duration:{sw.ElapsedMilliseconds:#,##0}ms");
-sw.Restart();
-
-var newConfig = XlsxSerializerOptions.Default with
+var sw = Stopwatch.StartNew();
+XlsxSerializer.ToFile(users, Out("kitchen-sink.xlsx"), new XlsxSerializerOptions
 {
-    CultureInfo = CultureInfo.CurrentCulture,
-    MaxDepth = 32,
-    Provider = XlsxSerializerProvider.Create(
-        //new[] { new BoolZeroOneSerializer() },
-        new[] { XlsxSerializerProvider.Default }),
+    CultureInfo = CultureInfo.CurrentCulture,   // opt-in: localize DateTimeOffset text
+    SheetName = "KitchenSink",
     HasHeaderRow = true,
     AutoFitColumns = true,
     AutoFilter = true,
-};
-
-var fileName = Path.Combine(Environment.CurrentDirectory, "test.xlsx");
-if (File.Exists(fileName))
-    File.Delete(fileName);
-
-XlsxSerializer.ToFile(Users, fileName, newConfig);
-
+});
 sw.Stop();
-
-Console.WriteLine($"XlsxSerializer.ToFile duration:{sw.ElapsedMilliseconds:#,##0}ms");
-Console.WriteLine($"Excel file created. Please check the file. {fileName}");
+Report("Sink", $"{users.Count} rows, every supported type, {sw.ElapsedMilliseconds:#,##0}ms", Out("kitchen-sink.xlsx"));
 
 Console.WriteLine();
-Console.WriteLine("press any key...");
+Console.WriteLine($"All workbooks are in: {outDir}");
 
-Console.ReadLine();
-
-
-//public class BoolZeroOneSerializer : IXlsxSerializer<bool>
-//{
-//    public void WriteTitle(XlsxCellWriter writer, bool value, XlsxSerializerOptions options, string name = "")
-//    {
-//        writer.Write(name);
-//    }
-
-//    public void Serialize(XlsxCellWriter writer, bool value, XlsxSerializerOptions options)
-//    {
-//        // true => 0, false => 1
-//        writer.Write(value ? 0 : 1);
-//    }
-//}
-
-public class UnixSecondsSerializer : IXlsxSerializer<DateTime>
+if (!Console.IsInputRedirected)
 {
-    public void WriteTitle(XlsxCellWriter writer, DateTime value, XlsxSerializerOptions options, string name = "")
-    {
-        writer.Write(name);
-    }
-
-    public void Serialize(XlsxCellWriter writer, DateTime value, XlsxSerializerOptions options)
-    {
-        writer.Write(((DateTimeOffset)(value)).ToUnixTimeSeconds());
-    }
+    Console.WriteLine("press Enter to close...");
+    Console.ReadLine();
 }
 
-#pragma warning disable CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入っていなければなりません。Null 許容として宣言することをご検討ください。
+/// <summary>README Example-2: plain properties become columns.</summary>
+public class Portal
+{
+    public string Name { get; set; } = "";
+    public string Owner { get; set; } = "";
+    public int Level { get; set; }
+}
+
+/// <summary>README Example-3 declares this as Portal; renamed here so both variants
+/// can live in one program.</summary>
+public class AnnotatedPortal
+{
+    [XlsxColumn("Name Ex", Order = 3)]
+    public string Name { get; set; } = "";
+    [XlsxColumn("Owner Ex", Order = 1)]
+    public string Owner { get; set; } = "";
+    [XlsxColumn("Level Ex", Order = 2)]
+    public int Level { get; set; }
+    [XlsxIgnore]
+    public string InternalNote { get; set; } = "";
+}
+
+/// <summary>README Example-6: writes bool cells as YES/NO text.</summary>
+public class YesNoSerializer : IXlsxSerializer<bool>
+{
+    public void WriteTitle(XlsxCellWriter writer, bool value, XlsxSerializerOptions options, string name = "value")
+        => writer.Write(name);
+    public void Serialize(XlsxCellWriter writer, bool value, XlsxSerializerOptions options)
+        => writer.Write(value ? "YES" : "NO");
+}
+
+/// <summary>Per-member serializer via [XlsxSerializer], used by the kitchen sink.</summary>
+public class UnixSecondsSerializer : IXlsxSerializer<DateTime>
+{
+    public void WriteTitle(XlsxCellWriter writer, DateTime value, XlsxSerializerOptions options, string name = "value")
+        => writer.Write(name);
+    public void Serialize(XlsxCellWriter writer, DateTime value, XlsxSerializerOptions options)
+        => writer.Write(((DateTimeOffset)value).ToUnixTimeSeconds());
+}
+
+#pragma warning disable CS8618
 public class Order
 {
     public int OrderId { get; set; }
@@ -153,4 +231,4 @@ public class User
     public char Char { get; set; }
     public string Escape { get; set; }
 }
-#pragma warning restore CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入っていなければなりません。Null 許容として宣言することをご検討ください。
+#pragma warning restore CS8618
