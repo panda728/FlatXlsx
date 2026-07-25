@@ -51,6 +51,18 @@ public class WorkbookContractTests
     }
 
     [Fact]
+    public void A_pair_writes_Key_and_Value_headings()
+    {
+        // A dictionary enumerates as pairs, so this heading shape is what a dictionary export
+        // gets. Pinned because the pair layout must not drift from what readers already receive.
+        var sheet = Xlsx.Read(new[] { new KeyValuePair<string, int>("k1", 1) },
+            XlsxSerializerOptions.Default with { HasHeaderRow = true });
+
+        Assert.Equal(new[] { "Key", "Value" }, sheet.Texts(0));
+        Assert.Equal(new[] { "k1", "1" }, sheet.Texts(1));
+    }
+
+    [Fact]
     public void Options_can_be_built_without_knowing_about_providers()
     {
         // new XlsxSerializerOptions { ... } is the first thing a newcomer writes; it must work.

@@ -148,4 +148,42 @@ public class AnswerabilityTests
 
         Assert.IsNotType<XlsxDataException>(ex);
     }
+
+    [Fact]
+    public void A_platform_type_with_no_serializer_is_refused_by_name_instead_of_guessed_at()
+    {
+        // Reflecting System.Range into Start/End columns would produce a plausible-looking
+        // workbook nobody asked for; the layout of .NET's own types is not the library's guess
+        // to make. The refusal names the type so the fix has an address.
+        System.Range[] rows = { 1..5 };
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => Xlsx.Write(rows, XlsxSerializerOptions.Default));
+
+        Assert.IsNotType<XlsxDataException>(ex);   // addressee: the developer, not the data owner
+        Assert.Contains("System.Range", ex.Message);
+    }
+
+    [Fact]
+    public void A_platform_typed_member_is_refused_the_same_way()
+    {
+        var rows = new[] { new { Name = "a", Span = new System.Range(1, 3) } };
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => Xlsx.Write(rows, XlsxSerializerOptions.Default));
+
+        Assert.Contains("System.Range", ex.Message);
+    }
+
+    [Fact]
+    public void The_scan_treats_a_missing_serializer_as_a_developer_problem()
+    {
+        // Validate collects data problems; a type the library cannot place is fixed in code,
+        // so it surfaces immediately rather than being filed on the data owner's work list.
+        System.Range[] rows = { 1..5 };
+
+        var ex = Assert.Throws<InvalidOperationException>(() => XlsxSerializer.Validate(rows));
+
+        Assert.IsNotType<XlsxDataException>(ex);
+    }
 }

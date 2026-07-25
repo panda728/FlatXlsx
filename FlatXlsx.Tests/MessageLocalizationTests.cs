@@ -63,6 +63,18 @@ public class MessageLocalizationTests
         Assert.Contains("32768", message);
     }
 
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("ja-JP")]
+    public void A_refused_type_is_named_whatever_the_language(string uiCulture)
+    {
+        // The type name is what the developer searches for; it must survive translation.
+        var message = Culture.MessageFrom(uiCulture,
+            () => Xlsx.Write(new System.Range[] { 1..5 }, XlsxSerializerOptions.Default));
+
+        Assert.Contains("System.Range", message);
+    }
+
     [Fact]
     public void The_language_of_messages_does_not_change_the_workbook()
     {

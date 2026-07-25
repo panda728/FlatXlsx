@@ -28,6 +28,12 @@ public sealed class GenericsXlsxSerializerProvider : IXlsxSerializerProvider
                     return CreateInstance(typeof(NullableXlsxSerializer<>), new[] { nullableUnderlying });
                 }
 
+                // KeyValuePair<TKey, TValue> - the shape a dictionary enumerates as
+                if (type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
+                {
+                    return CreateInstance(typeof(KeyValuePairXlsxSerializer<,>), type.GetGenericArguments());
+                }
+
                 // Tuple/ValueTuple
                 var fullName = type.FullName;
                 if (fullName != null && (fullName.StartsWith("System.Tuple") || fullName.StartsWith("System.ValueTuple")))

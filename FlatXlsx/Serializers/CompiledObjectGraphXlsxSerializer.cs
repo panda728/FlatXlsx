@@ -19,8 +19,11 @@ internal sealed class CompiledObjectGraphXlsxSerializer<T> : IXlsxSerializer<T>
     {
         isReferenceType = !typeof(T).IsValueType;
 
-        var props = typeof(T).GetProperties().Where(p => p.GetIndexParameters().Length == 0);
-        var fields = typeof(T).GetFields();
+        // Instance members only: the parameterless overloads also return statics, which are not
+        // row data and cannot be read through the row instance anyway.
+        var props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.GetIndexParameters().Length == 0);
+        var fields = typeof(T).GetFields(BindingFlags.Public | BindingFlags.Instance);
         var members = props.Cast<MemberInfo>().Concat(fields)
             .Where(x => x.GetCustomAttribute<XlsxIgnoreAttribute>() == null)
             .Select((x, i) => new SerializableMemberInfo(x, i))

@@ -50,16 +50,23 @@ public class SerializerContractTests
         Workbook.AssertEveryPartIsWellFormed(subject.Write(XlsxSerializerOptions.Default));
     }
 
-    [Fact]
-    public void An_unregistered_type_falls_back_to_its_public_members()
+    class UnregisteredShape
     {
-        // Not "unsupported types are rejected": the object-graph provider accepts anything with
-        // public members, so no such promise exists to underwrite. What callers can rely on is
-        // that an unregistered type still yields one column per readable member.
-        var value = new System.Text.StringBuilder("ab");
+        public string A { get; set; } = "";
+        public int B { get; set; }
+    }
+
+    [Fact]
+    public void An_unregistered_application_type_falls_back_to_its_public_members()
+    {
+        // The fallback has a boundary: an application-defined type yields one column per
+        // readable instance member, while the platform's own types are refused by name
+        // instead (see AnswerabilityTests) - a reflected layout for those is never what
+        // the caller meant.
+        var value = new UnregisteredShape { A = "ab", B = 7 };
 
         var sheet = Xlsx.Read(new[] { value }, XlsxSerializerOptions.Default);
 
-        Assert.NotEmpty(sheet.Row(0));
+        Assert.Equal(new[] { "ab", "7" }, sheet.Texts(0));
     }
 }

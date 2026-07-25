@@ -113,4 +113,12 @@
     <value>A workbook cannot use more than {0} custom number formats.</value>
     <comment>{0} the limit</comment>
   </data>
+  <data name="PlatformTypeNotSupported" xml:space="preserve">
+    <value>The type '{0}' is a built-in .NET type, so a column layout is not inferred for it - automatic expansion into member columns applies to application-defined types only. Register a serializer for the type in XlsxSerializerOptions.CustomSerializers, or convert the value to a supported type.</value>
+    <comment>{0} the full name of the type</comment>
+  </data>
+  <data name="PlatformTypeNeedsNewerTarget" xml:space="preserve">
+    <value>The type '{0}' is serialized out of the box when the application targets .NET 8 or later; this application is using FlatXlsx's netstandard build, which predates the type. Target net8.0 or later, or register a serializer for the type in XlsxSerializerOptions.CustomSerializers.</value>
+    <comment>{0} the full name of the type; only the netstandard builds produce this message</comment>
+  </data>
 </root>

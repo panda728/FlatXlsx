@@ -54,6 +54,11 @@ dictionary access. Those branches are compiled on every build and reviewed by ey
 executed by any test. Exercising them needs a `net481` test target, which is the obvious next
 extension of the Conditions fence rather than a defect in it.
 
+One diagnostic is netstandard-only: the message that redirects a `DateOnly`/`TimeOnly`/`Half`/
+`Int128`/`Rune` refusal to the net8.0+ targets sits behind the same seam — compiled and
+reviewed, not executed here. The refusal mechanism itself is exercised on every framework
+through `System.Range`.
+
 ## Remedy — what happens when one goes red
 
 Every test here blocks the build. That is affordable because the whole suite is deterministic and

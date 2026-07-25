@@ -45,4 +45,25 @@ public class RegressionLedgerTests
 
         Assert.Equal("A1:B3", sheet.AutoFilterRange);
     }
+
+    class TypeWithStaticMembers
+    {
+        public static TypeWithStaticMembers Empty { get; } = new();
+        public const int SchemaVersion = 3;
+        public string Name { get; set; } = "";
+        public int Value { get; set; }
+    }
+
+    [Fact]
+    public void A_row_type_with_static_members_serializes_its_instance_members_only()
+    {
+        // GetProperties()/GetFields() return statics too, and the compiled graph tried to read
+        // them through the row instance: a TypeInitializationException burying an
+        // ArgumentException, naming no type. Statics are not row data.
+        var sheet = Xlsx.Read(new[] { new TypeWithStaticMembers { Name = "a", Value = 1 } },
+            XlsxSerializerOptions.Default with { HasHeaderRow = true });
+
+        Assert.Equal(new[] { "Name", "Value" }, sheet.Texts(0));
+        Assert.Equal(new[] { "a", "1" }, sheet.Texts(1));
+    }
 }

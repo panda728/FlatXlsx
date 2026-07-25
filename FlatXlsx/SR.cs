@@ -42,5 +42,7 @@ internal static class SR
     internal static string SerializerTypeNotImplemented(Type type) => Format(nameof(SerializerTypeNotImplemented), type);
     internal static string TooManyColumns(int limit, int row) => Format(nameof(TooManyColumns), limit, row);
     internal static string TooManyRows(int limit) => Format(nameof(TooManyRows), limit);
+    internal static string PlatformTypeNotSupported(Type type) => Format(nameof(PlatformTypeNotSupported), type);
+    internal static string PlatformTypeNeedsNewerTarget(Type type) => Format(nameof(PlatformTypeNeedsNewerTarget), type);
     internal static string TupleSerializerNotFound(int typeArguments) => Format(nameof(TupleSerializerNotFound), typeArguments);
 }

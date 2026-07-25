@@ -126,6 +126,7 @@ abstract class SerializerCase
         ["Collection"] = Of(new Collection<string> { "a", "b" }, "a", "b"),
         ["Dictionary"] = Of(new Dictionary<string, int> { ["k1"] = 1, ["k2"] = 2 }, "k1", "1", "k2", "2"),
         ["KeyValuePair"] = Of(new KeyValuePair<string, int>("k1", 1), "k1", "1"),
+        ["KeyValuePair(null key)"] = Of(new KeyValuePair<string?, int>(null, 9), null, "9"),
         ["object(fallback)"] = Of((object)"boxed", "boxed"),
         ["object graph"] = Of(new Portal { Owner = null, Name = "Portal1", Level = 8 }, null, "Portal1", "8"),
     };

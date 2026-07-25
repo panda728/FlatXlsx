@@ -113,4 +113,12 @@
     <value>ワークブックで使用できるカスタム数値書式は {0} 個までです。</value>
     <comment>{0} the limit</comment>
   </data>
+  <data name="PlatformTypeNotSupported" xml:space="preserve">
+    <value>型 '{0}' は .NET 組み込みの型のため、列の割り付けを推測しません(メンバー列への自動展開はアプリケーション定義の型のみが対象です)。XlsxSerializerOptions.CustomSerializers にこの型のシリアライザーを登録するか、対応済みの型へ変換してください。</value>
+    <comment>{0} the full name of the type</comment>
+  </data>
+  <data name="PlatformTypeNeedsNewerTarget" xml:space="preserve">
+    <value>型 '{0}' は、アプリケーションが .NET 8 以降をターゲットにすると追加設定なしでシリアライズされます。現在は netstandard ビルドの FlatXlsx で動作しています。net8.0 以降をターゲットにするか、XlsxSerializerOptions.CustomSerializers にこの型のシリアライザーを登録してください。</value>
+    <comment>{0} the full name of the type; only the netstandard builds produce this message</comment>
+  </data>
 </root>

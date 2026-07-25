@@ -89,6 +89,9 @@ ClosedXML instead of looking for a hidden option here:
   (fonts, colors, borders, merged cells)
 - Formulas, charts, images, pivot tables
 - Reading or editing existing workbooks (FlatXlsx is write-only)
+- Column layouts for .NET's built-in types — member expansion is inferred for
+  application-defined types only; a built-in type without a serializer fails naming the type
+  instead of guessing at a layout
 
 ## Notice
 
@@ -99,6 +102,9 @@ Output is streamed directly to the destination; no working folder is used.
 - An empty source writes nothing — unless `HeaderTitles` is set, in which case a header-only
   workbook is written so downstream consumers still receive a file.
 - A null source throws `ArgumentNullException`; silence there would only hide a caller bug.
+- Applications targeting .NET 5–7 or Unity receive the netstandard build, which has no built-in
+  serializers for `DateOnly`, `TimeOnly`, `Half`, `Int128` or `Rune`. Writing one fails with a
+  message naming the type; target net8.0+ or register a serializer via `CustomSerializers`.
 
 ## Message languages
 
