@@ -16,6 +16,9 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/panda728/FlatXlsx</RepositoryUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <!-- Messages in the main assembly are English; translations ship as satellite assemblies.
+         Declaring this lets the runtime skip probing for one on an English system. -->
+    <NeutralLanguage>en</NeutralLanguage>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>

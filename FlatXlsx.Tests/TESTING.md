@@ -13,6 +13,7 @@ depends on it is depending on an accident.
 | `WriterHistoryTests` | Properties over *sequences* of writes: text survives, the shared-string table stays consistent as it grows, row count never changes the result, async matches sync. | Callers exporting more than one row — that is, all of them. |
 | `UntrustedInputTests` | Markup, control characters, hostile sizes and lazy sources cannot corrupt the file or exhaust the process. | Teams exporting data they did not author. |
 | `AmbientEnvironmentTests` | Numbers and dates are stored independently of the machine's locale. | Anyone running on a server whose culture nobody chose. |
+| `MessageLocalizationTests` | Messages follow the UI culture, fall back to English when untranslated, keep their numbers, and never change the workbook. | The developer reading a failure, and the support desk reading their screenshot. |
 | `OutputTargetTests` | File, stream, `IBufferWriter`, and pipe destinations behave: no seeking, no closing what the caller owns, no file when there is nothing to write. | The calling application. |
 | `RegressionLedgerTests` | Defects that already reached a build stay fixed. | Everyone; this is the claim history. |
 
@@ -26,6 +27,9 @@ Depending on any of these is unsupported; they may change without a test turning
 - **The bytes of the file.** Cell encoding (shared string vs inline string), style indices, zip
   entry order and compression output are free to change. Assertions are written against values
   read back through `Support/Workbook`, never against markup.
+- **The exact wording of a message.** Translations may be reworded or added. What is guaranteed
+  is the language it arrives in and the facts it carries, so assertions elsewhere in the suite
+  quote the numbers in a message rather than its prose.
 - **How a spreadsheet application renders the result.** The suite checks what a conforming reader
   parses. Excel's own layout, fonts and column-width units are outside it; the release check for
   that is opening the file by hand.

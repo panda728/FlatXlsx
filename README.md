@@ -71,6 +71,22 @@ but Excel displays numbers with at most 15 digits of precision.
 Output is streamed directly to the destination; no working folder is used.
 (`XlsxSerializerOptions.WorkPath` is obsolete and ignored.)
 
+## Message languages
+
+Exception messages follow `CultureInfo.CurrentUICulture`. English is built into the main
+assembly; other languages ship as satellite assemblies (`ja/FlatXlsx.resources.dll`) that NuGet
+restores alongside it.
+
+- Nothing to configure: on a Japanese system the messages are Japanese.
+- An untranslated language falls back to English, as does an application that trims or omits the
+  satellite assemblies.
+- This is separate from `XlsxSerializerOptions.CultureInfo`, which decides how *data* is
+  formatted. Numbers and dates are always stored in the invariant form regardless of either
+  setting, so the same code produces the same file on every machine.
+
+To add a language, copy `FlatXlsx/Resources/Strings.resx` to `Strings.<culture>.resx`, translate
+the `<value>` elements, and rebuild - the satellite assembly is produced automatically.
+
 ## Handling untrusted data
 
 Values are frequently outside the caller's control, so the writer is built to keep any input

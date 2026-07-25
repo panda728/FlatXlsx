@@ -1,5 +1,4 @@
-using System.Globalization;
-using FlatXlsx.Tests.Support;
+﻿using FlatXlsx.Tests.Support;
 
 namespace FlatXlsx.Tests;
 
@@ -15,38 +14,13 @@ namespace FlatXlsx.Tests;
 /// </remarks>
 public class AmbientEnvironmentTests
 {
-    static T UnderCulture<T>(string culture, Func<T> body)
-    {
-        T result = default!;
-        Exception? failure = null;
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                var info = new CultureInfo(culture);
-                CultureInfo.CurrentCulture = info;
-                CultureInfo.CurrentUICulture = info;
-                result = body();
-            }
-            catch (Exception ex)
-            {
-                failure = ex;
-            }
-        });
-        thread.Start();
-        thread.Join();
-        if (failure != null)
-            throw new InvalidOperationException($"failed under {culture}", failure);
-        return result;
-    }
-
     [Theory]
     [InlineData("en-US")]
     [InlineData("de-DE")]   // comma for the decimal separator
     [InlineData("ja-JP")]
     public void A_fractional_number_is_stored_with_a_dot_whatever_the_culture(string culture)
     {
-        var sheet = UnderCulture(culture, () => Xlsx.Read(new[] { 12.5d }, XlsxSerializerOptions.Default));
+        var sheet = Culture.Under(culture, null, () => Xlsx.Read(new[] { 12.5d }, XlsxSerializerOptions.Default));
 
         Assert.Equal("12.5", sheet.Texts(0)[0]);
     }
@@ -57,7 +31,7 @@ public class AmbientEnvironmentTests
     [InlineData("ja-JP")]
     public void A_whole_number_is_stored_without_grouping_whatever_the_culture(string culture)
     {
-        var sheet = UnderCulture(culture, () => Xlsx.Read(new[] { 1234567 }, XlsxSerializerOptions.Default));
+        var sheet = Culture.Under(culture, null, () => Xlsx.Read(new[] { 1234567 }, XlsxSerializerOptions.Default));
 
         Assert.Equal("1234567", sheet.Texts(0)[0]);
     }
@@ -68,7 +42,7 @@ public class AmbientEnvironmentTests
     [InlineData("th-TH")]   // Buddhist calendar: years differ by 543
     public void A_date_is_stored_in_the_western_calendar_whatever_the_culture(string culture)
     {
-        var sheet = UnderCulture(culture, () => Xlsx.Read(new[] { new DateTime(2023, 1, 2, 3, 4, 5) }, XlsxSerializerOptions.Default));
+        var sheet = Culture.Under(culture, null, () => Xlsx.Read(new[] { new DateTime(2023, 1, 2, 3, 4, 5) }, XlsxSerializerOptions.Default));
 
         Assert.Equal("2023-01-02T03:04:05", sheet.Texts(0)[0]);
     }
@@ -79,7 +53,7 @@ public class AmbientEnvironmentTests
     [InlineData("th-TH")]
     public void A_date_only_value_is_stored_in_the_western_calendar_whatever_the_culture(string culture)
     {
-        var sheet = UnderCulture(culture, () => Xlsx.Read(new[] { new DateOnly(2023, 1, 2) }, XlsxSerializerOptions.Default));
+        var sheet = Culture.Under(culture, null, () => Xlsx.Read(new[] { new DateOnly(2023, 1, 2) }, XlsxSerializerOptions.Default));
 
         Assert.Equal("2023-01-02T00:00:00", sheet.Texts(0)[0]);
     }

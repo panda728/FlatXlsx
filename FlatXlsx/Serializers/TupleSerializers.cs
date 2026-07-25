@@ -433,7 +433,7 @@ namespace FlatXlsx.Serializers
                     break;
             }
 
-            throw new InvalidOperationException($"TupleXlsxSerializer<T1...T{i}> is not found.");
+            throw new InvalidOperationException(SR.TupleSerializerNotFound(i));
         }
 
         internal static Type GetValueTupleXlsxSerializerType(int i)
@@ -460,7 +460,7 @@ namespace FlatXlsx.Serializers
                     break;
             }
 
-            throw new InvalidOperationException($"ValueTupleXlsxSerializer<T1...T{i}> is not found.");
+            throw new InvalidOperationException(SR.TupleSerializerNotFound(i));
         }
     }
 }

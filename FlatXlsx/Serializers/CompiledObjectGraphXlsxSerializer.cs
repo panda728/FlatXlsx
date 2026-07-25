@@ -180,7 +180,7 @@ internal sealed class SerializableMemberInfo
         {
             PropertyInfo pi => pi.PropertyType,
             FieldInfo fi => fi.FieldType,
-            _ => throw new InvalidOperationException()
+            _ => throw new InvalidOperationException(SR.MemberKindNotSupported)
         };
 
         var serializerAttr = member.GetCustomAttribute<XlsxSerializerAttribute>();
@@ -201,6 +201,6 @@ internal sealed class SerializableMemberInfo
         {
             return Expression.Property(expression, pi);
         }
-        throw new InvalidOperationException();
+        throw new InvalidOperationException(SR.MemberKindNotSupported);
     }
 }

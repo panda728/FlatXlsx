@@ -106,7 +106,8 @@ public class UntrustedInputTests
         var ex = Assert.Throws<InvalidOperationException>(
             () => Xlsx.Write(new[] { node }, XlsxSerializerOptions.Default));
 
-        Assert.Contains("max depth", ex.Message);
+        // Asserted by the number rather than the wording: the message is translated.
+        Assert.Contains(XlsxSerializerOptions.Default.MaxDepth.ToString(), ex.Message);
     }
 
     [Fact]

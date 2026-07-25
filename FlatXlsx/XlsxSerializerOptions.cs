@@ -55,6 +55,6 @@ public record XlsxSerializerOptions(IXlsxSerializerProvider Provider)
 #endif
     void Throw(Type type)
     {
-        throw new InvalidOperationException($"Type is not found in provider. Type:{type}");
+        throw new InvalidOperationException(SR.SerializerNotFound(type));
     }
 }

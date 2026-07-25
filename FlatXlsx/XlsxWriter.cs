@@ -520,26 +520,24 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
 #endif
     static void ThrowReachedMaxDepth(int depth)
     {
-        throw new InvalidOperationException($"Serializer detects reached max depth:{depth}. Please check the circular reference.");
+        throw new InvalidOperationException(SR.MaxDepthReached(depth));
     }
 
 #if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
     [DoesNotReturn]
 #endif
     static void ThrowTooManyRows()
-        => throw new InvalidOperationException($"A worksheet cannot hold more than {MAX_ROWS} rows.");
+        => throw new InvalidOperationException(SR.TooManyRows(MAX_ROWS));
 
 #if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
     [DoesNotReturn]
 #endif
     static void ThrowTooManyColumns()
-        => throw new InvalidOperationException(
-            $"A worksheet cannot hold more than {MAX_COLUMNS} columns. " +
-            "A nested collection or object graph is likely expanding into too many cells.");
+        => throw new InvalidOperationException(SR.TooManyColumns(MAX_COLUMNS));
 
 #if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
     [DoesNotReturn]
 #endif
     static void ThrowCellTooLong(int length)
-        => throw new InvalidOperationException($"A cell cannot hold more than {MAX_CELL_LENGTH} characters, but the value has {length}.");
+        => throw new InvalidOperationException(SR.CellTooLong(MAX_CELL_LENGTH, length));
 }

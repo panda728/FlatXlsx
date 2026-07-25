@@ -15,7 +15,7 @@ public class ArrayPoolBufferWriter : IBufferWriter<byte>, IDisposable
     public ArrayPoolBufferWriter(int initialCapacity = MinimumBufferSize)
     {
         if (initialCapacity <= 0)
-            throw new ArgumentException(null, nameof(initialCapacity));
+            throw new ArgumentException(SR.InitialCapacityOutOfRange, nameof(initialCapacity));
 
         _rentedBuffer = ArrayPool<byte>.Shared.Rent(initialCapacity);
         _written = 0;
@@ -222,12 +222,12 @@ public class ArrayPoolBufferWriter : IBufferWriter<byte>, IDisposable
     [DoesNotReturn]
 #endif
     static void ThrowInvalidOperationException()
-        => throw new InvalidOperationException("Cannot advance past the end of the buffer.");
+        => throw new InvalidOperationException(SR.BufferAdvanceTooFar);
 
 #if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
     [DoesNotReturn]
 #endif
     static void ThrowArgumentException(string name)
-        => throw new ArgumentException(null, name);
+        => throw new ArgumentException(SR.SizeHintNegative, name);
 }
 

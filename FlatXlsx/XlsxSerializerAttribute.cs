@@ -10,13 +10,13 @@ public sealed class XlsxSerializerAttribute(Type type) : Attribute
         var serializerType = Type.GetImplementedGenericType(typeof(IXlsxSerializer<>));
         if (serializerType == null)
         {
-            throw new InvalidOperationException($"Type is not implemented IXlsxSerializer<T>, Type:{Type.FullName}");
+            throw new InvalidOperationException(SR.SerializerTypeNotImplemented(Type));
         }
 
         var attrType = serializerType.GenericTypeArguments[0];
         if (attrType != targetType)
         {
-            throw new InvalidOperationException($"Attribute XlsxSerializer type is not same as target type. AttrType:{attrType.FullName} TargetType:{targetType.FullName}");
+            throw new InvalidOperationException(SR.SerializerTypeMismatch(attrType, targetType));
         }
     }
 }

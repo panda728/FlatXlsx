@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="BufferAdvanceTooFar" xml:space="preserve">
+    <value>Cannot advance past the end of the buffer.</value>
+  </data>
+  <data name="CellTooLong" xml:space="preserve">
+    <value>A cell cannot hold more than {0} characters, but the value has {1}.</value>
+    <comment>{0} the limit, {1} the length of the offending value</comment>
+  </data>
+  <data name="InitialCapacityOutOfRange" xml:space="preserve">
+    <value>The initial capacity must be greater than zero.</value>
+  </data>
+  <data name="MaxDepthReached" xml:space="preserve">
+    <value>The object graph is nested more than {0} levels deep. Check for a circular reference.</value>
+    <comment>{0} the configured MaxDepth</comment>
+  </data>
+  <data name="MemberKindNotSupported" xml:space="preserve">
+    <value>Only fields and properties can be serialized.</value>
+  </data>
+  <data name="SerializerNotFound" xml:space="preserve">
+    <value>No serializer is registered for the type '{0}'.</value>
+    <comment>{0} the full name of the type</comment>
+  </data>
+  <data name="SerializerTypeMismatch" xml:space="preserve">
+    <value>The serializer attribute is declared for '{0}' but the target is of type '{1}'.</value>
+    <comment>{0} the attribute's type, {1} the target's type</comment>
+  </data>
+  <data name="SerializerTypeNotImplemented" xml:space="preserve">
+    <value>The type '{0}' does not implement IXlsxSerializer&lt;T&gt;.</value>
+    <comment>{0} the full name of the type</comment>
+  </data>
+  <data name="SizeHintNegative" xml:space="preserve">
+    <value>The size hint cannot be negative.</value>
+  </data>
+  <data name="TooManyColumns" xml:space="preserve">
+    <value>A worksheet cannot hold more than {0} columns. A nested collection or object graph is likely expanding into too many cells.</value>
+    <comment>{0} the column limit</comment>
+  </data>
+  <data name="TooManyRows" xml:space="preserve">
+    <value>A worksheet cannot hold more than {0} rows.</value>
+    <comment>{0} the row limit</comment>
+  </data>
+  <data name="TupleSerializerNotFound" xml:space="preserve">
+    <value>No tuple serializer is available for {0} type arguments.</value>
+    <comment>{0} the number of type arguments</comment>
+  </data>
+</root>
