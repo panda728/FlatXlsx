@@ -105,18 +105,18 @@ Three variants are measured so the comparison is fair to ClosedXML:
 
 | Method             | N   | Mean        | Ratio | Allocated    | Alloc Ratio |
 |------------------- |---- |------------:|------:|-------------:|------------:|
-| ClosedXmlNaive     | 1   |    26.19 ms |  1.00 |   5,281.1 KB |       1.000 |
-| ClosedXmlOptimized | 1   |     8.26 ms |  0.32 |   1,239.0 KB |       0.235 |
-| FlatXlsx           | 1   |     0.70 ms |  0.03 |      21.5 KB |       0.004 |
-| ClosedXmlNaive     | 10  |   155.48 ms |  1.00 |  48,536.1 KB |       1.000 |
-| ClosedXmlOptimized | 10  |    30.86 ms |  0.20 |   9,312.5 KB |       0.192 |
-| FlatXlsx           | 10  |     2.09 ms |  0.01 |      21.5 KB |       0.000 |
-| ClosedXmlNaive     | 100 | 1,904.67 ms | 1.000 | 471,629.7 KB |       1.000 |
-| ClosedXmlOptimized | 100 |   297.29 ms | 0.156 |  82,638.1 KB |       0.175 |
-| FlatXlsx           | 100 |    16.15 ms | 0.008 |      21.5 KB |       0.000 |
+| ClosedXmlNaive     | 1   |    42.52 ms |  1.00 |   5,281.3 KB |       1.000 |
+| ClosedXmlOptimized | 1   |     8.74 ms |  0.21 |   1,238.1 KB |       0.234 |
+| FlatXlsx           | 1   |     0.80 ms |  0.02 |      23.7 KB |       0.004 |
+| ClosedXmlNaive     | 10  |   167.99 ms |  1.00 |  48,535.6 KB |       1.000 |
+| ClosedXmlOptimized | 10  |    30.29 ms |  0.18 |   9,314.8 KB |       0.192 |
+| FlatXlsx           | 10  |     2.21 ms |  0.01 |      25.7 KB |       0.001 |
+| ClosedXmlNaive     | 100 | 1,605.45 ms | 1.000 | 471,633.7 KB |       1.000 |
+| ClosedXmlOptimized | 100 |   332.12 ms | 0.207 |  82,651.5 KB |       0.175 |
+| FlatXlsx           | 100 |    15.18 ms | 0.009 |      25.7 KB |       0.000 |
 
-Even against well-tuned ClosedXML, FlatXlsx is ~18x faster; output is fully streamed,
-so allocations stay flat (~21 KB) regardless of row count.
+Even against well-tuned ClosedXML, FlatXlsx is ~20x faster; output is fully streamed,
+so allocations stay flat (~26 KB) regardless of row count.
 For large data sets, `XlsxSerializerOptions.CompressionLevel = CompressionLevel.Fastest`
 trades a slightly larger file for even faster serialization.
 
