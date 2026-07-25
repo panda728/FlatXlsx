@@ -10,7 +10,7 @@ namespace FlatXlsx.Serializers
             => writer.Write(name);
 
         public void Serialize(XlsxWriter writer, Boolean value, XlsxSerializerOptions options)
-            => writer.WritePrimitive(value);
+            => writer.Write(value);
     }
 
     public sealed class ByteXlsxSerializer : IXlsxSerializer<Byte>
@@ -19,7 +19,7 @@ namespace FlatXlsx.Serializers
             => writer.Write(name);
 
         public void Serialize(XlsxWriter writer, Byte value, XlsxSerializerOptions options)
-            => writer.WritePrimitive(value);
+            => writer.Write(value);
     }
 
     public sealed class SByteXlsxSerializer : IXlsxSerializer<SByte>
@@ -28,7 +28,7 @@ namespace FlatXlsx.Serializers
             => writer.Write(name);
 
         public void Serialize(XlsxWriter writer, SByte value, XlsxSerializerOptions options)
-            => writer.WritePrimitive(value);
+            => writer.Write(value);
     }
 
     public sealed class DecimalXlsxSerializer : IXlsxSerializer<Decimal>
@@ -37,7 +37,7 @@ namespace FlatXlsx.Serializers
             => writer.Write(name);
 
         public void Serialize(XlsxWriter writer, Decimal value, XlsxSerializerOptions options)
-            => writer.WritePrimitive(value);
+            => writer.Write(value);
     }
 
     public sealed class DoubleXlsxSerializer : IXlsxSerializer<Double>
@@ -46,7 +46,7 @@ namespace FlatXlsx.Serializers
             => writer.Write(name);
 
         public void Serialize(XlsxWriter writer, Double value, XlsxSerializerOptions options)
-            => writer.WritePrimitive(value);
+            => writer.Write(value);
     }
 
     public sealed class SingleXlsxSerializer : IXlsxSerializer<Single>
@@ -55,7 +55,7 @@ namespace FlatXlsx.Serializers
             => writer.Write(name);
 
         public void Serialize(XlsxWriter writer, Single value, XlsxSerializerOptions options)
-            => writer.WritePrimitive(value);
+            => writer.Write(value);
     }
 
     public sealed class Int32XlsxSerializer : IXlsxSerializer<Int32>
@@ -64,7 +64,7 @@ namespace FlatXlsx.Serializers
             => writer.Write(name);
 
         public void Serialize(XlsxWriter writer, Int32 value, XlsxSerializerOptions options)
-            => writer.WritePrimitive(value);
+            => writer.Write(value);
     }
 
     public sealed class UInt32XlsxSerializer : IXlsxSerializer<UInt32>
@@ -73,7 +73,7 @@ namespace FlatXlsx.Serializers
             => writer.Write(name);
 
         public void Serialize(XlsxWriter writer, UInt32 value, XlsxSerializerOptions options)
-            => writer.WritePrimitive(value);
+            => writer.Write(value);
     }
 
     public sealed class Int64XlsxSerializer : IXlsxSerializer<Int64>
@@ -82,7 +82,7 @@ namespace FlatXlsx.Serializers
             => writer.Write(name);
 
         public void Serialize(XlsxWriter writer, Int64 value, XlsxSerializerOptions options)
-            => writer.WritePrimitive(value);
+            => writer.Write(value);
     }
 
     public sealed class UInt64XlsxSerializer : IXlsxSerializer<UInt64>
@@ -91,7 +91,7 @@ namespace FlatXlsx.Serializers
             => writer.Write(name);
 
         public void Serialize(XlsxWriter writer, UInt64 value, XlsxSerializerOptions options)
-            => writer.WritePrimitive(value);
+            => writer.Write(value);
     }
 
     public sealed class Int16XlsxSerializer : IXlsxSerializer<Int16>
@@ -100,7 +100,7 @@ namespace FlatXlsx.Serializers
             => writer.Write(name);
 
         public void Serialize(XlsxWriter writer, Int16 value, XlsxSerializerOptions options)
-            => writer.WritePrimitive(value);
+            => writer.Write(value);
     }
 
     public sealed class UInt16XlsxSerializer : IXlsxSerializer<UInt16>
@@ -109,7 +109,7 @@ namespace FlatXlsx.Serializers
             => writer.Write(name);
 
         public void Serialize(XlsxWriter writer, UInt16 value, XlsxSerializerOptions options)
-            => writer.WritePrimitive(value);
+            => writer.Write(value);
     }
 
 }

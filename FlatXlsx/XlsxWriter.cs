@@ -142,16 +142,21 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
         Clear();
     }
 
+    /// <summary>Marks the start of a nested value (a member of an object graph, an element of a
+    /// collection). Guards against runaway nesting: past <see cref="XlsxSerializerOptions.MaxDepth"/>
+    /// it throws, which is what stops a circular reference from writing forever.
+    /// Pair every call with <see cref="ExitNested"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void EnterAndValidate()
+    public void EnterNested()
     {
         _currentDepth++;
         if (_currentDepth >= _options.MaxDepth)
             ThrowReachedMaxDepth(_currentDepth);
     }
 
+    /// <summary>Marks the end of the nested value opened by <see cref="EnterNested"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Exit()
+    public void ExitNested()
     {
         _currentDepth--;
     }
@@ -161,12 +166,12 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void WriteRaw(ReadOnlySpan<byte> value) => _writer.Write(value);
 
+    /// <summary>Writes an empty cell.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int WriteEmpty()
+    public void WriteEmpty()
     {
         _writer.Write(_emptyColumn);
         SetMaxLength(0);
-        return 0;
     }
 
     /// <summary>Closes the current cell: records its width for auto-fit and enforces the
@@ -275,7 +280,7 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
     public void Write(char value) => Write($"{value}");
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(bool value)
+    public void Write(bool value)
     {
         _writer.Write(_colStartBoolean);
         WriteUtf8Bytes(value ? "1" : "0");
@@ -369,74 +374,74 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
 
 #if NET8_0_OR_GREATER
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(byte value) => WriterFormatted(value, _colStartInteger);
+    public void Write(byte value) => WriterFormatted(value, _colStartInteger);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(sbyte value) => WriterFormatted(value, _colStartInteger);
+    public void Write(sbyte value) => WriterFormatted(value, _colStartInteger);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(decimal value) => WriterFormatted(value, _colStartNumber);
+    public void Write(decimal value) => WriterFormatted(value, _colStartNumber);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(double value) => WriterFormatted(value, _colStartNumber);
+    public void Write(double value) => WriterFormatted(value, _colStartNumber);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(float value) => WriterFormatted(value, _colStartNumber);
+    public void Write(float value) => WriterFormatted(value, _colStartNumber);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(int value) => WriterFormatted(value, _colStartInteger);
+    public void Write(int value) => WriterFormatted(value, _colStartInteger);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(uint value) => WriterFormatted(value, _colStartInteger);
+    public void Write(uint value) => WriterFormatted(value, _colStartInteger);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(long value) => WriterFormatted(value, _colStartInteger);
+    public void Write(long value) => WriterFormatted(value, _colStartInteger);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(ulong value) => WriterFormatted(value, _colStartInteger);
+    public void Write(ulong value) => WriterFormatted(value, _colStartInteger);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(short value) => WriterFormatted(value, _colStartNumber);
+    public void Write(short value) => WriterFormatted(value, _colStartNumber);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(ushort value) => WriterFormatted(value, _colStartNumber);
+    public void Write(ushort value) => WriterFormatted(value, _colStartNumber);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(Half value) => WriterFormatted(value, _colStartNumber);
+    public void Write(Half value) => WriterFormatted(value, _colStartNumber);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(Int128 value) => WriterFormatted(value, _colStartInteger);
+    public void Write(Int128 value) => WriterFormatted(value, _colStartInteger);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(UInt128 value) => WriterFormatted(value, _colStartInteger);
+    public void Write(UInt128 value) => WriterFormatted(value, _colStartInteger);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(System.Numerics.BigInteger value) => WriterFormatted(value, _colStartInteger);
+    public void Write(System.Numerics.BigInteger value) => WriterFormatted(value, _colStartInteger);
 #else
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(byte value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
+    public void Write(byte value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(sbyte value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
+    public void Write(sbyte value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(decimal value) => WriterNumber(value.ToString(CultureInfo.InvariantCulture).AsSpan());
+    public void Write(decimal value) => WriterNumber(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(double value) => WriterNumber(value.ToString(CultureInfo.InvariantCulture).AsSpan());
+    public void Write(double value) => WriterNumber(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(float value) => WriterNumber(value.ToString(CultureInfo.InvariantCulture).AsSpan());
+    public void Write(float value) => WriterNumber(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(int value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
+    public void Write(int value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(uint value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
+    public void Write(uint value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(long value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
+    public void Write(long value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(ulong value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
+    public void Write(ulong value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(short value) => WriterNumber(value.ToString(CultureInfo.InvariantCulture).AsSpan());
+    public void Write(short value) => WriterNumber(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(ushort value) => WriterNumber(value.ToString(CultureInfo.InvariantCulture).AsSpan());
+    public void Write(ushort value) => WriterNumber(value.ToString(CultureInfo.InvariantCulture).AsSpan());
 #if NET5_0_OR_GREATER
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(Half value) => WriterNumber(value.ToString(CultureInfo.InvariantCulture).AsSpan());
+    public void Write(Half value) => WriterNumber(value.ToString(CultureInfo.InvariantCulture).AsSpan());
 #endif
 #if NET7_0_OR_GREATER
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(Int128 value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
+    public void Write(Int128 value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(UInt128 value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
+    public void Write(UInt128 value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
 #endif
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WritePrimitive(System.Numerics.BigInteger value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
+    public void Write(System.Numerics.BigInteger value) => WriterInteger(value.ToString(CultureInfo.InvariantCulture).AsSpan());
 #endif
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WriteDateTime(DateTime value)
+    public void Write(DateTime value)
     {
         var d = value;
         if (d == DateTime.MinValue)
@@ -469,7 +474,7 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
 
 #if NET6_0_OR_GREATER
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WriteDateTime(DateOnly value)
+    public void Write(DateOnly value)
     {
 #if NET8_0_OR_GREATER
         _writer.Write(_colStartDate);
@@ -483,7 +488,7 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WriteDateTime(TimeOnly value)
+    public void Write(TimeOnly value)
     {
 #if NET8_0_OR_GREATER
         _writer.Write(_colStartTime);

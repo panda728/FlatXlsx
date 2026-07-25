@@ -45,7 +45,7 @@ internal class BuiltinSerializers
         public void WriteTitle(XlsxWriter writer, DateTime value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
         public void Serialize(XlsxWriter writer, DateTime value, XlsxSerializerOptions options)
-            => writer.WriteDateTime(value);
+            => writer.Write(value);
     }
 
     public sealed class DateTimeOffsetXlsxSerializer : IXlsxSerializer<DateTimeOffset>
@@ -107,7 +107,7 @@ internal class BuiltinSerializers
         public void WriteTitle(XlsxWriter writer, BigInteger value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
         public void Serialize(XlsxWriter writer, BigInteger value, XlsxSerializerOptions options)
-            => writer.WritePrimitive(value);
+            => writer.Write(value);
     }
 
     public sealed class ComplexXlsxSerializer : IXlsxSerializer<Complex>
@@ -123,7 +123,7 @@ internal class BuiltinSerializers
         public void WriteTitle(XlsxWriter writer, IntPtr value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
         public void Serialize(XlsxWriter writer, IntPtr value, XlsxSerializerOptions options)
-            => writer.WritePrimitive(value.ToInt64());
+            => writer.Write(value.ToInt64());
     }
 
     public sealed class UIntPtrXlsxSerializer : IXlsxSerializer<UIntPtr>
@@ -131,7 +131,7 @@ internal class BuiltinSerializers
         public void WriteTitle(XlsxWriter writer, UIntPtr value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
         public void Serialize(XlsxWriter writer, UIntPtr value, XlsxSerializerOptions options)
-            => writer.WritePrimitive(value.ToUInt64());
+            => writer.Write(value.ToUInt64());
     }
 
 #if NET5_0_OR_GREATER
@@ -150,7 +150,7 @@ internal class BuiltinSerializers
         public void WriteTitle(XlsxWriter writer, Half value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
         public void Serialize(XlsxWriter writer, Half value, XlsxSerializerOptions options)
-            => writer.WritePrimitive(value);
+            => writer.Write(value);
     }
 #endif
 
@@ -160,7 +160,7 @@ internal class BuiltinSerializers
         public void WriteTitle(XlsxWriter writer, Int128 value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
         public void Serialize(XlsxWriter writer, Int128 value, XlsxSerializerOptions options)
-            => writer.WritePrimitive(value);
+            => writer.Write(value);
     }
 
     public sealed class UInt128XlsxSerializer : IXlsxSerializer<UInt128>
@@ -168,7 +168,7 @@ internal class BuiltinSerializers
         public void WriteTitle(XlsxWriter writer, UInt128 value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
         public void Serialize(XlsxWriter writer, UInt128 value, XlsxSerializerOptions options)
-            => writer.WritePrimitive(value);
+            => writer.Write(value);
     }
 #endif
 
@@ -178,7 +178,7 @@ internal class BuiltinSerializers
         public void WriteTitle(XlsxWriter writer, DateOnly value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
         public void Serialize(XlsxWriter writer, DateOnly value, XlsxSerializerOptions options)
-            => writer.WriteDateTime(value);
+            => writer.Write(value);
     }
 
     public sealed class TimeOnlyXlsxSerializer : IXlsxSerializer<TimeOnly>
@@ -186,7 +186,7 @@ internal class BuiltinSerializers
         public void WriteTitle(XlsxWriter writer, TimeOnly value, XlsxSerializerOptions options, string name = "value")
             => writer.Write(name);
         public void Serialize(XlsxWriter writer, TimeOnly value, XlsxSerializerOptions options)
-            => writer.WriteDateTime(value);
+            => writer.Write(value);
     }
 #endif
 }

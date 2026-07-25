@@ -36,7 +36,7 @@ namespace FlatXlsx.Serializers
             => writer.Write(name);
 
         public void Serialize(XlsxWriter writer, <#= type.Name #> value, XlsxSerializerOptions options)
-            => writer.WritePrimitive(value);
+            => writer.Write(value);
     }
 
 <# } #>

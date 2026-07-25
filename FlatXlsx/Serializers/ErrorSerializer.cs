@@ -2,7 +2,10 @@
 
 namespace FlatXlsx.Serializers;
 
-public sealed class ErrorSerializer<T>(Exception exception) : IXlsxSerializer<T>
+/// <summary>Defers a provider-resolution failure to the moment the serializer is used, so the
+/// original exception surfaces at the call that needed it. Internal plumbing, not a name for
+/// users to meet in IntelliSense.</summary>
+internal sealed class ErrorSerializer<T>(Exception exception) : IXlsxSerializer<T>
 {
     readonly ExceptionDispatchInfo exception = ExceptionDispatchInfo.Capture(exception);
 
@@ -17,7 +20,7 @@ public sealed class ErrorSerializer<T>(Exception exception) : IXlsxSerializer<T>
     }
 }
 
-public static class ErrorSerializer
+internal static class ErrorSerializer
 {
     public static IXlsxSerializer Create(Type type, Exception exception)
     {

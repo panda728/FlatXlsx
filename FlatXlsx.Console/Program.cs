@@ -90,7 +90,7 @@ Console.ReadLine();
 //    public void Serialize(XlsxWriter writer, bool value, XlsxSerializerOptions options)
 //    {
 //        // true => 0, false => 1
-//        writer.WritePrimitive(value ? 0 : 1);
+//        writer.Write(value ? 0 : 1);
 //    }
 //}
 
@@ -103,7 +103,7 @@ public class UnixSecondsSerializer : IXlsxSerializer<DateTime>
 
     public void Serialize(XlsxWriter writer, DateTime value, XlsxSerializerOptions options)
     {
-        writer.WritePrimitive(((DateTimeOffset)(value)).ToUnixTimeSeconds());
+        writer.Write(((DateTimeOffset)(value)).ToUnixTimeSeconds());
     }
 }
 

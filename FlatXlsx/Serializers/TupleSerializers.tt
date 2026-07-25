@@ -27,13 +27,13 @@ namespace FlatXlsx.Serializers
 <# } #>
     {
 		public void WriteTitle(XlsxWriter writer, Tuple<<#= BuildTypeParameters(i) #>> value, XlsxSerializerOptions options, string name = "value"){
-            writer.EnterAndValidate();
+            writer.EnterNested();
 <# for(var j = 1; j <= i; j++) { #>
 <# if(j != 1) { #>
 <# } #>
             options.GetRequiredSerializer<<#= BuildTypeParameter(j) #>>().WriteTitle(writer, value.<#= BuildGetItemProperty(j) #>, options, <#= BuildTitleParameter(j) #>);
 <# } #>
-            writer.Exit();
+            writer.ExitNested();
         }
         public void Serialize(XlsxWriter writer, Tuple<<#= BuildTypeParameters(i) #>> value, XlsxSerializerOptions options)
         {
@@ -41,13 +41,13 @@ namespace FlatXlsx.Serializers
                 writer.WriteEmpty();
                 return;
             }
-            writer.EnterAndValidate();
+            writer.EnterNested();
 <# for(var j = 1; j <= i; j++) { #>
 <# if(j != 1) { #>
 <# } #>
             options.GetRequiredSerializer<<#= BuildTypeParameter(j) #>>().Serialize(writer, value.<#= BuildGetItemProperty(j) #>, options);
 <# } #>
-            writer.Exit();
+            writer.ExitNested();
         }
     }
 
@@ -58,24 +58,24 @@ namespace FlatXlsx.Serializers
     {
 		public void WriteTitle(XlsxWriter writer, ValueTuple<<#= BuildTypeParameters(i) #>> value, XlsxSerializerOptions options, string name = "value"){
         {
-            writer.EnterAndValidate();
+            writer.EnterNested();
 <# for(var j = 1; j <= i; j++) { #>
 <# if(j != 1) { #>
 <# } #>
             options.GetRequiredSerializer<<#= BuildTypeParameter(j) #>>().WriteTitle(writer, value.<#= BuildGetItemProperty(j) #>, options, <#= BuildTitleParameter(j) #>);
 <# } #>
-            writer.Exit();
+            writer.ExitNested();
         }
         }
         public void Serialize(XlsxWriter writer, ValueTuple<<#= BuildTypeParameters(i) #>> value, XlsxSerializerOptions options)
         {
-            writer.EnterAndValidate();
+            writer.EnterNested();
 <# for(var j = 1; j <= i; j++) { #>
 <# if(j != 1) { #>
 <# } #>
             options.GetRequiredSerializer<<#= BuildTypeParameter(j) #>>().Serialize(writer, value.<#= BuildGetItemProperty(j) #>, options);
 <# } #>
-            writer.Exit();
+            writer.ExitNested();
         }
     }
 

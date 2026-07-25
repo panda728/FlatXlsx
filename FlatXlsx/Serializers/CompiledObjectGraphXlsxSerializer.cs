@@ -38,9 +38,9 @@ internal sealed class CompiledObjectGraphXlsxSerializer<T> : IXlsxSerializer<T>
 
     public void WriteTitle(XlsxWriter writer, T value, XlsxSerializerOptions options, string name = "value")
     {
-        writer.EnterAndValidate();
+        writer.EnterNested();
         writeTitle(writer, alternateSerializers, value, options);
-        writer.Exit();
+        writer.ExitNested();
     }
 
     public void Serialize(XlsxWriter writer, T value, XlsxSerializerOptions options)
@@ -54,9 +54,9 @@ internal sealed class CompiledObjectGraphXlsxSerializer<T> : IXlsxSerializer<T>
             }
         }
 
-        writer.EnterAndValidate();
+        writer.EnterNested();
         serialize(writer, alternateSerializers, value, options);
-        writer.Exit();
+        writer.ExitNested();
     }
 
     static WriteTitleMethod CompileTitleWriter(Type valueType, SerializableMemberInfo[] memberInfos)

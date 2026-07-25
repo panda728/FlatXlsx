@@ -11,13 +11,13 @@ public sealed class EnumerableXlsxSerializer<TCollection, TElement> : IXlsxSeria
             return;
         }
 
-        writer.EnterAndValidate();
+        writer.EnterNested();
         var serializer = options.GetRequiredSerializer<TElement>();
         foreach (var item in value)
         {
             serializer.WriteTitle(writer, item, options, name);
         }
-        writer.Exit();
+        writer.ExitNested();
     }
 
     public void Serialize(XlsxWriter writer, TCollection value, XlsxSerializerOptions options)
@@ -28,13 +28,13 @@ public sealed class EnumerableXlsxSerializer<TCollection, TElement> : IXlsxSeria
             return;
         }
 
-        writer.EnterAndValidate();
+        writer.EnterNested();
         var serializer = options.GetRequiredSerializer<TElement>();
         foreach (var item in value)
         {
             serializer.Serialize(writer, item, options);
         }
-        writer.Exit();
+        writer.ExitNested();
     }
 }
 
@@ -49,7 +49,7 @@ public sealed class DictionaryXlsxSerializer<TDictionary, TKey, TValue> : IXlsxS
             return;
         }
 
-        writer.EnterAndValidate();
+        writer.EnterNested();
         var keySerializer = options.GetRequiredSerializer<TKey>();
         var valueSerializer = options.GetRequiredSerializer<TValue>();
         foreach (var item in value)
@@ -57,7 +57,7 @@ public sealed class DictionaryXlsxSerializer<TDictionary, TKey, TValue> : IXlsxS
             keySerializer.WriteTitle(writer, item.Key, options, "key");
             valueSerializer.WriteTitle(writer, item.Value, options, name);
         }
-        writer.Exit();
+        writer.ExitNested();
     }
 
     public void Serialize(XlsxWriter writer, TDictionary value, XlsxSerializerOptions options)
@@ -68,7 +68,7 @@ public sealed class DictionaryXlsxSerializer<TDictionary, TKey, TValue> : IXlsxS
             return;
         }
 
-        writer.EnterAndValidate();
+        writer.EnterNested();
         var keySerializer = options.GetRequiredSerializer<TKey>();
         var valueSerializer = options.GetRequiredSerializer<TValue>();
 
@@ -83,7 +83,7 @@ public sealed class DictionaryXlsxSerializer<TDictionary, TKey, TValue> : IXlsxS
             keySerializer.Serialize(writer, item.Key, options);
             valueSerializer.Serialize(writer, item.Value, options);
         }
-        writer.Exit();
+        writer.ExitNested();
     }
 }
 
@@ -100,13 +100,13 @@ public sealed class EnumerableKeyValuePairXlsxSerializer<TCollection, TKey, TVal
 
         var keySerializer = options.GetRequiredSerializer<TKey>();
         var valueSerializer = options.GetRequiredSerializer<TValue>();
-        writer.EnterAndValidate();
+        writer.EnterNested();
         foreach (var item in value)
         {
             keySerializer.WriteTitle(writer, item.Key, options, "key");
             valueSerializer.WriteTitle(writer, item.Value, options, name);
         }
-        writer.Exit();
+        writer.ExitNested();
     }
 
     public void Serialize(XlsxWriter writer, TCollection value, XlsxSerializerOptions options)
@@ -119,7 +119,7 @@ public sealed class EnumerableKeyValuePairXlsxSerializer<TCollection, TKey, TVal
 
         var keySerializer = options.GetRequiredSerializer<TKey>();
         var valueSerializer = options.GetRequiredSerializer<TValue>();
-        writer.EnterAndValidate();
+        writer.EnterNested();
 
         foreach (var item in value)
         {
@@ -131,6 +131,6 @@ public sealed class EnumerableKeyValuePairXlsxSerializer<TCollection, TKey, TVal
             keySerializer.Serialize(writer, item.Key, options);
             valueSerializer.Serialize(writer, item.Value, options);
         }
-        writer.Exit();
+        writer.ExitNested();
     }
 }
