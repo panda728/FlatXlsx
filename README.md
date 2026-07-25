@@ -162,30 +162,31 @@ var potals = new Portal[] {
 XlsxSerializer.ToFile(potals, @"c:\test\potals.xlsx", XlsxSerializerOptions.Default);
 ~~~
 ## Example-3
-By setting attributes on the class, you can specify the name of the title or change the order of the columns.  
+To add a header row with your own titles, set `HeaderTitles` — that one setting is the whole ask.
+To use the member names as titles instead, set `HasHeaderRow = true`.
 ![image](https://user-images.githubusercontent.com/16958552/187447183-1c0af135-8407-4c79-be8d-0b4875973a79.png)
+~~~csharp
+XlsxSerializer.ToFile(potals, @"c:\test\potals.xlsx",
+    new XlsxSerializerOptions { HeaderTitles = new[] { "Name", "Owner", "Level" } });
+~~~
+
+Column titles and order can also live on the class itself, next to the members they describe.
+`[DataMember]` is honored too, for types already annotated for other serializers.
 ~~~csharp
 public class Portal
 {
-    [DataMember(Name = "Name Ex", Order = 3)]
+    [XlsxColumn("Name Ex", Order = 3)]
     public string Name { get; set; }
-    [DataMember(Name = "Owner Ex", Order = 1)]
+    [XlsxColumn("Owner Ex", Order = 1)]
     public string Owner { get; set; }
-    [DataMember(Name = "Level Ex", Order = 2)]
+    [XlsxColumn("Level Ex", Order = 2)]
     public int Level { get; set; }
+    [XlsxIgnore]
+    public string InternalNote { get; set; }
 }
 
-var potals = new Portal[] {
-    new Portal { Name = "Portal1", Owner = "panda728", Level = 8 },
-    new Portal { Name = "Portal2", Owner = "panda728", Level = 1 },
-    new Portal { Name = "Portal3", Owner = "panda728", Level = 2 },
-};
-
-var newConfig = XlsxSerializerOptions.Default with
-{
-    HasHeaderRecord = true,
-};
-XlsxSerializer.ToFile(potals, @"c:\test\potalsEx.xlsx", newConfig);
+XlsxSerializer.ToFile(potals, @"c:\test\potalsEx.xlsx",
+    new XlsxSerializerOptions { HasHeaderRow = true });
 ~~~
 ## Example-4
 Options can be set to display a title line and automatically adjust column widths.  
@@ -193,9 +194,7 @@ Options can be set to display a title line and automatically adjust column width
 ~~~csharp
 var newConfig = XlsxSerializerOptions.Default with
 {
-    CultureInfo = CultureInfo.InvariantCulture,
-    HasHeaderRecord = true,
-    HeaderTitles = new string[] { "Name", "Owner", "Level" },
+    HeaderTitles = new[] { "Name", "Owner", "Level" },
     AutoFitColumns = true,
 };
 XlsxSerializer.ToFile(potals, @"c:\test\potalsOp.xlsx", newConfig);
@@ -207,9 +206,7 @@ Optionally supports Autofilter.
 ~~~csharp
 var newConfig = XlsxSerializerOptions.Default with
 {
-    CultureInfo = CultureInfo.InvariantCulture,
-    HasHeaderRecord = true,
-    HeaderTitles = new string[] { "Name", "Owner", "Level" },
+    HeaderTitles = new[] { "Name", "Owner", "Level" },
     AutoFilter = true,
 };
 XlsxSerializer.ToFile(potals, @"c:\test\potalsOp.xlsx", newConfig);

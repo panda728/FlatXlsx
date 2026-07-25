@@ -29,7 +29,7 @@ public class UntrustedInputTests
     {
         var options = XlsxSerializerOptions.Default with
         {
-            HasHeaderRecord = true,
+            HasHeaderRow = true,
             HeaderTitles = new[] { "<b>Name</b>" },
         };
 
@@ -136,7 +136,7 @@ public class UntrustedInputTests
             yield return "b";
         }
 
-        var options = XlsxSerializerOptions.Default with { AutoFilter = true, HasHeaderRecord = true };
+        var options = XlsxSerializerOptions.Default with { AutoFilter = true, HasHeaderRow = true };
         Xlsx.Write(Source(), options);
 
         Assert.Equal(1, reads);

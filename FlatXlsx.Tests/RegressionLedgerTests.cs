@@ -1,4 +1,4 @@
-using FlatXlsx.Tests.Support;
+﻿using FlatXlsx.Tests.Support;
 
 namespace FlatXlsx.Tests;
 
@@ -39,7 +39,7 @@ public class RegressionLedgerTests
     {
         // The range was derived from the auto-fit tally, which is empty unless AutoFitColumns is
         // on, so the filter covered no columns at all.
-        var options = XlsxSerializerOptions.Default with { AutoFilter = true, HasHeaderRecord = true };
+        var options = XlsxSerializerOptions.Default with { AutoFilter = true, HasHeaderRow = true };
 
         var sheet = Xlsx.Read(new[] { (1, "a"), (2, "b") }, options);
 

@@ -285,7 +285,6 @@ namespace BenchmarkSample
             var customOptions = XlsxSerializerOptions.Default with
             {
                 HeaderTitles = COLUMN_TITLES,
-                HasHeaderRecord = true,
                 AutoFitColumns = true,
             };
             XlsxSerializer.ToFile(rows, fakeExcelFileName, customOptions);

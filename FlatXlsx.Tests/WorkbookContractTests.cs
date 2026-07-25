@@ -28,24 +28,93 @@ public class WorkbookContractTests
     [Fact]
     public void Members_appear_in_the_order_their_DataMember_asks_for()
     {
-        var sheet = Xlsx.Read(_portals, XlsxSerializerOptions.Default with { HasHeaderRecord = true });
+        var sheet = Xlsx.Read(_portals, XlsxSerializerOptions.Default with { HasHeaderRow = true });
 
         Assert.Equal(new[] { "Owner Ex", "Name Ex", "Level Ex" }, sheet.Texts(0));
         Assert.Equal(new[] { "panda728", "Portal1", "8" }, sheet.Texts(1));
     }
 
     [Fact]
-    public void Supplied_header_titles_replace_the_member_names()
+    public void Supplying_titles_is_the_whole_ask_for_a_titled_header()
     {
+        // The single most common request - "put these titles on top" - must be one setting.
+        // Requiring a separate header switch turns forgetting it into a silent no-header file.
         var options = XlsxSerializerOptions.Default with
         {
-            HasHeaderRecord = true,
             HeaderTitles = new[] { "Owner", "Portal", "Lv" },
         };
 
         var sheet = Xlsx.Read(_portals, options);
 
         Assert.Equal(new[] { "Owner", "Portal", "Lv" }, sheet.Texts(0));
+        Assert.Equal(new[] { "panda728", "Portal1", "8" }, sheet.Texts(1));
+    }
+
+    [Fact]
+    public void Options_can_be_built_without_knowing_about_providers()
+    {
+        // new XlsxSerializerOptions { ... } is the first thing a newcomer writes; it must work.
+        var options = new XlsxSerializerOptions { HeaderTitles = new[] { "Owner", "Portal", "Lv" } };
+
+        var sheet = Xlsx.Read(_portals, options);
+
+        Assert.Equal(new[] { "Owner", "Portal", "Lv" }, sheet.Texts(0));
+    }
+
+    class Employee
+    {
+        [XlsxColumn("部署", Order = 1)]
+        public string Department { get; set; } = "";
+
+        [XlsxColumn("氏名", Order = 0)]
+        public string Name { get; set; } = "";
+
+        public int Age { get; set; }
+
+        [XlsxIgnore]
+        public string InternalNote { get; set; } = "";
+    }
+
+    [Fact]
+    public void XlsxColumn_titles_and_orders_the_columns_where_they_are_declared()
+    {
+        var rows = new[] { new Employee { Department = "開発", Name = "北尾", Age = 30, InternalNote = "secret" } };
+
+        var sheet = Xlsx.Read(rows, XlsxSerializerOptions.Default with { HasHeaderRow = true });
+
+        Assert.Equal(new[] { "氏名", "部署", "Age" }, sheet.Texts(0));
+        Assert.Equal(new[] { "北尾", "開発", "30" }, sheet.Texts(1));
+    }
+
+    [Fact]
+    public void An_ignored_member_never_reaches_the_file()
+    {
+        // Claimant: whoever marked the member - the point is that its value must not leak.
+        var rows = new[] { new Employee { Department = "開発", Name = "北尾", InternalNote = "secret" } };
+
+        var sheet = Xlsx.Read(rows, XlsxSerializerOptions.Default);
+
+        Assert.Equal(3, sheet.Row(0).Count);
+        Assert.DoesNotContain("secret", sheet.Texts(0));
+    }
+
+    class DoublyAnnotated
+    {
+        [XlsxColumn("Xlsx名")]
+        [System.Runtime.Serialization.DataMember(Name = "DataMember名")]
+        public string Value { get; set; } = "";
+    }
+
+    [Fact]
+    public void XlsxColumn_wins_when_DataMember_is_also_present()
+    {
+        // DataMember stays honored for types already annotated for other serializers, but the
+        // attribute written for this library is the more specific intention.
+        var sheet = Xlsx.Read(
+            new[] { new DoublyAnnotated { Value = "v" } },
+            XlsxSerializerOptions.Default with { HasHeaderRow = true });
+
+        Assert.Equal(new[] { "Xlsx名" }, sheet.Texts(0));
     }
 
     [Fact]
@@ -152,7 +221,7 @@ public class WorkbookContractTests
     [Fact]
     public void The_filter_covers_the_header_and_every_row_written()
     {
-        var options = XlsxSerializerOptions.Default with { AutoFilter = true, HasHeaderRecord = true };
+        var options = XlsxSerializerOptions.Default with { AutoFilter = true, HasHeaderRow = true };
 
         var sheet = Xlsx.Read(new[] { "a", "b", "c" }, options);
 

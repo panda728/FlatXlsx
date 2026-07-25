@@ -251,7 +251,7 @@ public static class XlsxSerializer
     {
         await stream.WriteAsync(_sheetStart, 0, _sheetStart.Length, cancellationToken).ConfigureAwait(false);
 
-        if (options.HasHeaderRecord)
+        if (options.HasHeader)
             await stream.WriteAsync(_frozenTitleRow, 0, _frozenTitleRow.Length, cancellationToken).ConfigureAwait(false);
 
         var serializer = options.GetSerializer<T>();
@@ -271,7 +271,7 @@ public static class XlsxSerializer
 
         if (serializer != null)
         {
-            if (options.HasHeaderRecord)
+            if (options.HasHeader)
             {
                 writer.BeginRow();
                 writer.WriteRaw(_rowStart);
@@ -339,7 +339,7 @@ public static class XlsxSerializer
     {
         var serializer = options.GetSerializer<T>();
         if (serializer == null) return;
-        if (options.HasHeaderRecord && options.HeaderTitles != null)
+        if (options.HasHeader && options.HeaderTitles != null)
         {
             foreach (var t in options.HeaderTitles)
                 writer.Write(t);
@@ -389,7 +389,7 @@ public static class XlsxSerializer
     {
         stream.Write(_sheetStart, 0, _sheetStart.Length);
 
-        if (options.HasHeaderRecord)
+        if (options.HasHeader)
             stream.Write(_frozenTitleRow, 0, _frozenTitleRow.Length);
 
         var serializer = options.GetSerializer<T>();
@@ -409,7 +409,7 @@ public static class XlsxSerializer
 
         if (serializer != null)
         {
-            if (options.HasHeaderRecord)
+            if (options.HasHeader)
             {
                 writer.BeginRow();
                 writer.WriteRaw(_rowStart);
@@ -528,7 +528,7 @@ public static class XlsxSerializer
         // The result is stored in writer.ColumnMaxLength 
         var serializer = options.GetSerializer<T>();
         if (serializer == null) return;
-        if (options.HasHeaderRecord && options.HeaderTitles != null)
+        if (options.HasHeader && options.HeaderTitles != null)
         {
             foreach (var t in options.HeaderTitles)
                 writer.Write(t);

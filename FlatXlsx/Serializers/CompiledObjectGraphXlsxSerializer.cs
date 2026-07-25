@@ -22,7 +22,7 @@ internal sealed class CompiledObjectGraphXlsxSerializer<T> : IXlsxSerializer<T>
         var props = typeof(T).GetProperties().Where(p => p.GetIndexParameters().Length == 0);
         var fields = typeof(T).GetFields();
         var members = props.Cast<MemberInfo>().Concat(fields)
-            .Where(x => x.GetCustomAttribute<IgnoreXlsxSerializeAttribute>() == null)
+            .Where(x => x.GetCustomAttribute<XlsxIgnoreAttribute>() == null)
             .Select((x, i) => new SerializableMemberInfo(x, i))
             .OrderBy(x => x.Order)
             .ThenBy(x => x.Name)
@@ -170,11 +170,14 @@ internal sealed class SerializableMemberInfo
 
     public SerializableMemberInfo(MemberInfo member, int i)
     {
+        var column = member.GetCustomAttribute<XlsxColumnAttribute>();
         var dataMember = member.GetCustomAttribute<DataMemberAttribute>();
 
         MemberInfo = member;
-        Name = dataMember?.Name ?? member.Name;
-        Order = dataMember?.Order ?? i;
+        Name = column?.Name ?? dataMember?.Name ?? member.Name;
+        Order = column != null
+            ? (column.Order >= 0 ? column.Order : i)
+            : dataMember?.Order ?? i;
 
         MemberType = member switch
         {

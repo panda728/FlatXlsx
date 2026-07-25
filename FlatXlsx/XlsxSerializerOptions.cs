@@ -4,9 +4,14 @@ using System.Text;
 
 namespace FlatXlsx;
 
-public record XlsxSerializerOptions(IXlsxSerializerProvider Provider)
+public record XlsxSerializerOptions
 {
-    public static XlsxSerializerOptions Default { get; } = new XlsxSerializerOptions(XlsxSerializerProvider.Default);
+    public static XlsxSerializerOptions Default { get; } = new();
+
+    /// <summary>Resolves the serializer for each type. The default provider covers the
+    /// supported built-in types plus object graphs; replace it only to plug in custom
+    /// serializers.</summary>
+    public IXlsxSerializerProvider Provider { get; init; } = XlsxSerializerProvider.Default;
 
     public CultureInfo? CultureInfo { get; init; }
 
@@ -35,8 +40,20 @@ public record XlsxSerializerOptions(IXlsxSerializerProvider Provider)
     public string IntegerFormat { get; init; } = "#,##0;[Red]\\-#,##0";
     public string NumberFormat { get; init; } = "#,##0.00;[Red]\\-#,##0.00";
 
-    public bool HasHeaderRecord { get; init; } = false;
+    /// <summary>Adds a frozen header row titled from the members' names
+    /// (or their <see cref="XlsxColumnAttribute"/> / DataMember names).</summary>
+    /// <remarks>Not needed when <see cref="HeaderTitles"/> is set: supplying titles is already
+    /// asking for a header row.</remarks>
+    public bool HasHeaderRow { get; init; } = false;
+
+    /// <summary>Adds a frozen header row with exactly these titles. Setting this is sufficient
+    /// on its own; no other option needs to change.</summary>
     public string[]? HeaderTitles { get; init; }
+
+    /// <summary>A header row is written when either <see cref="HasHeaderRow"/> is set or
+    /// <see cref="HeaderTitles"/> supplies the titles - asking for titles and separately asking
+    /// for the row to exist would be two settings for one intention.</summary>
+    internal bool HasHeader => HasHeaderRow || HeaderTitles is { Length: > 0 };
 
     public IXlsxSerializer<T>? GetSerializer<T>()
         => Provider.GetSerializer<T>();

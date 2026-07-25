@@ -21,7 +21,30 @@ public sealed class XlsxSerializerAttribute(Type type) : Attribute
     }
 }
 
+/// <summary>Excludes the member from the output.</summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
-public sealed class IgnoreXlsxSerializeAttribute : Attribute
+public sealed class XlsxIgnoreAttribute : Attribute
 {
+}
+
+/// <summary>
+/// Sets the column title and position of a member, right where the member is declared.
+/// </summary>
+/// <remarks>
+/// <code>
+/// [XlsxColumn("部署", Order = 1)]
+/// public string Department { get; set; }
+/// </code>
+/// <c>[DataMember(Name, Order)]</c> is also honored for types already annotated for other
+/// serializers; when both are present, this attribute wins.
+/// </remarks>
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
+public sealed class XlsxColumnAttribute(string? name = null) : Attribute
+{
+    /// <summary>The column title. null keeps the member's own name.</summary>
+    public string? Name { get; } = name;
+
+    /// <summary>Position of the column; members are sorted by this, then by declaration order.
+    /// Unset means declaration order.</summary>
+    public int Order { get; set; } = -1;
 }

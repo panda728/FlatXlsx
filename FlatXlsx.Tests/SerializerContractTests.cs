@@ -1,4 +1,4 @@
-using FlatXlsx.Tests.Support;
+﻿using FlatXlsx.Tests.Support;
 
 namespace FlatXlsx.Tests;
 
@@ -33,7 +33,7 @@ public class SerializerContractTests
         // drift is labelled with someone else's name - wrong data under a plausible heading,
         // which is worse than an obvious failure.
         var subject = SerializerCase.All[type];
-        var options = XlsxSerializerOptions.Default with { HasHeaderRecord = true };
+        var options = XlsxSerializerOptions.Default with { HasHeaderRow = true };
 
         var sheet = Workbook.Read(subject.Write(options));
 

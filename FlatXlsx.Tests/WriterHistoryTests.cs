@@ -93,7 +93,7 @@ public class WriterHistoryTests
         // Claimant: anyone who moves an existing export onto the async API and expects the file
         // their users receive to be unchanged.
         var values = Enumerable.Range(0, 500).Select(i => $"row-{i}").ToArray();
-        var options = XlsxSerializerOptions.Default with { HasHeaderRecord = true, AutoFilter = true };
+        var options = XlsxSerializerOptions.Default with { HasHeaderRow = true, AutoFilter = true };
 
         var synchronous = Workbook.Read(Xlsx.Write(values, options));
         var asynchronous = Workbook.Read(await Xlsx.WriteAsync(values, options));
@@ -116,7 +116,7 @@ public class WriterHistoryTests
                 .Select(i => (i, $"name-{i}", i % 2 == 0 ? null : $"note-{i}"))
                 .ToArray();
 
-            var sheet = Xlsx.Read(rows, XlsxSerializerOptions.Default with { HasHeaderRecord = true });
+            var sheet = Xlsx.Read(rows, XlsxSerializerOptions.Default with { HasHeaderRow = true });
 
             Assert.All(sheet.Rows, row => Assert.Equal(3, row.Count));
         }, iter: 30);

@@ -58,7 +58,7 @@ var newConfig = XlsxSerializerOptions.Default with
     Provider = XlsxSerializerProvider.Create(
         //new[] { new BoolZeroOneSerializer() },
         new[] { XlsxSerializerProvider.Default }),
-    HasHeaderRecord = true,
+    HasHeaderRow = true,
     AutoFitColumns = true,
     AutoFilter = true,
 };
