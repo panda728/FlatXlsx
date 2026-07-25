@@ -102,11 +102,16 @@ public static class XlsxSerializer
     /// <summary>Creates an .xlsx file. The output is streamed; no working folder is used.</summary>
     public static void ToFile<T>(IEnumerable<T> rows, string fileName, XlsxSerializerOptions options)
     {
-        if (rows == null || !rows.Any())
+        if (rows == null)
+            return;
+
+        // The source is enumerated exactly once, so it may be a query or a forward-only reader.
+        using var enumerator = rows.GetEnumerator();
+        if (!enumerator.MoveNext())
             return;
 
         using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
-        ToStream(rows, fs, options);
+        ToStream(enumerator, fs, options);
     }
 
     /// <summary>Writes .xlsx content to the stream. The stream does not need to be seekable
@@ -115,9 +120,18 @@ public static class XlsxSerializer
     {
         if (stream == null)
             throw new ArgumentNullException(nameof(stream));
-        if (rows == null || !rows.Any())
+        if (rows == null)
             return;
 
+        using var enumerator = rows.GetEnumerator();
+        if (!enumerator.MoveNext())
+            return;
+
+        ToStream(enumerator, stream, options);
+    }
+
+    static void ToStream<T>(IEnumerator<T> rows, Stream stream, XlsxSerializerOptions options)
+    {
         using var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true);
 
         WriteEntry(archive, CONTENT_TYPE_XML, _contentTypes, options.CompressionLevel);
@@ -161,11 +175,15 @@ public static class XlsxSerializer
     /// <summary>Creates an .xlsx file asynchronously. The output is streamed; no working folder is used.</summary>
     public static async Task ToFileAsync<T>(IEnumerable<T> rows, string fileName, XlsxSerializerOptions options, CancellationToken cancellationToken = default)
     {
-        if (rows == null || !rows.Any())
+        if (rows == null)
+            return;
+
+        using var enumerator = rows.GetEnumerator();
+        if (!enumerator.MoveNext())
             return;
 
         using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
-        await ToStreamAsync(rows, fs, options, cancellationToken).ConfigureAwait(false);
+        await ToStreamAsync(enumerator, fs, options, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Writes .xlsx content to the stream asynchronously. The stream does not need to be
@@ -174,9 +192,18 @@ public static class XlsxSerializer
     {
         if (stream == null)
             throw new ArgumentNullException(nameof(stream));
-        if (rows == null || !rows.Any())
+        if (rows == null)
             return;
 
+        using var enumerator = rows.GetEnumerator();
+        if (!enumerator.MoveNext())
+            return;
+
+        await ToStreamAsync(enumerator, stream, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    static async Task ToStreamAsync<T>(IEnumerator<T> rows, Stream stream, XlsxSerializerOptions options, CancellationToken cancellationToken)
+    {
         using var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true);
 
         await WriteEntryAsync(archive, CONTENT_TYPE_XML, _contentTypes, options.CompressionLevel, cancellationToken).ConfigureAwait(false);
@@ -217,7 +244,7 @@ public static class XlsxSerializer
     }
 
     static async Task CreateSheetAsync<T>(
-        IEnumerable<T> rows,
+        IEnumerator<T> rows,
         Stream stream,
         XlsxWriter writer,
         XlsxSerializerOptions options,
@@ -229,34 +256,55 @@ public static class XlsxSerializer
         if (options.HasHeaderRecord)
             await stream.WriteAsync(_frozenTitleRow, 0, _frozenTitleRow.Length, cancellationToken).ConfigureAwait(false);
 
-        if (options.AutoFitColumns)
-            await WriteCellWidthAsync(rows, stream, writer, options, cancellationToken).ConfigureAwait(false);
+        var serializer = options.GetSerializer<T>();
+
+        // The caller has already advanced to the first row. Auto-fit has to measure rows before
+        // <cols> is written, so it buffers them - but never more than AutoFitDepth, and the
+        // source is still enumerated exactly once.
+        var buffered = new List<T> { rows.Current };
+        if (options.AutoFitColumns && serializer != null)
+        {
+            while (buffered.Count < options.AutoFitDepth && rows.MoveNext())
+                buffered.Add(rows.Current);
+            await WriteCellWidthAsync(buffered, stream, writer, options, cancellationToken).ConfigureAwait(false);
+        }
 
         await stream.WriteAsync(_dataStart, 0, _dataStart.Length, cancellationToken).ConfigureAwait(false);
 
-        var serializer = options.GetSerializer<T>();
         if (serializer != null)
         {
             if (options.HasHeaderRecord)
             {
+                writer.BeginRow();
                 writer.WriteRaw(_rowStart);
-                if (options.HeaderTitles != null && options.HeaderTitles.Any())
+                if (options.HeaderTitles != null && options.HeaderTitles.Length > 0)
                 {
                     foreach (var t in options.HeaderTitles)
                         writer.Write(t);
                 }
                 else
                 {
-                    serializer.WriteTitle(writer, rows.First(), options);
+                    serializer.WriteTitle(writer, buffered[0], options);
                 }
                 writer.WriteRaw(_rowEnd);
                 await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
             }
 
-            foreach (var row in rows)
+            foreach (var row in buffered)
             {
+                writer.BeginRow();
                 writer.WriteRaw(_rowStart);
                 serializer.Serialize(writer, row, options);
+                writer.WriteRaw(_rowEnd);
+                if (writer.BufferedBytes >= FLUSH_THRESHOLD)
+                    await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
+            }
+
+            while (rows.MoveNext())
+            {
+                writer.BeginRow();
+                writer.WriteRaw(_rowStart);
+                serializer.Serialize(writer, rows.Current, options);
                 writer.WriteRaw(_rowEnd);
                 if (writer.BufferedBytes >= FLUSH_THRESHOLD)
                     await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
@@ -266,11 +314,14 @@ public static class XlsxSerializer
 
         if (options.AutoFilter)
         {
+            // Derived from what was actually written: re-enumerating rows here would run a lazy
+            // source (a query, a reader) a second time, and ColumnMaxLength is only populated
+            // when AutoFitColumns is on.
             var colName = options.HeaderTitles != null && options.HeaderTitles.Any()
                 ? ToColumnName(options.HeaderTitles.Length)
-                : ToColumnName(writer.ColumnMaxLength.Count);
+                : ToColumnName(writer.MaxColumnCount);
 
-            var range = $"A1:{colName}{rows.Count() + 1}";
+            var range = $"A1:{colName}{writer.RowCount}";
             writer.WriteRaw(_autoFilterStart);
             writer.WriteRaw(Encoding.UTF8.GetBytes(range));
             writer.WriteRaw(_autoFilterEnd);
@@ -281,7 +332,7 @@ public static class XlsxSerializer
     }
 
     static async Task WriteCellWidthAsync<T>(
-        IEnumerable<T> rows,
+        List<T> rows,
         Stream stream,
         XlsxWriter writer,
         XlsxSerializerOptions options,
@@ -296,7 +347,7 @@ public static class XlsxSerializer
                 writer.Write(t);
             writer.Clear();
         }
-        foreach (var row in rows.Take(options.AutoFitDepth))
+        foreach (var row in rows)
         {
             serializer.Serialize(writer, row, options);
             writer.Clear();
@@ -324,7 +375,7 @@ public static class XlsxSerializer
         foreach (var s in writer.SharedStrings.Keys)
         {
             buffer.Write(_siStart);
-            WriteUtf8Bytes(SecurityElement.Escape(s), buffer);
+            XmlEscape.WriteEscaped(s, buffer);
             buffer.Write(_siEnd);
             await buffer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
         }
@@ -332,7 +383,7 @@ public static class XlsxSerializer
     }
 
     static void CreateSheet<T>(
-        IEnumerable<T> rows,
+        IEnumerator<T> rows,
         Stream stream,
         XlsxWriter writer,
         XlsxSerializerOptions options
@@ -343,53 +394,67 @@ public static class XlsxSerializer
         if (options.HasHeaderRecord)
             stream.Write(_frozenTitleRow, 0, _frozenTitleRow.Length);
 
-        if (options.AutoFitColumns)
-            WriteCellWidth(rows, stream, writer, options);
+        var serializer = options.GetSerializer<T>();
+
+        // The caller has already advanced to the first row. Auto-fit has to measure rows before
+        // <cols> is written, so it buffers them - but never more than AutoFitDepth, and the
+        // source is still enumerated exactly once.
+        var buffered = new List<T> { rows.Current };
+        if (options.AutoFitColumns && serializer != null)
+        {
+            while (buffered.Count < options.AutoFitDepth && rows.MoveNext())
+                buffered.Add(rows.Current);
+            WriteCellWidth(buffered, stream, writer, options);
+        }
 
         stream.Write(_dataStart, 0, _dataStart.Length);
 
-        var serializer = options.GetSerializer<T>();
         if (serializer != null)
         {
             if (options.HasHeaderRecord)
             {
+                writer.BeginRow();
                 writer.WriteRaw(_rowStart);
-                if (options.HeaderTitles != null && options.HeaderTitles.Any())
+                if (options.HeaderTitles != null && options.HeaderTitles.Length > 0)
                 {
                     foreach (var t in options.HeaderTitles)
                         writer.Write(t);
                 }
                 else
                 {
-                    serializer.WriteTitle(writer, rows.First(), options);
+                    serializer.WriteTitle(writer, buffered[0], options);
                 }
                 writer.WriteRaw(_rowEnd);
                 writer.CopyTo(stream);
             }
 
 #if NET5_0_OR_GREATER
-            if (rows is T[] arr)
-                WriteRowsSpan(arr.AsSpan(), stream, writer, serializer, options);
-            else if (rows is List<T> list)
-                WriteRowsSpan(CollectionsMarshal.AsSpan(list), stream, writer, serializer, options);
-            else
-                WriteRows(rows, stream, writer, serializer, options);
+            WriteRowsSpan(CollectionsMarshal.AsSpan(buffered), stream, writer, serializer, options);
 #else
-            if (rows is T[] arr)
-                WriteRowsSpan(arr.AsSpan(), stream, writer, serializer, options);
-            else
-                WriteRows(rows, stream, writer, serializer, options);
+            WriteRows(buffered, stream, writer, serializer, options);
 #endif
+            while (rows.MoveNext())
+            {
+                writer.BeginRow();
+                writer.WriteRaw(_rowStart);
+                serializer.Serialize(writer, rows.Current, options);
+                writer.WriteRaw(_rowEnd);
+                if (writer.BufferedBytes >= FLUSH_THRESHOLD)
+                    writer.CopyTo(stream);
+            }
         }
         writer.WriteRaw(_dataEnd);
 
         if (options.AutoFilter)
         {
+            // Derived from what was actually written: re-enumerating rows here would run a lazy
+            // source (a query, a reader) a second time, and ColumnMaxLength is only populated
+            // when AutoFitColumns is on.
             var colName = options.HeaderTitles != null && options.HeaderTitles.Any()
                 ? ToColumnName(options.HeaderTitles.Length)
-                : ToColumnName(writer.ColumnMaxLength.Count);
+                : ToColumnName(writer.MaxColumnCount);
 
-            var range = $"A1:{colName}{rows.Count() + 1}";
+            var range = $"A1:{colName}{writer.RowCount}";
             writer.WriteRaw(_autoFilterStart);
             writer.WriteRaw(Encoding.UTF8.GetBytes(range));
             writer.WriteRaw(_autoFilterEnd);
@@ -426,6 +491,7 @@ public static class XlsxSerializer
     {
         foreach (var row in rows)
         {
+            writer.BeginRow();
             writer.WriteRaw(_rowStart);
             serializer.Serialize(writer, row, options);
             writer.WriteRaw(_rowEnd);
@@ -444,6 +510,7 @@ public static class XlsxSerializer
     {
         foreach (var row in rows)
         {
+            writer.BeginRow();
             writer.WriteRaw(_rowStart);
             serializer.Serialize(writer, row, options);
             writer.WriteRaw(_rowEnd);
@@ -453,7 +520,7 @@ public static class XlsxSerializer
     }
 
     static void WriteCellWidth<T>(
-        IEnumerable<T> rows,
+        List<T> rows,
         Stream stream,
         XlsxWriter writer,
         XlsxSerializerOptions options
@@ -469,7 +536,7 @@ public static class XlsxSerializer
                 writer.Write(t);
             writer.Clear();
         }
-        foreach (var row in rows.Take(options.AutoFitDepth))
+        foreach (var row in rows)
         {
             serializer.Serialize(writer, row, options);
             writer.Clear();
@@ -497,7 +564,7 @@ public static class XlsxSerializer
         foreach (var s in writer.SharedStrings.Keys)
         {
             buffer.Write(_siStart);
-            WriteUtf8Bytes(SecurityElement.Escape(s), buffer);
+            XmlEscape.WriteEscaped(s, buffer);
             buffer.Write(_siEnd);
             buffer.CopyTo(stream);
         }

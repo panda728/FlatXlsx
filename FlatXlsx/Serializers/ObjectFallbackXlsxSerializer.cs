@@ -16,6 +16,12 @@ internal class ObjectFallbackXlsxSerializer : IXlsxSerializer<object>
 
     public void WriteTitle(XlsxWriter writer, object value, XlsxSerializerOptions options, string name = "value")
     {
+        if (value == null)
+        {
+            writer.Write(name);
+            return;
+        }
+
         var type = value.GetType();
         if (type == typeof(object))
         {

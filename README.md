@@ -71,6 +71,26 @@ but Excel displays numbers with at most 15 digits of precision.
 Output is streamed directly to the destination; no working folder is used.
 (`XlsxSerializerOptions.WorkPath` is obsolete and ignored.)
 
+## Handling untrusted data
+
+Values are frequently outside the caller's control, so the writer is built to keep any input
+from producing a broken or dangerous workbook:
+
+| Concern | Behaviour |
+|---|---|
+| Markup in values (`<`, `&`, `</t></is></c>`) | Escaped as XML text; it can never become elements. Header titles included. |
+| Control characters (`\0` and other C0 codes) | Dropped. XML 1.0 forbids them even escaped, and Excel rejects a file that contains them. |
+| Formula injection (`=cmd\|...`) | Not applicable: values are written as string or number cells, never as `<f>` formulas, so Excel does not evaluate them. Re-exporting the sheet to CSV is a separate matter. |
+| Circular references / deep nesting | `MaxDepth` (default 64) aborts with a clear exception. |
+| Collections expanding across columns | Excel's 16,384-column limit is enforced with an exception instead of silently emitting a corrupt file. Row (1,048,576) and cell-length (32,767) limits likewise. |
+| High-cardinality strings | The shared-string table is capped by `MaxSharedStrings` (default 1,000,000); beyond it, values are written as inline strings, so memory stays bounded. |
+
+The row source is enumerated exactly once, so a query or forward-only reader can be passed
+directly. With `AutoFitColumns` the first `AutoFitDepth` rows (default 200) are buffered to
+measure widths — bounded, never the whole sequence.
+
+`XlsxWriter` instances are not thread-safe; serializer providers and their caches are.
+
 ## Benchmark
 
 FlatXlsx 1.0.0 vs ClosedXML 0.105.0, .NET 10 (BenchmarkDotNet 0.15.8, ShortRun; N = 100 lines).

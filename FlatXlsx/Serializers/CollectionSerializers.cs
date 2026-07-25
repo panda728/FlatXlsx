@@ -5,6 +5,12 @@ public sealed class EnumerableXlsxSerializer<TCollection, TElement> : IXlsxSeria
 {
     public void WriteTitle(XlsxWriter writer, TCollection value, XlsxSerializerOptions options, string name = "value")
     {
+        if (value == null)
+        {
+            writer.WriteEmpty();
+            return;
+        }
+
         writer.EnterAndValidate();
         var serializer = options.GetRequiredSerializer<TElement>();
         foreach (var item in value)
@@ -37,6 +43,11 @@ public sealed class DictionaryXlsxSerializer<TDictionary, TKey, TValue> : IXlsxS
 {
     public void WriteTitle(XlsxWriter writer, TDictionary value, XlsxSerializerOptions options, string name = "value")
     {
+        if (value == null)
+        {
+            writer.WriteEmpty();
+            return;
+        }
 
         writer.EnterAndValidate();
         var keySerializer = options.GetRequiredSerializer<TKey>();
@@ -81,6 +92,12 @@ public sealed class EnumerableKeyValuePairXlsxSerializer<TCollection, TKey, TVal
 {
     public void WriteTitle(XlsxWriter writer, TCollection value, XlsxSerializerOptions options, string name = "value")
     {
+        if (value == null)
+        {
+            writer.WriteEmpty();
+            return;
+        }
+
         var keySerializer = options.GetRequiredSerializer<TKey>();
         var valueSerializer = options.GetRequiredSerializer<TValue>();
         writer.EnterAndValidate();

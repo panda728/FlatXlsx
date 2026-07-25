@@ -17,6 +17,12 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
     const int LEN_DATE = 10;
     const int LEN_DATETIME = 18;
 
+    // Hard limits of the SpreadsheetML format. Exceeding any of them yields a file that Excel
+    // reports as corrupt, so they are enforced up front instead of being discovered by the user.
+    const int MAX_ROWS = 1_048_576;
+    const int MAX_COLUMNS = 16_384;
+    const int MAX_CELL_LENGTH = 32_767;
+
 #if NET6_0_OR_GREATER
     const int XF_TIME = 4;
     const int LEN_TIME = 8;
@@ -30,14 +36,30 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
     static readonly byte[] _colStartString = Encoding.UTF8.GetBytes(@$"<c t=""s""><v>");
     static readonly byte[] _colEnd = Encoding.UTF8.GetBytes(@"</v></c>");
 
+    static readonly byte[] _colStartInline = Encoding.UTF8.GetBytes(@"<c t=""inlineStr""><is><t>");
+    static readonly byte[] _colStartInlineWrap = Encoding.UTF8.GetBytes(@$"<c t=""inlineStr"" s=""{XF_WRAP_TEXT}""><is><t>");
+    static readonly byte[] _colEndInline = Encoding.UTF8.GetBytes("</t></is></c>");
+
 #if NET8_0_OR_GREATER
     static readonly byte[] _colStartDateTime = Encoding.UTF8.GetBytes(@$"<c t=""d"" s=""{XF_DATETIME}""><v>");
     static readonly byte[] _colStartDate = Encoding.UTF8.GetBytes(@$"<c t=""d"" s=""{XF_DATE}""><v>");
     static readonly byte[] _colStartTime = Encoding.UTF8.GetBytes(@$"<c t=""d"" s=""{XF_TIME}""><v>");
-    static readonly byte[] _colStartInline = Encoding.UTF8.GetBytes(@"<c t=""inlineStr""><is><t>");
-    static readonly byte[] _colEndInline = Encoding.UTF8.GetBytes("</t></is></c>");
     static readonly SearchValues<char> _newlineChars = SearchValues.Create("\r\n");
-    static readonly SearchValues<byte> _xmlSpecialBytes = SearchValues.Create("<>&"u8);
+
+    /// <summary>Bytes that must never reach an inline string cell verbatim: markup characters
+    /// and the C0 controls that XML forbids entirely.</summary>
+    static readonly SearchValues<byte> _inlineUnsafeBytes = SearchValues.Create(BuildInlineUnsafeBytes());
+
+    static byte[] BuildInlineUnsafeBytes()
+    {
+        var bytes = new byte[0x20 + 3];
+        for (var i = 0; i < 0x20; i++)
+            bytes[i] = (byte)i;
+        bytes[0x20] = (byte)'<';
+        bytes[0x21] = (byte)'>';
+        bytes[0x22] = (byte)'&';
+        return bytes;
+    }
 #endif
 
     readonly ArrayPoolBufferWriter _writer = new();
@@ -48,6 +70,8 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
     int _columnIndex = 0;
     int _currentDepth = 0;
     int _stringIndex = 0;
+    int _rowCount = 0;
+    int _maxColumnCount = 0;
 
     public void Dispose()
     {
@@ -75,6 +99,21 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
     /// </summary>
     public Dictionary<int, int> ColumnMaxLength { get; } = new();
     public void StopCountingCharLength() => _countingCharLength = false;
+
+    /// <summary>Number of rows opened with <see cref="BeginRow"/> so far.</summary>
+    public int RowCount => _rowCount;
+
+    /// <summary>Widest row written so far, in cells.</summary>
+    public int MaxColumnCount => _maxColumnCount;
+
+    /// <summary>Starts a new row and enforces the sheet's row limit.</summary>
+    public void BeginRow()
+    {
+        if (_rowCount == MAX_ROWS)
+            ThrowTooManyRows();
+        _rowCount++;
+        _columnIndex = 0;
+    }
 
     public void Clear()
     {
@@ -123,35 +162,43 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int WriteEmpty()
     {
-        _columnIndex++;
         _writer.Write(_emptyColumn);
+        SetMaxLength(0);
         return 0;
     }
 
+    /// <summary>Closes the current cell: records its width for auto-fit and enforces the
+    /// sheet's column limit. Every cell written must pass through here.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     void SetMaxLength(int length)
     {
-        if (!_countingCharLength)
-            return;
-
+        if (_countingCharLength)
+        {
 #if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
-        if (!ColumnMaxLength.TryAdd(_columnIndex, length))
-        {
-            if (ColumnMaxLength[_columnIndex] < length)
-                ColumnMaxLength[_columnIndex] = length;
-        }
+            if (!ColumnMaxLength.TryAdd(_columnIndex, length))
+            {
+                if (ColumnMaxLength[_columnIndex] < length)
+                    ColumnMaxLength[_columnIndex] = length;
+            }
 #else
-        if (ColumnMaxLength.ContainsKey(_columnIndex))
-        {
-            if (ColumnMaxLength[_columnIndex] < length)
-                ColumnMaxLength[_columnIndex] = length;
-        }
-        else
-        {
-            ColumnMaxLength.Add(_columnIndex, length);
-        }
+            if (ColumnMaxLength.ContainsKey(_columnIndex))
+            {
+                if (ColumnMaxLength[_columnIndex] < length)
+                    ColumnMaxLength[_columnIndex] = length;
+            }
+            else
+            {
+                ColumnMaxLength.Add(_columnIndex, length);
+            }
 #endif
+        }
+
+        if (_columnIndex == MAX_COLUMNS)
+            ThrowTooManyColumns();
         _columnIndex++;
+
+        if (_columnIndex > _maxColumnCount)
+            _maxColumnCount = _columnIndex;
     }
 
     /// <summary>Write string.</summary>
@@ -163,19 +210,21 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
             return;
         }
 
-#if NET8_0_OR_GREATER
-        _writer.Write(
-            value.AsSpan().ContainsAny(_newlineChars)
-                ? _colStartStringWrap
-                : _colStartString
-        );
-#else
-        _writer.Write(
-            value.Contains(Environment.NewLine)
-                ? _colStartStringWrap
-                : _colStartString
-        );
-#endif
+        if (value.Length > MAX_CELL_LENGTH)
+            ThrowCellTooLong(value.Length);
+
+        var wrap = ContainsNewLine(value);
+
+        // The shared-string table has to be held in memory until the whole sheet is written, so
+        // high-cardinality data (ids, timestamps, free text) would grow it without bound while
+        // gaining nothing from deduplication. Past the cap, values go out as inline strings.
+        if (SharedStrings.Count >= _options.MaxSharedStrings && !SharedStrings.ContainsKey(value))
+        {
+            WriteEscapedInline(value, wrap);
+            return;
+        }
+
+        _writer.Write(wrap ? _colStartStringWrap : _colStartString);
 
 #if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
         var index = SharedStrings.TryAdd(value, _stringIndex)
@@ -199,6 +248,23 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
         WriteUtf8Bytes($"{index}");
 #endif
         _writer.Write(_colEnd);
+        SetMaxLength(value.Length);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static bool ContainsNewLine(string value)
+#if NET8_0_OR_GREATER
+        => value.AsSpan().ContainsAny(_newlineChars);
+#else
+        => value.IndexOf('\n') >= 0 || value.IndexOf('\r') >= 0;
+#endif
+
+    /// <summary>Writes the value as an inline string cell, escaping it as XML text.</summary>
+    void WriteEscapedInline(string value, bool wrap)
+    {
+        _writer.Write(wrap ? _colStartInlineWrap : _colStartInline);
+        XmlEscape.WriteEscaped(value, _writer);
+        _writer.Write(_colEndInline);
         SetMaxLength(value.Length);
     }
 
@@ -276,34 +342,45 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
     }
 
     /// <summary>Writes the value as an inline string cell, bypassing the shared-string table.
-    /// For values that are unique per row (Guid, timestamps), the shared-string table only
-    /// adds allocations and dictionary growth without any dedup benefit.
-    /// The value's UTF-8 form must not contain XML special characters.</summary>
+    /// For values that are unique per row (Guid, timestamps) the table only adds allocations and
+    /// dictionary growth without any dedup benefit.</summary>
+    /// <remarks>The formatted text is checked for markup and control characters; anything that
+    /// would need escaping falls back to the shared-string path, so a custom serializer cannot
+    /// inject markup into the sheet through this method.</remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WriteInlineString<T>(T value) where T : IUtf8SpanFormattable
     {
-        _writer.Write(_colStartInline);
-        var written = WriteUtf8Formatted(value, default);
-        _writer.Write(_colEndInline);
-        SetMaxLength(written);
+        Span<byte> tmp = stackalloc byte[128];
+        if (!value.TryFormat(tmp, out var written, default, null) || NeedsEscaping(tmp[..written]))
+        {
+            Write(value.ToString());
+            return;
+        }
+        WriteInlineBytes(tmp[..written]);
     }
 
-    /// <summary>Inline-string variant for culture-formatted values: falls back to the
-    /// shared-string path if the formatted text contains XML special characters.</summary>
+    /// <summary>Inline-string variant for culture-formatted values.</summary>
     public void WriteInlineString<T>(T value, IFormatProvider? provider) where T : IUtf8SpanFormattable, IFormattable
     {
-        Span<byte> tmp = stackalloc byte[64];
-        if (!value.TryFormat(tmp, out var written, default, provider) ||
-            tmp[..written].ContainsAny(_xmlSpecialBytes))
+        Span<byte> tmp = stackalloc byte[128];
+        if (!value.TryFormat(tmp, out var written, default, provider) || NeedsEscaping(tmp[..written]))
         {
             Write(value.ToString(null, provider));
             return;
         }
+        WriteInlineBytes(tmp[..written]);
+    }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static bool NeedsEscaping(ReadOnlySpan<byte> utf8) => utf8.ContainsAny(_inlineUnsafeBytes);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    void WriteInlineBytes(ReadOnlySpan<byte> utf8)
+    {
         _writer.Write(_colStartInline);
-        _writer.Write(tmp[..written]);
+        _writer.Write(utf8);
         _writer.Write(_colEndInline);
-        SetMaxLength(written);
+        SetMaxLength(utf8.Length);
     }
 #endif
 
@@ -444,4 +521,24 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
     {
         throw new InvalidOperationException($"Serializer detects reached max depth:{depth}. Please check the circular reference.");
     }
+
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
+    [DoesNotReturn]
+#endif
+    static void ThrowTooManyRows()
+        => throw new InvalidOperationException($"A worksheet cannot hold more than {MAX_ROWS} rows.");
+
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
+    [DoesNotReturn]
+#endif
+    static void ThrowTooManyColumns()
+        => throw new InvalidOperationException(
+            $"A worksheet cannot hold more than {MAX_COLUMNS} columns. " +
+            "A nested collection or object graph is likely expanding into too many cells.");
+
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
+    [DoesNotReturn]
+#endif
+    static void ThrowCellTooLong(int length)
+        => throw new InvalidOperationException($"A cell cannot hold more than {MAX_CELL_LENGTH} characters, but the value has {length}.");
 }

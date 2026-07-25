@@ -10,7 +10,14 @@ public record XlsxSerializerOptions(IXlsxSerializerProvider Provider)
 
     public CultureInfo? CultureInfo { get; init; }
 
+    /// <summary>Guards against circular references and deeply nested object graphs.</summary>
     public int MaxDepth { get; init; } = 64;
+
+    /// <summary>Upper bound on the number of distinct strings kept in the shared-string table.
+    /// The table lives in memory until the sheet is finished, so this caps memory use when the
+    /// data has high cardinality. Values beyond the cap are written as inline strings instead,
+    /// which costs file size but never fails.</summary>
+    public int MaxSharedStrings { get; init; } = 1_000_000;
 
     public bool AutoFilter { get; init; } = false;
     public bool AutoFitColumns { get; init; } = false;
