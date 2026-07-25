@@ -69,7 +69,6 @@ but Excel displays numbers with at most 15 digits of precision.
 ## Notice
 
 Output is streamed directly to the destination; no working folder is used.
-(`XlsxSerializerOptions.WorkPath` is obsolete and ignored.)
 
 ## Message languages
 

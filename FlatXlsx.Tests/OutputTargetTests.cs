@@ -1,4 +1,4 @@
-using System.Buffers;
+﻿using System.Buffers;
 using System.IO.Pipelines;
 using FlatXlsx.Tests.Support;
 
@@ -60,15 +60,16 @@ public class OutputTargetTests
         // export finishes; if the writer only flushed at the end, a large export would sit in
         // memory instead of streaming out.
         var pipe = new Pipe();
+        var cancellation = TestContext.Current.CancellationToken;
 
         var writing = Task.Run(async () =>
         {
-            await XlsxSerializer.ToAsync(_rows, pipe.Writer, XlsxSerializerOptions.Default);
+            await XlsxSerializer.ToAsync(_rows, pipe.Writer, XlsxSerializerOptions.Default, cancellation);
             await pipe.Writer.CompleteAsync();
-        });
+        }, cancellation);
 
         using var received = new MemoryStream();
-        await pipe.Reader.CopyToAsync(received);
+        await pipe.Reader.CopyToAsync(received, cancellation);
         await pipe.Reader.CompleteAsync();
         await writing;
 
@@ -99,7 +100,7 @@ public class OutputTargetTests
         var path = Path.Combine(Path.GetTempPath(), $"flatxlsx_{Guid.NewGuid():N}.xlsx");
         try
         {
-            await XlsxSerializer.ToFileAsync(_rows, path, XlsxSerializerOptions.Default);
+            await XlsxSerializer.ToFileAsync(_rows, path, XlsxSerializerOptions.Default, TestContext.Current.CancellationToken);
 
             var sheet = Workbook.Read(File.ReadAllBytes(path));
             Assert.Equal(_rows, sheet.Rows.Select(r => r[0].Text).ToArray());

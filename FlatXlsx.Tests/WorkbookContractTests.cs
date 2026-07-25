@@ -1,4 +1,4 @@
-using System.Runtime.Serialization;
+﻿using System.Runtime.Serialization;
 using FlatXlsx.Tests.Support;
 
 namespace FlatXlsx.Tests;
@@ -142,7 +142,7 @@ public class WorkbookContractTests
     [Fact]
     public void Auto_fitted_width_stops_at_the_configured_maximum()
     {
-        var options = XlsxSerializerOptions.Default with { AutoFitColumns = true, AutoFitWidhtMax = 10 };
+        var options = XlsxSerializerOptions.Default with { AutoFitColumns = true, AutoFitWidthMax = 10 };
 
         var sheet = Xlsx.Read(new[] { new string('x', 500) }, options);
 

@@ -8,7 +8,6 @@ namespace FlatXlsx;
 
 public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
 {
-    //const int XF_NORMAL = 0;
     const int XF_WRAP_TEXT = 1;
     const int XF_DATETIME = 2;
     const int XF_DATE = 3;
@@ -84,9 +83,7 @@ public class XlsxWriter(XlsxSerializerOptions options) : IDisposable
     /// Maintain a dictionary of strings. Output the same value with the same ID.
     /// </summary>
     public Dictionary<string, int> SharedStrings { get; } = new();
-    public ReadOnlySpan<byte> AsSpan() => _writer.OutputAsSpan;
-    public ReadOnlyMemory<byte> AsMemory() => _writer.OutputAsMemory;
-    public long BytesCommitted() => _writer.BytesCommitted;
+
     /// <summary>Bytes currently buffered and not yet copied to the output stream.</summary>
     public int BufferedBytes => _writer.BytesWritten;
     public override string ToString() => Encoding.UTF8.GetString(

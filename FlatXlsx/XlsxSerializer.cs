@@ -82,7 +82,6 @@ public static class XlsxSerializer
     readonly static byte[] _autoFilterEnd = Encoding.UTF8.GetBytes(@"""/>");
 
     readonly static byte[] _sstStart = Encoding.UTF8.GetBytes(@"<sst xmlns=""http://schemas.openxmlformats.org/spreadsheetml/2006/main"">");
-    //readonly byte[] _sstStart = Encoding.UTF8.GetBytes(@"<sst xmlns=""http://schemas.openxmlformats.org/spreadsheetml/2006/main"" uniqueCount=""1"">");
     readonly static byte[] _sstEnd = Encoding.UTF8.GetBytes(@"</sst>");
     readonly static byte[] _siStart = Encoding.UTF8.GetBytes("<si><t>");
     readonly static byte[] _siEnd = Encoding.UTF8.GetBytes("</t></si>");
@@ -359,7 +358,7 @@ public static class XlsxSerializer
         foreach (var pair in writer.ColumnMaxLength)
         {
             var id = pair.Key + 1;
-            var width = Math.Min(options.AutoFitWidhtMax, pair.Value + COLUMN_WIDTH_MARGIN);
+            var width = Math.Min(options.AutoFitWidthMax, pair.Value + COLUMN_WIDTH_MARGIN);
 
             WriteUtf8Bytes(@$"<col min=""{id}"" max =""{id}"" width =""{width:0.0}"" bestFit =""1"" customWidth =""1"" />", buffer);
         }
@@ -548,7 +547,7 @@ public static class XlsxSerializer
         foreach (var pair in writer.ColumnMaxLength)
         {
             var id = pair.Key + 1;
-            var width = Math.Min(options.AutoFitWidhtMax, pair.Value + COLUMN_WIDTH_MARGIN);
+            var width = Math.Min(options.AutoFitWidthMax, pair.Value + COLUMN_WIDTH_MARGIN);
 
             WriteUtf8Bytes(@$"<col min=""{id}"" max =""{id}"" width =""{width:0.0}"" bestFit =""1"" customWidth =""1"" />", buffer);
         }

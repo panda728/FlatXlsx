@@ -4,11 +4,14 @@ using System.Runtime.CompilerServices;
 
 namespace FlatXlsx;
 
-public class ArrayPoolBufferWriter : IBufferWriter<byte>, IDisposable
+/// <summary>
+/// The pooled byte buffer the writer builds each row in. Internal: callers reach the output
+/// through <see cref="XlsxSerializer"/>, never through the buffer itself.
+/// </summary>
+internal class ArrayPoolBufferWriter : IBufferWriter<byte>, IDisposable
 {
     byte[]? _rentedBuffer;
     int _written;
-    long _committed;
 
     const int MinimumBufferSize = 256;
 
@@ -19,16 +22,6 @@ public class ArrayPoolBufferWriter : IBufferWriter<byte>, IDisposable
 
         _rentedBuffer = ArrayPool<byte>.Shared.Rent(initialCapacity);
         _written = 0;
-        _committed = 0;
-    }
-
-    public Memory<byte> OutputAsMemory
-    {
-        get
-        {
-            CheckIfDisposed();
-            return _rentedBuffer.AsMemory(0, _written);
-        }
     }
 
     public Span<byte> OutputAsSpan
@@ -46,15 +39,6 @@ public class ArrayPoolBufferWriter : IBufferWriter<byte>, IDisposable
         {
             CheckIfDisposed();
             return _written;
-        }
-    }
-
-    public long BytesCommitted
-    {
-        get
-        {
-            CheckIfDisposed();
-            return _committed;
         }
     }
 
@@ -90,8 +74,6 @@ public class ArrayPoolBufferWriter : IBufferWriter<byte>, IDisposable
 
         await stream.WriteAsync(_rentedBuffer, 0, _written, cancellationToken).ConfigureAwait(false);
 
-        _committed += _written;
-
         ClearHelper();
     }
 
@@ -112,7 +94,6 @@ public class ArrayPoolBufferWriter : IBufferWriter<byte>, IDisposable
         }
 
         stream.Write(_rentedBuffer, 0, _written);
-        _committed += _written;
         ClearHelper();
     }
 
