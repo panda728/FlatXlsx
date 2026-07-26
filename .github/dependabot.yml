@@ -1,0 +1,8 @@
+# Keeps the workflow actions on current majors; a deprecated-runtime warning
+# (like the Node 20 one) then arrives as a pull request instead of a log note.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
