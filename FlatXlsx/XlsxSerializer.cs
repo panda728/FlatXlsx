@@ -2,7 +2,6 @@
 using System.IO;
 using System.IO.Compression;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace FlatXlsx;
@@ -70,45 +69,82 @@ public static class XlsxSerializer
     // Excel reserves numFmtId values below 164 for its built-in formats; custom codes start there.
     const int CUSTOM_NUMFMT_BASE = 164;
 
-    /// <summary>Builds styles.xml from the options' sheet-wide formats plus the format codes
+    // styles.xml fixed fragments; the dynamic parts (counts, ids, format codes) are written
+    // between them straight into the pooled buffer, so building the document allocates nothing.
+    readonly static byte[] _stylesStart = Encoding.UTF8.GetBytes(@"<styleSheet xmlns=""http://schemas.openxmlformats.org/spreadsheetml/2006/main""><numFmts count=""");
+    readonly static byte[] _numFmtStart = Encoding.UTF8.GetBytes(@"<numFmt numFmtId=""");
+    readonly static byte[] _numFmtMid = Encoding.UTF8.GetBytes(@""" formatCode=""");
+    readonly static byte[] _numFmtEnd = Encoding.UTF8.GetBytes(@"""/>");
+    readonly static byte[] _stylesMid = Encoding.UTF8.GetBytes(@"</numFmts><fonts count=""1""><font/></fonts><fills count=""1""><fill/></fills><borders count=""1""><border/></borders><cellStyleXfs count=""1""><xf/></cellStyleXfs><cellXfs count=""");
+    readonly static byte[] _stylesFixedXfs = Encoding.UTF8.GetBytes(@"<xf/><xf><alignment wrapText=""true""/></xf>");
+    readonly static byte[] _xfStart = Encoding.UTF8.GetBytes(@"<xf numFmtId=""");
+    readonly static byte[] _xfEnd = Encoding.UTF8.GetBytes(@""" applyNumberFormat=""1""></xf>");
+    readonly static byte[] _stylesEnd = Encoding.UTF8.GetBytes("</cellXfs></styleSheet>");
+    readonly static byte[] _quoteClose = Encoding.UTF8.GetBytes(@""">");
+
+    /// <summary>Writes styles.xml from the options' sheet-wide formats plus the format codes
     /// the cells actually used. Written after the sheet for the same reason strings.xml is:
     /// its content is only known once the cells have been written.</summary>
-    static byte[] BuildStyles(XlsxSerializerOptions options, IReadOnlyList<string> customCodes)
+    static void WriteStyles(ArrayPoolBufferWriter buffer, XlsxSerializerOptions options, IReadOnlyList<string> customCodes)
     {
-        var sb = new StringBuilder(1024);
-        sb.Append(@"<styleSheet xmlns=""http://schemas.openxmlformats.org/spreadsheetml/2006/main"">");
-        sb.Append(@"<numFmts count=""").Append(5 + customCodes.Count).Append(@""">");
-        AppendNumFmt(sb, 1, options.DateTimeFormat);
-        AppendNumFmt(sb, 2, options.DateFormat);
-        AppendNumFmt(sb, 3, options.TimeFormat);
-        AppendNumFmt(sb, 4, options.IntegerFormat);
-        AppendNumFmt(sb, 5, options.NumberFormat);
+        buffer.Write(_stylesStart);
+        WriteInt(buffer, 5 + customCodes.Count);
+        buffer.Write(_quoteClose);
+        WriteNumFmt(buffer, 1, options.DateTimeFormat);
+        WriteNumFmt(buffer, 2, options.DateFormat);
+        WriteNumFmt(buffer, 3, options.TimeFormat);
+        WriteNumFmt(buffer, 4, options.IntegerFormat);
+        WriteNumFmt(buffer, 5, options.NumberFormat);
         for (var i = 0; i < customCodes.Count; i++)
-            AppendNumFmt(sb, CUSTOM_NUMFMT_BASE + i, customCodes[i]);
-        sb.Append("</numFmts>");
-        sb.Append("<fonts count=\"1\"><font/></fonts>");
-        sb.Append("<fills count=\"1\"><fill/></fills>");
-        sb.Append("<borders count=\"1\"><border/></borders>");
-        sb.Append("<cellStyleXfs count=\"1\"><xf/></cellStyleXfs>");
-        sb.Append(@"<cellXfs count=""").Append(7 + customCodes.Count).Append(@""">");
-        sb.Append("<xf/>");
-        sb.Append(@"<xf><alignment wrapText=""true""/></xf>");
+            WriteNumFmt(buffer, CUSTOM_NUMFMT_BASE + i, customCodes[i]);
+        buffer.Write(_stylesMid);
+        WriteInt(buffer, 7 + customCodes.Count);
+        buffer.Write(_quoteClose);
+        buffer.Write(_stylesFixedXfs);
         for (var id = 1; id <= 5; id++)
-            sb.Append(@"<xf numFmtId=""").Append(id).Append(@""" applyNumberFormat=""1""></xf>");
+            WriteXf(buffer, id);
         for (var i = 0; i < customCodes.Count; i++)
-            sb.Append(@"<xf numFmtId=""").Append(CUSTOM_NUMFMT_BASE + i).Append(@""" applyNumberFormat=""1""></xf>");
-        sb.Append("</cellXfs>");
-        sb.Append("</styleSheet>");
-        return Encoding.UTF8.GetBytes(sb.ToString());
+            WriteXf(buffer, CUSTOM_NUMFMT_BASE + i);
+        buffer.Write(_stylesEnd);
 
-        static void AppendNumFmt(StringBuilder sb, int id, string code)
-            => sb.Append(@"<numFmt numFmtId=""").Append(id).Append(@""" formatCode=""").Append(EscapeAttribute(code)).Append(@"""/>");
+        static void WriteNumFmt(ArrayPoolBufferWriter buffer, int id, string code)
+        {
+            buffer.Write(_numFmtStart);
+            WriteInt(buffer, id);
+            buffer.Write(_numFmtMid);
+            XmlEscape.WriteEscapedAttribute(code, buffer);
+            buffer.Write(_numFmtEnd);
+        }
+
+        static void WriteXf(ArrayPoolBufferWriter buffer, int id)
+        {
+            buffer.Write(_xfStart);
+            WriteInt(buffer, id);
+            buffer.Write(_xfEnd);
+        }
+    }
+
+    /// <summary>Writes the number's invariant decimal digits without allocating a string.</summary>
+    static void WriteInt(ArrayPoolBufferWriter buffer, int value)
+    {
+#if NET8_0_OR_GREATER
+        Span<byte> tmp = stackalloc byte[12];
+        value.TryFormat(tmp, out var written, default, System.Globalization.CultureInfo.InvariantCulture);
+        buffer.Write(tmp.Slice(0, written));
+#else
+        WriteUtf8Bytes(value.ToString(System.Globalization.CultureInfo.InvariantCulture), buffer);
+#endif
     }
 
     readonly static byte[] _rowStart = Encoding.UTF8.GetBytes("<row>");
     readonly static byte[] _rowEnd = Encoding.UTF8.GetBytes("</row>");
     readonly static byte[] _colStart = Encoding.UTF8.GetBytes("<cols>");
     readonly static byte[] _colEnd = Encoding.UTF8.GetBytes("</cols>");
+    readonly static byte[] _colMin = Encoding.UTF8.GetBytes(@"<col min=""");
+    readonly static byte[] _colMax = Encoding.UTF8.GetBytes(@""" max=""");
+    readonly static byte[] _colWidth = Encoding.UTF8.GetBytes(@""" width=""");
+    // Widths are whole character counts, so the mandatory decimal is a constant ".0".
+    readonly static byte[] _colTail = Encoding.UTF8.GetBytes(@".0"" bestFit=""1"" customWidth=""1""/>");
     readonly static byte[] _frozenTitleRow = Encoding.UTF8.GetBytes(@"<sheetViews>
 <sheetView tabSelected=""1"" workbookViewId=""0"">
 <pane ySplit=""1"" topLeftCell=""A2"" activePane=""bottomLeft"" state=""frozen""/>
@@ -157,7 +193,10 @@ public static class XlsxSerializer
 
         try
         {
-            using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
+            // bufferSize 1 disables FileStream's own buffer: the deflate stage already batches
+            // writes into sizable chunks, so the default 4 KB buffer would only add a copy and
+            // an allocation per export.
+            using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 1);
             ToStream(enumerator, hasRows, fs, options);
         }
         catch
@@ -203,7 +242,12 @@ public static class XlsxSerializer
             CreateSheet(rows, hasRows, sheetStream, writer, options);
         using (var stringsStream = archive.CreateEntry(STRINGS_XML, options.CompressionLevel).Open())
             WriteSharedStrings(stringsStream, writer);
-        WriteEntry(archive, STYLES_XML, BuildStyles(options, writer.Formats.Codes), options.CompressionLevel);
+        using (var stylesStream = archive.CreateEntry(STYLES_XML, options.CompressionLevel).Open())
+        {
+            using var buffer = new ArrayPoolBufferWriter(1024);
+            WriteStyles(buffer, options, writer.Formats.Codes);
+            buffer.CopyTo(stylesStream);
+        }
     }
 
     /// <summary>Writes .xlsx content to an <see cref="IBufferWriter{T}"/> such as
@@ -321,7 +365,8 @@ public static class XlsxSerializer
 
         try
         {
-            using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
+            // bufferSize 1 disables FileStream's own buffer; see the synchronous ToFile.
+            using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 1, useAsync: true);
             await WriteContainerAsync(fs, options,
                 (s, w) => CreateSheetAsync(enumerator, hasRows, s, w, options, cancellationToken),
                 cancellationToken).ConfigureAwait(false);
@@ -382,7 +427,8 @@ public static class XlsxSerializer
 
             try
             {
-                using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
+                // bufferSize 1 disables FileStream's own buffer; see the synchronous ToFile.
+                using var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 1, useAsync: true);
                 await WriteContainerAsync(fs, options,
                     (s, w) => CreateSheetAsync(enumerator, hasRows, s, w, options, cancellationToken),
                     cancellationToken).ConfigureAwait(false);
@@ -487,7 +533,17 @@ public static class XlsxSerializer
             await DisposeEntryAsync(stringsStream).ConfigureAwait(false);
         }
 
-        await WriteEntryAsync(archive, STYLES_XML, BuildStyles(options, writer.Formats.Codes), options.CompressionLevel, cancellationToken).ConfigureAwait(false);
+        var stylesStream = await OpenEntryAsync(archive, STYLES_XML, options.CompressionLevel, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            using var buffer = new ArrayPoolBufferWriter(1024);
+            WriteStyles(buffer, options, writer.Formats.Codes);
+            await buffer.CopyToAsync(stylesStream, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            await DisposeEntryAsync(stylesStream).ConfigureAwait(false);
+        }
     }
 
     static Task<Stream> OpenEntryAsync(ZipArchive archive, string entryName, System.IO.Compression.CompressionLevel compressionLevel, CancellationToken cancellationToken)
@@ -554,65 +610,77 @@ public static class XlsxSerializer
 
         // When the caller found a first row it has already advanced to it. Auto-fit has to
         // measure rows before <cols> is written, so it buffers them - but never more than
-        // AutoFitSampleRows, and the source is still enumerated exactly once.
-        var buffered = new List<T>();
-        if (hasRows)
-            buffered.Add(rows.Current);
-        if (options.AutoFitColumns && serializer != null)
+        // AutoFitSampleRows, in a pooled array, and the source is still enumerated exactly once.
+        var buffered = ArrayPool<T>.Shared.Rent(1);
+        var bufferedCount = 0;
+        try
         {
-            while (hasRows && buffered.Count < options.AutoFitSampleRows && rows.MoveNext())
-                buffered.Add(rows.Current);
-            await WriteCellWidthAsync(buffered, stream, writer, options, cancellationToken).ConfigureAwait(false);
+            if (hasRows)
+                buffered[bufferedCount++] = rows.Current;
+            if (options.AutoFitColumns && serializer != null)
+            {
+                while (hasRows && bufferedCount < options.AutoFitSampleRows && rows.MoveNext())
+                {
+                    if (bufferedCount == buffered.Length)
+                        buffered = GrowSampleBuffer(buffered, bufferedCount);
+                    buffered[bufferedCount++] = rows.Current;
+                }
+                await WriteCellWidthAsync(buffered, bufferedCount, stream, writer, options, cancellationToken).ConfigureAwait(false);
+            }
+
+            await stream.WriteAsync(_dataStart, 0, _dataStart.Length, cancellationToken).ConfigureAwait(false);
+
+            if (serializer != null)
+            {
+                if (options.HasHeader)
+                {
+                    writer.BeginRow();
+                    writer.WriteRaw(_rowStart);
+                    if (options.HeaderTitles != null && options.HeaderTitles.Length > 0)
+                    {
+                        foreach (var t in options.HeaderTitles)
+                            writer.Write(t);
+                    }
+                    else if (bufferedCount > 0)
+                    {
+                        serializer.WriteTitle(writer, buffered[0], options);
+                    }
+                    writer.WriteRaw(_rowEnd);
+                    await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
+                }
+
+                for (var i = 0; i < bufferedCount; i++)
+                {
+                    writer.BeginRow();
+                    writer.WriteRaw(_rowStart);
+                    serializer.Serialize(writer, buffered[i], options);
+                    writer.WriteRaw(_rowEnd);
+                    if (writer.BufferedBytes >= FLUSH_THRESHOLD)
+                        await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
+                }
+
+                while (hasRows && rows.MoveNext())
+                {
+                    writer.BeginRow();
+                    writer.WriteRaw(_rowStart);
+                    serializer.Serialize(writer, rows.Current, options);
+                    writer.WriteRaw(_rowEnd);
+                    if (writer.BufferedBytes >= FLUSH_THRESHOLD)
+                        await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
+                }
+            }
         }
-
-        await stream.WriteAsync(_dataStart, 0, _dataStart.Length, cancellationToken).ConfigureAwait(false);
-
-        if (serializer != null)
+        finally
         {
-            if (options.HasHeader)
-            {
-                writer.BeginRow();
-                writer.WriteRaw(_rowStart);
-                if (options.HeaderTitles != null && options.HeaderTitles.Length > 0)
-                {
-                    foreach (var t in options.HeaderTitles)
-                        writer.Write(t);
-                }
-                else if (buffered.Count > 0)
-                {
-                    serializer.WriteTitle(writer, buffered[0], options);
-                }
-                writer.WriteRaw(_rowEnd);
-                await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
-            }
-
-            foreach (var row in buffered)
-            {
-                writer.BeginRow();
-                writer.WriteRaw(_rowStart);
-                serializer.Serialize(writer, row, options);
-                writer.WriteRaw(_rowEnd);
-                if (writer.BufferedBytes >= FLUSH_THRESHOLD)
-                    await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
-            }
-
-            while (hasRows && rows.MoveNext())
-            {
-                writer.BeginRow();
-                writer.WriteRaw(_rowStart);
-                serializer.Serialize(writer, rows.Current, options);
-                writer.WriteRaw(_rowEnd);
-                if (writer.BufferedBytes >= FLUSH_THRESHOLD)
-                    await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
-            }
+            ReturnSampleBuffer(buffered, bufferedCount);
         }
         writer.WriteRaw(_dataEnd);
 
         if (options.AutoFilter)
         {
             // Derived from what was actually written: re-enumerating rows here would run a lazy
-            // source (a query, a reader) a second time, and ColumnMaxLength is only populated
-            // when AutoFitColumns is on.
+            // source (a query, a reader) a second time, and the auto-fit tally is only
+            // populated when AutoFitColumns is on.
             var colName = options.HeaderTitles != null && options.HeaderTitles.Any()
                 ? ToColumnName(options.HeaderTitles.Length)
                 : ToColumnName(writer.MaxColumnCount);
@@ -646,56 +714,68 @@ public static class XlsxSerializer
 
         var serializer = options.GetSerializer<T>();
 
-        var buffered = new List<T>();
-        if (hasRows)
-            buffered.Add(rows.Current);
-        if (options.AutoFitColumns && serializer != null)
+        var buffered = ArrayPool<T>.Shared.Rent(1);
+        var bufferedCount = 0;
+        try
         {
-            while (hasRows && buffered.Count < options.AutoFitSampleRows && await rows.MoveNextAsync().ConfigureAwait(false))
-                buffered.Add(rows.Current);
-            await WriteCellWidthAsync(buffered, stream, writer, options, cancellationToken).ConfigureAwait(false);
+            if (hasRows)
+                buffered[bufferedCount++] = rows.Current;
+            if (options.AutoFitColumns && serializer != null)
+            {
+                while (hasRows && bufferedCount < options.AutoFitSampleRows && await rows.MoveNextAsync().ConfigureAwait(false))
+                {
+                    if (bufferedCount == buffered.Length)
+                        buffered = GrowSampleBuffer(buffered, bufferedCount);
+                    buffered[bufferedCount++] = rows.Current;
+                }
+                await WriteCellWidthAsync(buffered, bufferedCount, stream, writer, options, cancellationToken).ConfigureAwait(false);
+            }
+
+            await stream.WriteAsync(_dataStart, 0, _dataStart.Length, cancellationToken).ConfigureAwait(false);
+
+            if (serializer != null)
+            {
+                if (options.HasHeader)
+                {
+                    writer.BeginRow();
+                    writer.WriteRaw(_rowStart);
+                    if (options.HeaderTitles != null && options.HeaderTitles.Length > 0)
+                    {
+                        foreach (var t in options.HeaderTitles)
+                            writer.Write(t);
+                    }
+                    else if (bufferedCount > 0)
+                    {
+                        serializer.WriteTitle(writer, buffered[0], options);
+                    }
+                    writer.WriteRaw(_rowEnd);
+                    await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
+                }
+
+                for (var i = 0; i < bufferedCount; i++)
+                {
+                    writer.BeginRow();
+                    writer.WriteRaw(_rowStart);
+                    serializer.Serialize(writer, buffered[i], options);
+                    writer.WriteRaw(_rowEnd);
+                    if (writer.BufferedBytes >= FLUSH_THRESHOLD)
+                        await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
+                }
+
+                while (hasRows && await rows.MoveNextAsync().ConfigureAwait(false))
+                {
+                    writer.BeginRow();
+                    writer.WriteRaw(_rowStart);
+                    serializer.Serialize(writer, rows.Current, options);
+                    writer.WriteRaw(_rowEnd);
+                    if (writer.BufferedBytes >= FLUSH_THRESHOLD)
+                        await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
+                }
+            }
         }
-
-        await stream.WriteAsync(_dataStart, 0, _dataStart.Length, cancellationToken).ConfigureAwait(false);
-
-        if (serializer != null)
+        finally
         {
-            if (options.HasHeader)
-            {
-                writer.BeginRow();
-                writer.WriteRaw(_rowStart);
-                if (options.HeaderTitles != null && options.HeaderTitles.Length > 0)
-                {
-                    foreach (var t in options.HeaderTitles)
-                        writer.Write(t);
-                }
-                else if (buffered.Count > 0)
-                {
-                    serializer.WriteTitle(writer, buffered[0], options);
-                }
-                writer.WriteRaw(_rowEnd);
-                await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
-            }
-
-            foreach (var row in buffered)
-            {
-                writer.BeginRow();
-                writer.WriteRaw(_rowStart);
-                serializer.Serialize(writer, row, options);
-                writer.WriteRaw(_rowEnd);
-                if (writer.BufferedBytes >= FLUSH_THRESHOLD)
-                    await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
-            }
-
-            while (hasRows && await rows.MoveNextAsync().ConfigureAwait(false))
-            {
-                writer.BeginRow();
-                writer.WriteRaw(_rowStart);
-                serializer.Serialize(writer, rows.Current, options);
-                writer.WriteRaw(_rowEnd);
-                if (writer.BufferedBytes >= FLUSH_THRESHOLD)
-                    await writer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
-            }
+            ReturnSampleBuffer(buffered, bufferedCount);
         }
         writer.WriteRaw(_dataEnd);
 
@@ -717,7 +797,8 @@ public static class XlsxSerializer
 #endif
 
     static async Task WriteCellWidthAsync<T>(
-        List<T> rows,
+        T[] rows,
+        int count,
         Stream stream,
         XlsxCellWriter writer,
         XlsxSerializerOptions options,
@@ -726,30 +807,10 @@ public static class XlsxSerializer
     {
         var serializer = options.GetSerializer<T>();
         if (serializer == null) return;
-        if (options.HasHeader && options.HeaderTitles != null)
-        {
-            foreach (var t in options.HeaderTitles)
-                writer.Write(t);
-            writer.Clear();
-        }
-        foreach (var row in rows)
-        {
-            serializer.Serialize(writer, row, options);
-            writer.Clear();
-        }
-        writer.StopCountingCharLength();
+        MeasureColumns(rows, count, writer, serializer, options);
 
-        var size = 100 * writer.ColumnMaxLength.Count;
-        using var buffer = new ArrayPoolBufferWriter(size);
-        buffer.Write(_colStart);
-        foreach (var pair in writer.ColumnMaxLength)
-        {
-            var id = pair.Key + 1;
-            var width = Math.Min(options.AutoFitMaxWidth, pair.Value + COLUMN_WIDTH_MARGIN);
-
-            WriteUtf8Bytes(@$"<col min=""{id}"" max =""{id}"" width =""{width:0.0}"" bestFit =""1"" customWidth =""1"" />", buffer);
-        }
-        buffer.Write(_colEnd);
+        using var buffer = new ArrayPoolBufferWriter(Math.Max(64, 64 * writer.FitColumnCount));
+        WriteCols(buffer, writer, options);
         await buffer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
     }
 
@@ -784,60 +845,69 @@ public static class XlsxSerializer
 
         // When the caller found a first row it has already advanced to it. Auto-fit has to
         // measure rows before <cols> is written, so it buffers them - but never more than
-        // AutoFitSampleRows, and the source is still enumerated exactly once.
-        var buffered = new List<T>();
-        if (hasRows)
-            buffered.Add(rows.Current);
-        if (options.AutoFitColumns && serializer != null)
+        // AutoFitSampleRows, in a pooled array, and the source is still enumerated exactly once.
+        var buffered = ArrayPool<T>.Shared.Rent(1);
+        var bufferedCount = 0;
+        try
         {
-            while (hasRows && buffered.Count < options.AutoFitSampleRows && rows.MoveNext())
-                buffered.Add(rows.Current);
-            WriteCellWidth(buffered, stream, writer, options);
-        }
-
-        stream.Write(_dataStart, 0, _dataStart.Length);
-
-        if (serializer != null)
-        {
-            if (options.HasHeader)
+            if (hasRows)
+                buffered[bufferedCount++] = rows.Current;
+            if (options.AutoFitColumns && serializer != null)
             {
-                writer.BeginRow();
-                writer.WriteRaw(_rowStart);
-                if (options.HeaderTitles != null && options.HeaderTitles.Length > 0)
+                while (hasRows && bufferedCount < options.AutoFitSampleRows && rows.MoveNext())
                 {
-                    foreach (var t in options.HeaderTitles)
-                        writer.Write(t);
+                    if (bufferedCount == buffered.Length)
+                        buffered = GrowSampleBuffer(buffered, bufferedCount);
+                    buffered[bufferedCount++] = rows.Current;
                 }
-                else if (buffered.Count > 0)
-                {
-                    serializer.WriteTitle(writer, buffered[0], options);
-                }
-                writer.WriteRaw(_rowEnd);
-                writer.CopyTo(stream);
+                WriteCellWidth(buffered, bufferedCount, stream, writer, options);
             }
 
-#if NET5_0_OR_GREATER
-            WriteRowsSpan(CollectionsMarshal.AsSpan(buffered), stream, writer, serializer, options);
-#else
-            WriteRows(buffered, stream, writer, serializer, options);
-#endif
-            while (hasRows && rows.MoveNext())
+            stream.Write(_dataStart, 0, _dataStart.Length);
+
+            if (serializer != null)
             {
-                writer.BeginRow();
-                writer.WriteRaw(_rowStart);
-                serializer.Serialize(writer, rows.Current, options);
-                writer.WriteRaw(_rowEnd);
-                if (writer.BufferedBytes >= FLUSH_THRESHOLD)
+                if (options.HasHeader)
+                {
+                    writer.BeginRow();
+                    writer.WriteRaw(_rowStart);
+                    if (options.HeaderTitles != null && options.HeaderTitles.Length > 0)
+                    {
+                        foreach (var t in options.HeaderTitles)
+                            writer.Write(t);
+                    }
+                    else if (bufferedCount > 0)
+                    {
+                        serializer.WriteTitle(writer, buffered[0], options);
+                    }
+                    writer.WriteRaw(_rowEnd);
                     writer.CopyTo(stream);
+                }
+
+                WriteRows(buffered, bufferedCount, stream, writer, serializer, options);
+
+                while (hasRows && rows.MoveNext())
+                {
+                    writer.BeginRow();
+                    writer.WriteRaw(_rowStart);
+                    serializer.Serialize(writer, rows.Current, options);
+                    writer.WriteRaw(_rowEnd);
+                    if (writer.BufferedBytes >= FLUSH_THRESHOLD)
+                        writer.CopyTo(stream);
+                }
             }
+        }
+        finally
+        {
+            ReturnSampleBuffer(buffered, bufferedCount);
         }
         writer.WriteRaw(_dataEnd);
 
         if (options.AutoFilter)
         {
             // Derived from what was actually written: re-enumerating rows here would run a lazy
-            // source (a query, a reader) a second time, and ColumnMaxLength is only populated
-            // when AutoFitColumns is on.
+            // source (a query, a reader) a second time, and the auto-fit tally is only
+            // populated when AutoFitColumns is on.
             var colName = options.HeaderTitles != null && options.HeaderTitles.Any()
                 ? ToColumnName(options.HeaderTitles.Length)
                 : ToColumnName(writer.MaxColumnCount);
@@ -869,80 +939,94 @@ public static class XlsxSerializer
         return sb.ToString();
     }
 
-    static void WriteRowsSpan<T>(
-        Span<T> rows,
+    static void WriteRows<T>(
+        T[] rows,
+        int count,
         Stream stream,
         XlsxCellWriter writer,
         IXlsxSerializer<T> serializer,
         XlsxSerializerOptions options
     )
     {
-        foreach (var row in rows)
+        for (var i = 0; i < count; i++)
         {
             writer.BeginRow();
             writer.WriteRaw(_rowStart);
-            serializer.Serialize(writer, row, options);
+            serializer.Serialize(writer, rows[i], options);
             writer.WriteRaw(_rowEnd);
             if (writer.BufferedBytes >= FLUSH_THRESHOLD)
                 writer.CopyTo(stream);
         }
     }
 
-    static void WriteRows<T>(
-        IEnumerable<T> rows,
-        Stream stream,
-        XlsxCellWriter writer,
-        IXlsxSerializer<T> serializer,
-        XlsxSerializerOptions options
-    )
+    static T[] GrowSampleBuffer<T>(T[] buffered, int count)
     {
-        foreach (var row in rows)
-        {
-            writer.BeginRow();
-            writer.WriteRaw(_rowStart);
-            serializer.Serialize(writer, row, options);
-            writer.WriteRaw(_rowEnd);
-            if (writer.BufferedBytes >= FLUSH_THRESHOLD)
-                writer.CopyTo(stream);
-        }
+        var grown = ArrayPool<T>.Shared.Rent(count * 2);
+        Array.Copy(buffered, grown, count);
+        ReturnSampleBuffer(buffered, count);
+        return grown;
+    }
+
+    // The used slots are cleared before the array goes back: a pooled array must not keep the
+    // caller's rows reachable after the export.
+    static void ReturnSampleBuffer<T>(T[] buffered, int count)
+    {
+        Array.Clear(buffered, 0, count);
+        ArrayPool<T>.Shared.Return(buffered);
     }
 
     static void WriteCellWidth<T>(
-        List<T> rows,
+        T[] rows,
+        int count,
         Stream stream,
         XlsxCellWriter writer,
         XlsxSerializerOptions options
     )
     {
-        // Counting the number of characters in Writer's internal process
-        // The result is stored in writer.ColumnMaxLength 
         var serializer = options.GetSerializer<T>();
         if (serializer == null) return;
+        MeasureColumns(rows, count, writer, serializer, options);
+
+        using var buffer = new ArrayPoolBufferWriter(Math.Max(64, 64 * writer.FitColumnCount));
+        WriteCols(buffer, writer, options);
+        buffer.CopyTo(stream);
+    }
+
+    /// <summary>Serializes the sampled rows into the writer purely for its per-column character
+    /// tally; the buffered bytes are discarded row by row.</summary>
+    static void MeasureColumns<T>(T[] rows, int count, XlsxCellWriter writer, IXlsxSerializer<T> serializer, XlsxSerializerOptions options)
+    {
         if (options.HasHeader && options.HeaderTitles != null)
         {
             foreach (var t in options.HeaderTitles)
                 writer.Write(t);
             writer.Clear();
         }
-        foreach (var row in rows)
+        for (var i = 0; i < count; i++)
         {
-            serializer.Serialize(writer, row, options);
+            serializer.Serialize(writer, rows[i], options);
             writer.Clear();
         }
         writer.StopCountingCharLength();
+    }
 
-        var size = 100 * writer.ColumnMaxLength.Count;
-        using var buffer = new ArrayPoolBufferWriter(size);
+    static void WriteCols(ArrayPoolBufferWriter buffer, XlsxCellWriter writer, XlsxSerializerOptions options)
+    {
         buffer.Write(_colStart);
-        foreach (var pair in writer.ColumnMaxLength)
+        for (var i = 0; i < writer.FitColumnCount; i++)
         {
-            var id = pair.Key + 1;
-            var width = Math.Min(options.AutoFitMaxWidth, pair.Value + COLUMN_WIDTH_MARGIN);
+            var id = i + 1;
+            var width = Math.Min(options.AutoFitMaxWidth, writer.GetColumnMaxLength(i) + COLUMN_WIDTH_MARGIN);
 
-            WriteUtf8Bytes(@$"<col min=""{id}"" max =""{id}"" width =""{width:0.0}"" bestFit =""1"" customWidth =""1"" />", buffer);
+            buffer.Write(_colMin);
+            WriteInt(buffer, id);
+            buffer.Write(_colMax);
+            WriteInt(buffer, id);
+            buffer.Write(_colWidth);
+            WriteInt(buffer, width);
+            buffer.Write(_colTail);
         }
         buffer.Write(_colEnd);
-        buffer.CopyTo(stream);
     }
 
     static void WriteSharedStrings(Stream stream, XlsxCellWriter writer)

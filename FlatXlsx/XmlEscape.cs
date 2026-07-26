@@ -18,6 +18,7 @@ internal static class XmlEscape
     static readonly byte[] _lt = Encoding.UTF8.GetBytes("&lt;");
     static readonly byte[] _gt = Encoding.UTF8.GetBytes("&gt;");
     static readonly byte[] _cr = Encoding.UTF8.GetBytes("&#13;");
+    static readonly byte[] _quot = Encoding.UTF8.GetBytes("&quot;");
 
     public static void WriteEscaped(string value, ArrayPoolBufferWriter writer)
     {
@@ -40,6 +41,32 @@ internal static class XmlEscape
                 // read back (XML 1.0 line-end handling), silently altering the exported value.
                 case '\r': writer.Write(_cr); break;
                 // Forbidden characters are dropped.
+            }
+        }
+        WriteSegment(value, start, value.Length - start, writer);
+    }
+
+    /// <summary>Writes a value for use inside a double-quoted XML attribute, escaping markup
+    /// characters and the quote itself. Control characters cannot be escaped in XML 1.0 at all,
+    /// so every value that reaches this method has been validated not to contain them.</summary>
+    public static void WriteEscapedAttribute(string value, ArrayPoolBufferWriter writer)
+    {
+        var start = 0;
+        for (var i = 0; i < value.Length; i++)
+        {
+            var c = value[i];
+            if (c != '&' && c != '<' && c != '>' && c != '"')
+                continue;
+
+            WriteSegment(value, start, i - start, writer);
+            start = i + 1;
+
+            switch (c)
+            {
+                case '&': writer.Write(_amp); break;
+                case '<': writer.Write(_lt); break;
+                case '>': writer.Write(_gt); break;
+                case '"': writer.Write(_quot); break;
             }
         }
         WriteSegment(value, start, value.Length - start, writer);

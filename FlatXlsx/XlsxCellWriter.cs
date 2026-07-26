@@ -91,6 +91,11 @@ public class XlsxCellWriter(XlsxSerializerOptions options) : IDisposable
     public void Dispose()
     {
         _writer.Dispose();
+        if (_columnMaxLength != null)
+        {
+            ArrayPool<int>.Shared.Return(_columnMaxLength);
+            _columnMaxLength = null;
+        }
         GC.SuppressFinalize(this);
     }
 
@@ -115,10 +120,18 @@ public class XlsxCellWriter(XlsxSerializerOptions options) : IDisposable
 #else
         _writer.OutputAsSpan.ToArray());
 #endif
-    /// <summary>
-    /// Tally the maximum number of characters per column. For automatic column width adjustment
-    /// </summary>
-    internal Dictionary<int, int> ColumnMaxLength { get; } = [];
+    // Tally of the widest value written per column, for automatic column width adjustment.
+    // The column indexes are dense by construction (every row writes columns 0, 1, 2, ... in
+    // order), so a pooled array indexed by column replaces a dictionary at no allocation cost.
+    int[]? _columnMaxLength;
+    int _fitColumnCount;
+
+    /// <summary>Number of columns the auto-fit tally has seen.</summary>
+    internal int FitColumnCount => _fitColumnCount;
+
+    /// <summary>The widest value written to the column so far, in characters.</summary>
+    internal int GetColumnMaxLength(int column) => _columnMaxLength![column];
+
     internal void StopCountingCharLength() => _countingCharLength = false;
 
     /// <summary>Number of rows opened with <see cref="BeginRow"/> so far.</summary>
@@ -208,23 +221,20 @@ public class XlsxCellWriter(XlsxSerializerOptions options) : IDisposable
     {
         if (_countingCharLength)
         {
-#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
-            if (!ColumnMaxLength.TryAdd(_columnIndex, length))
+            var lengths = _columnMaxLength;
+            if (lengths == null || (uint)_columnIndex >= (uint)lengths.Length)
+                lengths = GrowFitBuffer();
+            if (_columnIndex >= _fitColumnCount)
             {
-                if (ColumnMaxLength[_columnIndex] < length)
-                    ColumnMaxLength[_columnIndex] = length;
+                // Columns are visited in order, so a new column is always the next one; its
+                // slot is assigned before the count covers it, never read uninitialized.
+                lengths[_columnIndex] = length;
+                _fitColumnCount = _columnIndex + 1;
             }
-#else
-            if (ColumnMaxLength.ContainsKey(_columnIndex))
+            else if (lengths[_columnIndex] < length)
             {
-                if (ColumnMaxLength[_columnIndex] < length)
-                    ColumnMaxLength[_columnIndex] = length;
+                lengths[_columnIndex] = length;
             }
-            else
-            {
-                ColumnMaxLength.Add(_columnIndex, length);
-            }
-#endif
         }
 
         if (_columnIndex == MAX_COLUMNS)
@@ -234,6 +244,18 @@ public class XlsxCellWriter(XlsxSerializerOptions options) : IDisposable
 
         if (_columnIndex > _maxColumnCount)
             _maxColumnCount = _columnIndex;
+    }
+
+    int[] GrowFitBuffer()
+    {
+        var grown = ArrayPool<int>.Shared.Rent(Math.Max(64, (_columnIndex + 1) * 2));
+        if (_columnMaxLength != null)
+        {
+            Array.Copy(_columnMaxLength, grown, _fitColumnCount);
+            ArrayPool<int>.Shared.Return(_columnMaxLength);
+        }
+        _columnMaxLength = grown;
+        return grown;
     }
 
     /// <summary>Write string.</summary>
