@@ -1,5 +1,6 @@
 ﻿using BenchmarkDotNet.Running;
 using BenchmarkSample;
+using System.Diagnostics;
 
 var workPath = "work";
 if (Directory.Exists(workPath))
@@ -15,10 +16,14 @@ var ex = new ExportExcel { N = 1 };
 
 ex.GlobalSetup();
 
-var sw = Stopwatch.StartNew();
-ex.ExcelApplication();
-sw.Stop();
-Console.WriteLine($"ExcelApp : {sw.ElapsedMilliseconds:#,##0}ms");
+var sw = new Stopwatch();
+if (OperatingSystem.IsWindows())
+{
+    sw.Start();
+    ex.ExcelApplication();
+    sw.Stop();
+    Console.WriteLine($"ExcelApp : {sw.ElapsedMilliseconds:#,##0}ms");
+}
 
 sw.Restart();
 ex.ClosedXmlNaive();
