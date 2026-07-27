@@ -5,18 +5,24 @@ using System.Reflection;
 namespace BenchmarkSample
 {
     /// <summary>
-    /// How a single export scales with the number of rows, up to the neighbourhood of Excel's
-    /// own 1,048,576-row limit.
+    /// What one export costs as the row count grows, up to the neighbourhood of Excel's own
+    /// 1,048,576-row limit.
     /// </summary>
     /// <remarks>
-    /// Only FlatXlsx is measured here. The question is the shape of the curve rather than a
-    /// comparison, and a library that holds the whole workbook in memory needs several gigabytes
-    /// at the top of this range - which measures the machine's memory pressure, not the library.
+    /// ClosedXML is not measured here: at the top of this range a library that holds the whole
+    /// workbook in memory needs several gigabytes, which measures the machine rather than the
+    /// library.
     ///
-    /// The key column takes only 100 distinct values however many rows there are, so the
-    /// shared-string table stays the same size while the row count grows. That is deliberate -
-    /// it isolates the streaming cost from the one part that is expected to grow with the data -
-    /// and it is also the flattering case. <see cref="ExportCardinality"/> measures the other one.
+    /// The baseline is the realistic case - a key that is unique on every row, the way an order
+    /// number is - because every distinct string goes into the shared-string table and that is
+    /// what a caller has to budget for. The other two say what can be done about it:
+    /// <list type="bullet">
+    /// <item>DistinctCapped - same data, <see cref="XlsxSerializerOptions.MaxSharedStrings"/>
+    /// lowered so values that no longer fit are written into the cell instead.</item>
+    /// <item>RepeatedKey - the same export where the key takes only 100 distinct values. Not a
+    /// realistic export; it isolates the cost of streaming rows out from the cost of remembering
+    /// distinct strings.</item>
+    /// </list>
     /// </remarks>
     [MarkdownExporterAttribute.GitHub]
     [ShortRunJob]
@@ -27,10 +33,12 @@ namespace BenchmarkSample
         static readonly string workPath = Path.Combine(Path.GetDirectoryName(exePath) ?? "", "work");
         readonly string fileName = Path.Combine(workPath, $"scale-{Guid.NewGuid()}.xlsx");
 
-        List<Row> rows = [];
+        List<Row> distinct = [];
+        List<Row> repeated = [];
         XlsxSerializerOptions options = XlsxSerializerOptions.Default;
+        XlsxSerializerOptions cappedOptions = XlsxSerializerOptions.Default;
 
-        [Params(100, 10_000, 100_000, 1_000_000)]
+        [Params(100, 1_000, 10_000, 100_000, 1_000_000)]
         public int Rows;
 
         [GlobalSetup]
@@ -38,13 +46,17 @@ namespace BenchmarkSample
         {
             Directory.CreateDirectory(workPath);
 
-            rows = SampleData.Build(Rows, distinctKeys: 100);
+            // Identical rows apart from the one knob these benchmarks exist to turn.
+            distinct = SampleData.Build(Rows, distinctKeys: Rows);
+            repeated = SampleData.Build(Rows, distinctKeys: 100);
 
             options = XlsxSerializerOptions.Default with
             {
                 HeaderTitles = SampleData.ColumnTitles,
                 AutoFitColumns = true,
             };
+            // Room for the columns that really do repeat; the unique key overflows and goes inline.
+            cappedOptions = options with { MaxSharedStrings = 1_000 };
         }
 
         [GlobalCleanup]
@@ -54,7 +66,13 @@ namespace BenchmarkSample
                 File.Delete(fileName);
         }
 
+        [Benchmark(Baseline = true)]
+        public void Distinct() => XlsxSerializer.ToFile(distinct, fileName, options);
+
         [Benchmark]
-        public void FlatXlsx() => XlsxSerializer.ToFile(rows, fileName, options);
+        public void DistinctCapped() => XlsxSerializer.ToFile(distinct, fileName, cappedOptions);
+
+        [Benchmark]
+        public void RepeatedKey() => XlsxSerializer.ToFile(repeated, fileName, options);
     }
 }

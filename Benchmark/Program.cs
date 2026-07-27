@@ -36,10 +36,8 @@ Console.WriteLine($"FlatXlsx : {sw.ElapsedMilliseconds:#,##0}ms");
 sw.Stop();
 
 #else
-// Three suites: ExportExcel compares against ClosedXML, ExportScale measures how one export
-// grows with the row count, ExportCardinality measures what repeated values were hiding.
+// Two suites: ExportExcel compares against ClosedXML at sizes ClosedXML can reach, ExportScale
+// takes FlatXlsx alone up to a million rows.
 // Pass e.g. --filter *ExportScale* to run just one of them.
-BenchmarkSwitcher
-    .FromTypes(new[] { typeof(ExportExcel), typeof(ExportScale), typeof(ExportCardinality) })
-    .Run(args);
+BenchmarkSwitcher.FromTypes(new[] { typeof(ExportExcel), typeof(ExportScale) }).Run(args);
 #endif

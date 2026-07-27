@@ -196,57 +196,47 @@ straightforward version, ~19x faster with ~400x less. For large data sets,
 `XlsxSerializerOptions.CompressionLevel = CompressionLevel.Fastest` trades a slightly larger
 file for even faster serialization.
 
-### Scaling with row count
+### Large exports
 
 FlatXlsx on its own, up to the neighbourhood of Excel's own 1,048,576-row limit. ClosedXML is
 not measured here: at the top of this range a library that holds the whole workbook in memory
 needs several gigabytes, which measures the machine rather than the library.
 
-The key column takes 100 distinct values whatever the row count, so the shared-string table
-stays the same size and what is left is the cost of streaming rows out:
+The key column is unique on every row, as an order number is. That matters because every
+distinct string is interned in the shared-string table, and the table is the only part of an
+export that grows with the data — so these are the numbers to budget for:
 
-| Rows      | Mean       | Allocated |
-|---------- |-----------:|----------:|
-| 100       |    1.07 ms |  61.02 KB |
-| 10,000    |   38.71 ms |  61.03 KB |
-| 100,000   |  376.02 ms |  61.23 KB |
-| 1,000,000 | 3,905.2 ms |  61.23 KB |
+| Rows      | Mean      | Allocated | Mean (capped) | Allocated (capped) |
+|---------- |----------:|----------:|--------------:|-------------------:|
+| 100       |   1.24 ms |     61 KB |       1.22 ms |              61 KB |
+| 1,000     |   5.21 ms |    138 KB |       5.35 ms |             122 KB |
+| 10,000    |  41.31 ms |   1.18 MB |      37.52 ms |             122 KB |
+| 100,000   | 446.85 ms |  10.31 MB |     365.86 ms |             122 KB |
+| 1,000,000 |    4.58 s |  87.95 MB |        3.72 s |             122 KB |
 
-Time is linear in the number of rows and allocation is flat: 10,000x the data costs 0.2 KB
-more, because rows are formatted in pooled buffers and streamed out instead of being held.
+**A million rows costs about 4.6 s and 88 MB.** Nearly all of that 88 MB is the table holding a
+million distinct keys; writing the rows themselves does not grow with the row count.
 
-That flat line is a real property, but it is also the flattering case — it holds the one thing
-constant that a real export does not. The next table measures what it was hiding.
-
-### When every row carries a value no other row has
-
-An order number or a timestamp is different on every row, and every distinct string goes into
-the shared-string table. Same rows, same code, only the number of distinct keys changes:
-
-| Rows      | Key column                      | Mean       | Allocated |
-|---------- |-------------------------------- |-----------:|----------:|
-| 1,000,000 | 100 distinct values             | 3,735.1 ms |  61.23 KB |
-| 1,000,000 | unique per row                  | 4,155.6 ms |  87.95 MB |
-| 1,000,000 | unique per row, table capped     | 3,552.0 ms | 122.11 KB |
-
-**Interning a million distinct strings costs about 88 MB**, and that is the honest number for a
-real export of that size. The flat 61 KB is the streaming cost, not the whole cost.
-
-Lowering `MaxSharedStrings` puts the ceiling back — values that no longer fit are written into
-the cell instead of the table:
+The "capped" columns are the same export with the table bounded, so values that no longer fit
+are written into the cell instead:
 
 ~~~csharp
 var options = XlsxSerializerOptions.Default with { MaxSharedStrings = 1_000 };
 ~~~
 
-Allocation is flat again (122.11 KB at both 100,000 and 1,000,000 rows) and the export is
-slightly faster. It costs no file size either: interning only pays off when values repeat,
-because a value unique to one row ends up stored twice — once in the table, once as the index
-pointing at it. On the million-row file above the capped output is in fact smaller,
-**29.3 MB against 31.3 MB**.
+Allocation then stops growing entirely — **122 KB whether the export is a thousand rows or a
+million** — and from 10,000 rows up it is also faster. It costs no file size either: interning
+only pays off when values repeat, because a value unique to one row ends up stored twice, once
+in the table and once as the index pointing at it. On the million-row file the capped output is
+in fact smaller, **29.3 MB against 31.3 MB**.
 
 Rule of thumb: keep the default when columns repeat (statuses, categories, names); lower it when
 most rows carry values of their own.
+
+> For reference, an export whose key column takes only 100 distinct values allocates a flat
+> 61 KB at every size in the table above. That figure is the writer's own cost with the
+> shared-string table held constant — useful for understanding where the memory goes, but not a
+> number to plan an export around.
 
 ## Examples
 
