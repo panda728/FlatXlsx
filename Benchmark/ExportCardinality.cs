@@ -48,40 +48,9 @@ namespace BenchmarkSample
         {
             Directory.CreateDirectory(workPath);
 
-            var block = SampleData.LoadBlock();
-
-            repeated = new List<Row>(Rows);
-            distinct = new List<Row>(Rows);
-            for (var i = 0; i < Rows; i++)
-            {
-                var source = block[i % block.Count];
-                repeated.Add(source);
-
-                // One column differs on every row - the shape of an order number or a key.
-                // Everything else still repeats, as it does in real data.
-                distinct.Add(new Row
-                {
-                    LineNum = source.LineNum,
-                    HeaderID = source.HeaderID,
-                    DetailID = source.DetailID,
-                    Data = $"D{i:D9}",
-                    Header01 = source.Header01,
-                    Header02 = source.Header02,
-                    Header03 = source.Header03,
-                    Header04 = source.Header04,
-                    Header05 = source.Header05,
-                    Header06 = source.Header06,
-                    Header07 = source.Header07,
-                    Footer01 = source.Footer01,
-                    Footer02 = source.Footer02,
-                    Footer03 = source.Footer03,
-                    Footer04 = source.Footer04,
-                    Footer05 = source.Footer05,
-                    Footer06 = source.Footer06,
-                    Footer07 = source.Footer07,
-                    Footer08 = source.Footer08,
-                });
-            }
+            // Identical rows apart from the one knob these benchmarks exist to turn.
+            repeated = SampleData.Build(Rows, distinctKeys: 100);
+            distinct = SampleData.Build(Rows, distinctKeys: Rows);
 
             options = XlsxSerializerOptions.Default with
             {

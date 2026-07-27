@@ -159,10 +159,16 @@ measure widths — bounded, never the whole sequence.
 
 ## Benchmark
 
-FlatXlsx 1.0.1 vs ClosedXML 0.105.0, .NET 10 (BenchmarkDotNet 0.15.8, ShortRun).
-Every row has 19 columns, and `N` counts blocks of 100 rows — so `N = 1` is 100 rows,
-`N = 10` is 1,000 rows, and `N = 100` is 10,000 rows.
-Three variants are measured so the comparison is fair to ClosedXML:
+FlatXlsx 1.0.1 vs ClosedXML 0.105.0, .NET 10 (BenchmarkDotNet 0.15.8, ShortRun), all three
+suites measured in one session on the same machine.
+
+**The data.** 19 columns per row, built by `Benchmark/SampleData.cs`: three numbers, fifteen
+text columns drawn from small pools the way a status or a branch code repeats across an export,
+and one key column. How many distinct values that key column takes is an argument, because it
+is the property that decides how large the shared-string table grows — the tables below vary it
+deliberately. Nothing is random, so a run reproduces.
+
+**The variants.** Three, so the comparison is fair to ClosedXML:
 
 - **ClosedXmlNaive** — beginner-style code: cell-by-cell writes, per-cell number formats,
   `ColumnsUsed().AdjustToContents()` column sizing.
@@ -171,71 +177,73 @@ Three variants are measured so the comparison is fair to ClosedXML:
 - **FlatXlsx** — header row + approximate column auto-fit enabled (`AutoFitColumns = true`),
   so its feature set is comparable to the naive variant.
 
-| Method             | N   | Mean        | Ratio | Allocated    | Alloc Ratio |
-|------------------- |---- |------------:|------:|-------------:|------------:|
-| ClosedXmlNaive     | 1   |    36.66 ms |  1.00 |   5,281.2 KB |       1.000 |
-| ClosedXmlOptimized | 1   |     7.89 ms |  0.22 |   1,235.2 KB |       0.234 |
-| FlatXlsx           | 1   |     0.83 ms |  0.02 |      11.6 KB |       0.002 |
-| ClosedXmlNaive     | 10  |   257.03 ms |  1.00 |  48,536.8 KB |       1.000 |
-| ClosedXmlOptimized | 10  |    40.13 ms |  0.16 |   9,314.4 KB |       0.192 |
-| FlatXlsx           | 10  |     2.46 ms |  0.01 |      11.6 KB |       0.000 |
-| ClosedXmlNaive     | 100 | 1,640.70 ms | 1.000 | 471,626.9 KB |       1.000 |
-| ClosedXmlOptimized | 100 |   338.28 ms | 0.206 |  82,646.0 KB |       0.175 |
-| FlatXlsx           | 100 |    15.06 ms | 0.009 |      11.6 KB |       0.000 |
+Here the key is unique on every row, as it is in a real export:
 
-Even against well-tuned ClosedXML, FlatXlsx is ~20x faster, and its allocation is a flat
-~12 KB per export — a fixed cost that does not grow with the number of rows (11.63 KB for
-100 rows and 11.64 KB for 10,000 rows; row data is formatted in pooled buffers and streamed out).
-The one deliberate exception is the shared-string table, which grows with the number of
-*distinct* strings in the data and is bounded by `MaxSharedStrings`.
-For large data sets, `XlsxSerializerOptions.CompressionLevel = CompressionLevel.Fastest`
-trades a slightly larger file for even faster serialization.
+| Method             | Rows   | Mean       | Ratio | Allocated    | Alloc Ratio |
+|------------------- |------- |-----------:|------:|-------------:|------------:|
+| ClosedXmlNaive     | 100    |  26.10 ms  |  1.00 |   5,455.2 KB |       1.000 |
+| ClosedXmlOptimized | 100    |   7.36 ms  |  0.29 |   1,410.5 KB |       0.259 |
+| FlatXlsx           | 100    |   1.10 ms  |  0.04 |      61.2 KB |       0.011 |
+| ClosedXmlNaive     | 1,000  | 103.10 ms  |  1.00 |  49,262.8 KB |       1.000 |
+| ClosedXmlOptimized | 1,000  |  36.34 ms  |  0.36 |   9,874.7 KB |       0.200 |
+| FlatXlsx           | 1,000  |   4.98 ms  |  0.05 |     138.1 KB |       0.003 |
+| ClosedXmlNaive     | 10,000 | 778.72 ms  | 1.000 | 479,425.2 KB |       1.000 |
+| ClosedXmlOptimized | 10,000 | 356.83 ms  | 0.458 |  87,563.7 KB |       0.183 |
+| FlatXlsx           | 10,000 |  41.27 ms  | 0.053 |   1,182.6 KB |       0.002 |
+
+Against well-tuned ClosedXML that is ~9x faster with ~74x less allocated; against the
+straightforward version, ~19x faster with ~400x less. For large data sets,
+`XlsxSerializerOptions.CompressionLevel = CompressionLevel.Fastest` trades a slightly larger
+file for even faster serialization.
 
 ### Scaling with row count
 
-FlatXlsx on its own, same 19-column rows, up to the neighbourhood of Excel's own
-1,048,576-row limit. ClosedXML is not measured here: at the top of this range a library that
-holds the whole workbook in memory needs several gigabytes, which measures the machine rather
-than the library.
+FlatXlsx on its own, up to the neighbourhood of Excel's own 1,048,576-row limit. ClosedXML is
+not measured here: at the top of this range a library that holds the whole workbook in memory
+needs several gigabytes, which measures the machine rather than the library.
+
+The key column takes 100 distinct values whatever the row count, so the shared-string table
+stays the same size and what is left is the cost of streaming rows out:
 
 | Rows      | Mean       | Allocated |
 |---------- |-----------:|----------:|
-| 100       |    0.80 ms |  11.49 KB |
-| 10,000    |   15.35 ms |  11.50 KB |
-| 100,000   |  146.41 ms |  11.55 KB |
-| 1,000,000 | 1,373.4 ms |  11.71 KB |
+| 100       |    1.07 ms |  61.02 KB |
+| 10,000    |   38.71 ms |  61.03 KB |
+| 100,000   |  376.02 ms |  61.23 KB |
+| 1,000,000 | 3,905.2 ms |  61.23 KB |
 
-Time is linear in the number of rows, and allocation is flat — 10,000x the data costs 0.2 KB
-more. These rows repeat a fixed block, so the number of *distinct* strings stays constant; that
-isolates the streaming cost from the shared-string table, which is the one part that does grow
-with the data. The next table measures what that isolation was hiding.
+Time is linear in the number of rows and allocation is flat: 10,000x the data costs 0.2 KB
+more, because rows are formatted in pooled buffers and streamed out instead of being held.
+
+That flat line is a real property, but it is also the flattering case — it holds the one thing
+constant that a real export does not. The next table measures what it was hiding.
 
 ### When every row carries a value no other row has
 
-Real exports have an order number or a timestamp on every row. Those go into the shared-string
-table, and it grows with them. Same rows as above, with one column made unique per row:
+An order number or a timestamp is different on every row, and every distinct string goes into
+the shared-string table. Same rows, same code, only the number of distinct keys changes:
 
-| Rows      | Variant                       | Mean      | Allocated |
-|---------- |------------------------------ |----------:|----------:|
-| 1,000,000 | repeated values               | 1,439 ms  |  11.71 KB |
-| 1,000,000 | one unique column             | 2,619 ms  |  87.95 MB |
-| 1,000,000 | one unique column, table capped | 1,927 ms |  122.11 KB |
+| Rows      | Key column                      | Mean       | Allocated |
+|---------- |-------------------------------- |-----------:|----------:|
+| 1,000,000 | 100 distinct values             | 3,735.1 ms |  61.23 KB |
+| 1,000,000 | unique per row                  | 4,155.6 ms |  87.95 MB |
+| 1,000,000 | unique per row, table capped     | 3,552.0 ms | 122.11 KB |
 
-So the flat ~12 KB is the streaming cost, not the whole story: **interning a million distinct
-strings costs about 88 MB**, and that is the honest number for a real export of that size.
+**Interning a million distinct strings costs about 88 MB**, and that is the honest number for a
+real export of that size. The flat 61 KB is the streaming cost, not the whole cost.
 
-Lowering `MaxSharedStrings` puts a ceiling back on it — values that no longer fit are written
-into the cell instead:
+Lowering `MaxSharedStrings` puts the ceiling back — values that no longer fit are written into
+the cell instead of the table:
 
 ~~~csharp
 var options = XlsxSerializerOptions.Default with { MaxSharedStrings = 1_000 };
 ~~~
 
-Allocation then stays flat again (121.96 KB at 100,000 rows, 122.11 KB at 1,000,000) and the
-export is faster. It also does not cost file size here: interning only pays off when values
-repeat, because a value unique to one row ends up stored twice — once in the table and once as
-the index pointing at it. Measured on the million-row file above, the capped output is
-**5.8 MB against 9.1 MB**.
+Allocation is flat again (122.11 KB at both 100,000 and 1,000,000 rows) and the export is
+slightly faster. It costs no file size either: interning only pays off when values repeat,
+because a value unique to one row ends up stored twice — once in the table, once as the index
+pointing at it. On the million-row file above the capped output is in fact smaller,
+**29.3 MB against 31.3 MB**.
 
 Rule of thumb: keep the default when columns repeat (statuses, categories, names); lower it when
 most rows carry values of their own.

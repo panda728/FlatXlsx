@@ -16,10 +16,4 @@
     <ProjectReference Include="..\FlatXlsx\FlatXlsx.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="data01.dat">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
 </Project>

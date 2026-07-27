@@ -13,9 +13,10 @@ namespace BenchmarkSample
     /// comparison, and a library that holds the whole workbook in memory needs several gigabytes
     /// at the top of this range - which measures the machine's memory pressure, not the library.
     ///
-    /// The rows repeat a 100-row block, so the number of *distinct* strings stays constant while
-    /// the row count grows. That is deliberate: it isolates the streaming cost from the one part
-    /// that is expected to grow with the data, the shared-string table.
+    /// The key column takes only 100 distinct values however many rows there are, so the
+    /// shared-string table stays the same size while the row count grows. That is deliberate -
+    /// it isolates the streaming cost from the one part that is expected to grow with the data -
+    /// and it is also the flattering case. <see cref="ExportCardinality"/> measures the other one.
     /// </remarks>
     [MarkdownExporterAttribute.GitHub]
     [ShortRunJob]
@@ -37,16 +38,7 @@ namespace BenchmarkSample
         {
             Directory.CreateDirectory(workPath);
 
-            // The same block instances are referenced repeatedly; building the list must not
-            // itself become the thing being measured.
-            var block = SampleData.LoadBlock();
-            rows = new List<Row>(Rows);
-            while (rows.Count < Rows)
-            {
-                var take = Math.Min(block.Count, Rows - rows.Count);
-                for (var i = 0; i < take; i++)
-                    rows.Add(block[i]);
-            }
+            rows = SampleData.Build(Rows, distinctKeys: 100);
 
             options = XlsxSerializerOptions.Default with
             {

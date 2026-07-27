@@ -30,8 +30,10 @@ namespace BenchmarkSample
                 Directory.CreateDirectory(workPath);
         }
 
-        [Params(1, 10, 100)]
-        public int N;
+        /// <summary>Rows to export. The key column is unique on every row, as it is in a real
+        /// export - see <see cref="ExportCardinality"/> for what changes when it is not.</summary>
+        [Params(100, 1_000, 10_000)]
+        public int Rows;
 
         void CleanupFiles()
         {
@@ -53,11 +55,8 @@ namespace BenchmarkSample
         {
             CleanupFiles();
 
-            var list = SampleData.LoadBlock();
-
             rows.Clear();
-            for (int i = 0; i < N; i++)
-                rows.AddRange(list);
+            rows.AddRange(SampleData.Build(Rows, distinctKeys: Rows));
         }
 
         [GlobalCleanup]
