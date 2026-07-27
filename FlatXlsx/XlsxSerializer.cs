@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
 using System.Runtime.CompilerServices;
@@ -8,6 +9,26 @@ namespace FlatXlsx;
 
 public static class XlsxSerializer
 {
+    /// <summary>
+    /// Why every entry point is annotated for trimming and native AOT.
+    /// </summary>
+    /// <remarks>
+    /// Working out which columns a row type produces means reflecting over its members and
+    /// compiling an expression tree for them. A trimmer may have removed those members, and
+    /// ahead-of-time compilation cannot produce code for a type it never saw - so an export that
+    /// works in development can fail in a trimmed or AOT-published deployment. Saying so here
+    /// moves that discovery to the build that introduces it, instead of the customer's run.
+    ///
+    /// Registering a serializer for every row type is the way out: that path resolves by
+    /// dictionary lookup and reflects over nothing.
+    /// </remarks>
+    const string ReflectsOverRowTypes =
+        "FlatXlsx works out a row type's columns by reflecting over its members and compiling an " +
+        "expression tree, so a trimmed or AOT-published application may fail to export types it " +
+        "exports correctly in development. Register a serializer for every row type in " +
+        "XlsxSerializerOptions.CustomSerializers - that path reflects over nothing - and then " +
+        "suppress this warning.";
+
     readonly static byte[] _contentTypes = Encoding.UTF8.GetBytes(@"<Types xmlns=""http://schemas.openxmlformats.org/package/2006/content-types"">
 <Default Extension=""rels"" ContentType=""application/vnd.openxmlformats-package.relationships+xml""/>
 <Override PartName=""/book.xml"" ContentType=""application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml""/>
@@ -179,6 +200,8 @@ public static class XlsxSerializer
     /// <remarks>An empty source with <see cref="XlsxSerializerOptions.HeaderTitles"/> set still
     /// produces a workbook with the header row, so downstream consumers receive a file; an
     /// empty source without titles produces no file at all.</remarks>
+    [RequiresUnreferencedCode(ReflectsOverRowTypes)]
+    [RequiresDynamicCode(ReflectsOverRowTypes)]
     public static void ToFile<T>(IEnumerable<T> rows, string fileName, XlsxSerializerOptions? options = null)
     {
         options ??= XlsxSerializerOptions.Default;
@@ -212,6 +235,8 @@ public static class XlsxSerializer
     /// (network streams are fine); it is left open after writing.</summary>
     /// <remarks>An empty source with <see cref="XlsxSerializerOptions.HeaderTitles"/> set still
     /// produces a workbook with the header row; an empty source without titles writes nothing.</remarks>
+    [RequiresUnreferencedCode(ReflectsOverRowTypes)]
+    [RequiresDynamicCode(ReflectsOverRowTypes)]
     public static void ToStream<T>(IEnumerable<T> rows, Stream stream, XlsxSerializerOptions? options = null)
     {
         options ??= XlsxSerializerOptions.Default;
@@ -253,6 +278,8 @@ public static class XlsxSerializer
     /// <summary>Writes .xlsx content to an <see cref="IBufferWriter{T}"/> such as
     /// System.IO.Pipelines.PipeWriter (e.g. ASP.NET Core's Response.BodyWriter).
     /// Flushing the underlying pipe is left to the caller.</summary>
+    [RequiresUnreferencedCode(ReflectsOverRowTypes)]
+    [RequiresDynamicCode(ReflectsOverRowTypes)]
     public static void ToBufferWriter<T>(IEnumerable<T> rows, IBufferWriter<byte> bufferWriter, XlsxSerializerOptions? options = null)
     {
         if (bufferWriter == null)
@@ -280,6 +307,8 @@ public static class XlsxSerializer
     /// a bad format code, a missing serializer) still throw: their addressee is the developer,
     /// and the fix is in code, not in the data.</para>
     /// </remarks>
+    [RequiresUnreferencedCode(ReflectsOverRowTypes)]
+    [RequiresDynamicCode(ReflectsOverRowTypes)]
     public static IReadOnlyList<XlsxDataError> Validate<T>(IEnumerable<T> rows, XlsxSerializerOptions? options = null)
     {
         options ??= XlsxSerializerOptions.Default;
@@ -301,6 +330,8 @@ public static class XlsxSerializer
 
 #if !NETSTANDARD2_0
     /// <inheritdoc cref="Validate{T}"/>
+    [RequiresUnreferencedCode(ReflectsOverRowTypes)]
+    [RequiresDynamicCode(ReflectsOverRowTypes)]
     public static async Task<IReadOnlyList<XlsxDataError>> ValidateAsync<T>(IAsyncEnumerable<T> rows, XlsxSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         options ??= XlsxSerializerOptions.Default;
@@ -352,6 +383,8 @@ public static class XlsxSerializer
     /// <summary>Creates an .xlsx file asynchronously. The output is streamed; no working folder is used.</summary>
     /// <remarks>An empty source with <see cref="XlsxSerializerOptions.HeaderTitles"/> set still
     /// produces a workbook with the header row; an empty source without titles produces no file.</remarks>
+    [RequiresUnreferencedCode(ReflectsOverRowTypes)]
+    [RequiresDynamicCode(ReflectsOverRowTypes)]
     public static async Task ToFileAsync<T>(IEnumerable<T> rows, string fileName, XlsxSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         options ??= XlsxSerializerOptions.Default;
@@ -388,6 +421,8 @@ public static class XlsxSerializer
     /// <para>An empty source with <see cref="XlsxSerializerOptions.HeaderTitles"/> set still
     /// produces a workbook with the header row; an empty source without titles writes nothing.</para>
     /// </remarks>
+    [RequiresUnreferencedCode(ReflectsOverRowTypes)]
+    [RequiresDynamicCode(ReflectsOverRowTypes)]
     public static async Task ToStreamAsync<T>(IEnumerable<T> rows, Stream stream, XlsxSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         options ??= XlsxSerializerOptions.Default;
@@ -412,6 +447,8 @@ public static class XlsxSerializer
     /// passed directly, without materializing it first.</summary>
     /// <remarks>An empty source with <see cref="XlsxSerializerOptions.HeaderTitles"/> set still
     /// produces a workbook with the header row; an empty source without titles produces no file.</remarks>
+    [RequiresUnreferencedCode(ReflectsOverRowTypes)]
+    [RequiresDynamicCode(ReflectsOverRowTypes)]
     public static async Task ToFileAsync<T>(IAsyncEnumerable<T> rows, string fileName, XlsxSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         options ??= XlsxSerializerOptions.Default;
@@ -446,6 +483,8 @@ public static class XlsxSerializer
     /// open after writing.</summary>
     /// <remarks>An empty source with <see cref="XlsxSerializerOptions.HeaderTitles"/> set still
     /// produces a workbook with the header row; an empty source without titles writes nothing.</remarks>
+    [RequiresUnreferencedCode(ReflectsOverRowTypes)]
+    [RequiresDynamicCode(ReflectsOverRowTypes)]
     public static async Task ToStreamAsync<T>(IAsyncEnumerable<T> rows, Stream stream, XlsxSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         options ??= XlsxSerializerOptions.Default;
@@ -469,6 +508,8 @@ public static class XlsxSerializer
 
     /// <summary>Writes .xlsx content to a <see cref="System.IO.Pipelines.PipeWriter"/> from an
     /// asynchronous source, flushing as data is produced.</summary>
+    [RequiresUnreferencedCode(ReflectsOverRowTypes)]
+    [RequiresDynamicCode(ReflectsOverRowTypes)]
     public static Task ToPipeWriterAsync<T>(IAsyncEnumerable<T> rows, System.IO.Pipelines.PipeWriter pipeWriter, XlsxSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         if (pipeWriter == null)
@@ -571,6 +612,8 @@ public static class XlsxSerializer
     /// produced, so backpressure is honored.</summary>
     /// <remarks>The pipe is left uncompleted: ASP.NET Core completes the response pipe itself;
     /// a hand-made <see cref="System.IO.Pipelines.Pipe"/> is completed by the caller.</remarks>
+    [RequiresUnreferencedCode(ReflectsOverRowTypes)]
+    [RequiresDynamicCode(ReflectsOverRowTypes)]
     public static Task ToPipeWriterAsync<T>(IEnumerable<T> rows, System.IO.Pipelines.PipeWriter pipeWriter, XlsxSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
         if (pipeWriter == null)

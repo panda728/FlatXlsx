@@ -15,7 +15,7 @@ depends on it is depending on an accident.
 | `AmbientEnvironmentTests` | Numbers and dates are stored independently of the machine's locale. | Anyone running on a server whose culture nobody chose. |
 | `MessageLocalizationTests` | Messages follow the UI culture, fall back to English when untranslated, keep their numbers, and never change the workbook. | The developer reading a failure, and the support desk reading their screenshot. |
 | `OutputTargetTests` | File, stream, `IBufferWriter`, and pipe destinations behave: no seeking, no closing what the caller owns, no file when there is nothing to write. | The calling application. |
-| `AnswerabilityTests` | A data failure carries its location and numbers as structured properties; `Validate` collects every data problem in one pass; configuration mistakes stay developer-addressed exceptions. | The data owner who must fix the rows, and the handler that ledgers the failures. |
+| `AnswerabilityTests` | A data failure carries its location and numbers as structured properties; `Validate` collects every data problem in one pass; configuration mistakes stay developer-addressed exceptions; every entry point is annotated so a trimmed or AOT build is warned at compile time, and the remedy that warning names resolves without reflection. | The data owner who must fix the rows, the handler that ledgers the failures, and the team publishing trimmed or AOT. |
 | `RegressionLedgerTests` | Defects that already reached a build stay fixed. | Everyone; this is the claim history. |
 
 The contract suites are parameterised over `SerializerCase.All`. Adding a type there subjects it
@@ -44,6 +44,10 @@ Depending on any of these is unsupported; they may change without a test turning
   writer is not.
 - **`netstandard2.0` / `netstandard2.1` behaviour at runtime.** The suite runs on net8.0 and
   net10.0 only; the older targets are compiled but not exercised. See Conditions.
+- **That a trimmed or AOT-published application exports successfully.** What is guaranteed is
+  that such a build is *warned* (`AnswerabilityTests`) and that the remedy the warning names —
+  registering a serializer per row type — resolves without reflection. Whether a given trimmed
+  deployment then works is not exercised here; it needs a publish, not a test run.
 
 ## Conditions — where the guarantee applies
 

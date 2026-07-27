@@ -121,6 +121,50 @@ restores alongside it.
 To add a language, copy `FlatXlsx/Resources/Strings.resx` to `Strings.<culture>.resx`, translate
 the `<value>` elements, and rebuild - the satellite assembly is produced automatically.
 
+## Trimming and native AOT
+
+Working out which columns a row type produces means reflecting over its members and compiling an
+expression tree for them. A trimmer may have removed those members, and native AOT cannot
+generate code for a type it never saw — so an export that works in development can fail once the
+application is published trimmed or AOT.
+
+Every entry point is annotated, so **the build that introduces the problem reports it** rather
+than the deployment that runs into it:
+
+~~~
+warning IL2026: Using member 'FlatXlsx.XlsxSerializer.ToFile<T>(...)' which has
+'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code.
+~~~
+
+This matters beyond `PublishAot`: trimming is on by default for Blazor WebAssembly and
+.NET MAUI release builds.
+
+To export from such an application, register a serializer for every row type. That path resolves
+by type test and reflects over nothing, so it is safe to suppress the warning once every row type
+is covered:
+
+~~~csharp
+sealed class OrderXlsxSerializer : IXlsxSerializer<Order>
+{
+    public void WriteTitle(XlsxCellWriter writer, Order value, XlsxSerializerOptions options, string name = "value")
+    {
+        writer.Write("Id");
+        writer.Write("Quantity");
+    }
+
+    public void Serialize(XlsxCellWriter writer, Order value, XlsxSerializerOptions options)
+    {
+        writer.Write(value.Id);
+        writer.Write(value.Quantity);
+    }
+}
+
+var options = new XlsxSerializerOptions { CustomSerializers = [new OrderXlsxSerializer()] };
+~~~
+
+Writing that by hand is the price of AOT today; a source generator that emits it is the obvious
+next step and is not implemented yet.
+
 ## Handling untrusted data
 
 Values are frequently outside the caller's control, so the writer is built to keep any input

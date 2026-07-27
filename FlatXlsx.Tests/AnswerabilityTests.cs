@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using FlatXlsx.Tests.Support;
 
 namespace FlatXlsx.Tests;
@@ -173,6 +175,47 @@ public class AnswerabilityTests
             () => Xlsx.Write(rows, XlsxSerializerOptions.Default));
 
         Assert.Contains("System.Range", ex.Message);
+    }
+
+    [Fact]
+    public void Every_entry_point_warns_a_trimmed_or_AOT_build_before_it_ships()
+    {
+        // Claimant: the team publishing with PublishTrimmed or PublishAot. Working out a row
+        // type's columns reflects over its members, which those builds can break - and the break
+        // would otherwise surface in their customer's deployment, not in the build that caused
+        // it. Every entry point therefore carries the annotation that moves it to compile time.
+        var entryPoints = typeof(XlsxSerializer)
+            .GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Where(m => m.Name.StartsWith("To") || m.Name.StartsWith("Validate"))
+            .ToArray();
+
+        Assert.NotEmpty(entryPoints);
+        Assert.All(entryPoints, method =>
+        {
+            Assert.NotNull(method.GetCustomAttribute<RequiresUnreferencedCodeAttribute>());
+            Assert.NotNull(method.GetCustomAttribute<RequiresDynamicCodeAttribute>());
+        });
+    }
+
+    [Fact]
+    public void The_remedy_the_warning_names_is_reachable_without_reflection()
+    {
+        // The warning tells the caller to register a serializer for every row type. That advice
+        // is only honest if the registered path resolves by type test rather than by reflecting
+        // over interfaces, so the value it produces is asserted here alongside the claim.
+        var options = new XlsxSerializerOptions { CustomSerializers = [new UpperCaseSerializer()] };
+
+        var sheet = Xlsx.Read(new[] { "abc" }, options);
+
+        Assert.Equal("ABC", sheet.Texts(0)[0]);
+    }
+
+    sealed class UpperCaseSerializer : IXlsxSerializer<string>
+    {
+        public void WriteTitle(XlsxCellWriter writer, string value, XlsxSerializerOptions options, string name = "value")
+            => writer.Write(name);
+        public void Serialize(XlsxCellWriter writer, string value, XlsxSerializerOptions options)
+            => writer.Write(value?.ToUpperInvariant());
     }
 
     [Fact]
