@@ -191,6 +191,25 @@ The one deliberate exception is the shared-string table, which grows with the nu
 For large data sets, `XlsxSerializerOptions.CompressionLevel = CompressionLevel.Fastest`
 trades a slightly larger file for even faster serialization.
 
+### Scaling with row count
+
+FlatXlsx on its own, same 19-column rows, up to the neighbourhood of Excel's own
+1,048,576-row limit. ClosedXML is not measured here: at the top of this range a library that
+holds the whole workbook in memory needs several gigabytes, which measures the machine rather
+than the library.
+
+| Rows      | Mean       | Allocated |
+|---------- |-----------:|----------:|
+| 100       |    0.80 ms |  11.49 KB |
+| 10,000    |   15.35 ms |  11.50 KB |
+| 100,000   |  146.41 ms |  11.55 KB |
+| 1,000,000 | 1,373.4 ms |  11.71 KB |
+
+Time is linear in the number of rows, and allocation is flat — 10,000x the data costs 0.2 KB
+more. These rows repeat a fixed block, so the number of *distinct* strings stays constant; that
+is what separates the streaming cost from the shared-string table, which is the one part that
+does grow with the data and is bounded by `MaxSharedStrings`.
+
 ## Examples
 
 Every example below is runnable:

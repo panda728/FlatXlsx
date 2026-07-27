@@ -36,5 +36,7 @@ Console.WriteLine($"FlatXlsx : {sw.ElapsedMilliseconds:#,##0}ms");
 sw.Stop();
 
 #else
-BenchmarkRunner.Run<ExportExcel>(null, args);
+// Two suites: ExportExcel compares against ClosedXML, ExportScale measures how one export
+// grows with the row count. Pass e.g. --filter *ExportScale* to run just one of them.
+BenchmarkSwitcher.FromTypes(new[] { typeof(ExportExcel), typeof(ExportScale) }).Run(args);
 #endif
