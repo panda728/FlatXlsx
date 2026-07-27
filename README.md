@@ -207,8 +207,38 @@ than the library.
 
 Time is linear in the number of rows, and allocation is flat — 10,000x the data costs 0.2 KB
 more. These rows repeat a fixed block, so the number of *distinct* strings stays constant; that
-is what separates the streaming cost from the shared-string table, which is the one part that
-does grow with the data and is bounded by `MaxSharedStrings`.
+isolates the streaming cost from the shared-string table, which is the one part that does grow
+with the data. The next table measures what that isolation was hiding.
+
+### When every row carries a value no other row has
+
+Real exports have an order number or a timestamp on every row. Those go into the shared-string
+table, and it grows with them. Same rows as above, with one column made unique per row:
+
+| Rows      | Variant                       | Mean      | Allocated |
+|---------- |------------------------------ |----------:|----------:|
+| 1,000,000 | repeated values               | 1,439 ms  |  11.71 KB |
+| 1,000,000 | one unique column             | 2,619 ms  |  87.95 MB |
+| 1,000,000 | one unique column, table capped | 1,927 ms |  122.11 KB |
+
+So the flat ~12 KB is the streaming cost, not the whole story: **interning a million distinct
+strings costs about 88 MB**, and that is the honest number for a real export of that size.
+
+Lowering `MaxSharedStrings` puts a ceiling back on it — values that no longer fit are written
+into the cell instead:
+
+~~~csharp
+var options = XlsxSerializerOptions.Default with { MaxSharedStrings = 1_000 };
+~~~
+
+Allocation then stays flat again (121.96 KB at 100,000 rows, 122.11 KB at 1,000,000) and the
+export is faster. It also does not cost file size here: interning only pays off when values
+repeat, because a value unique to one row ends up stored twice — once in the table and once as
+the index pointing at it. Measured on the million-row file above, the capped output is
+**5.8 MB against 9.1 MB**.
+
+Rule of thumb: keep the default when columns repeat (statuses, categories, names); lower it when
+most rows carry values of their own.
 
 ## Examples
 
