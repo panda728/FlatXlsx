@@ -434,3 +434,5 @@ approach for query strings or form data on the web side, check out WebSerializer
 
 ## License
 This library is licensed under the MIT License.
+Copyright notices and license terms for the third-party code it derives from are reproduced in
+[THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt), which also ships inside the NuGet package.
