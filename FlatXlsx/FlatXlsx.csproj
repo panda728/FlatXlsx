@@ -6,8 +6,8 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>FlatXlsx</Title>
-    <Version>1.1.0</Version>
-    <PackageReleaseNotes>Trimming and native AOT: every entry point now carries RequiresUnreferencedCode and RequiresDynamicCode, so an application published trimmed or AOT is warned at build time instead of failing in deployment - relevant beyond PublishAot, since trimming is on by default for Blazor WebAssembly and MAUI release builds. Registering a serializer per row type is the documented way out, and that path no longer reflects: the lookup behind CustomSerializers matches by type test rather than by reading a type's interfaces.</PackageReleaseNotes>
+    <Version>1.1.1</Version>
+    <PackageReleaseNotes>License compliance: the package now carries THIRD-PARTY-NOTICES.txt, reproducing the MIT license and copyright notice of Cysharp/WebSerializer, from which the serialization pipeline is derived. No code or API changes.</PackageReleaseNotes>
     <Authors>Hideyuki Kitao</Authors>
     <Company />
     <LangVersion>latest</LangVersion>
