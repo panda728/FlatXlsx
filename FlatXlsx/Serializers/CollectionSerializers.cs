@@ -1,4 +1,6 @@
-﻿namespace FlatXlsx.Serializers;
+﻿// Derived from Cysharp/WebSerializer (MIT License, Copyright (c) 2022 Cysharp, Inc.).
+// See THIRD-PARTY-NOTICES.txt in the repository root.
+namespace FlatXlsx.Serializers;
 
 public sealed class EnumerableXlsxSerializer<TCollection, TElement> : IXlsxSerializer<TCollection>
     where TCollection : IEnumerable<TElement>

@@ -1,4 +1,6 @@
-﻿#if NETSTANDARD2_0
+﻿// Derived from Cysharp/WebSerializer (MIT License, Copyright (c) 2022 Cysharp, Inc.).
+// See THIRD-PARTY-NOTICES.txt in the repository root.
+#if NETSTANDARD2_0
 
 using System.Collections.Generic;
 using System.Reflection;

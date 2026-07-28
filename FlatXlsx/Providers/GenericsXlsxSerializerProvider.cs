@@ -1,4 +1,6 @@
-﻿using FlatXlsx.Serializers;
+﻿// Derived from Cysharp/WebSerializer (MIT License, Copyright (c) 2022 Cysharp, Inc.).
+// See THIRD-PARTY-NOTICES.txt in the repository root.
+using FlatXlsx.Serializers;
 
 namespace FlatXlsx.Providers;
 

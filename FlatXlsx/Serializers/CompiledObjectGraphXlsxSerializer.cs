@@ -1,4 +1,6 @@
-﻿using System.Buffers;
+﻿// Derived from Cysharp/WebSerializer (MIT License, Copyright (c) 2022 Cysharp, Inc.).
+// See THIRD-PARTY-NOTICES.txt in the repository root.
+using System.Buffers;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.Serialization;

@@ -1,4 +1,6 @@
-﻿using System.Runtime.CompilerServices;
+﻿// Derived from Cysharp/WebSerializer (MIT License, Copyright (c) 2022 Cysharp, Inc.).
+// See THIRD-PARTY-NOTICES.txt in the repository root.
+using System.Runtime.CompilerServices;
 
 namespace FlatXlsx;
 
