@@ -46,6 +46,70 @@ public class RegressionLedgerTests
         Assert.Equal("A1:B3", sheet.AutoFilterRange);
     }
 
+    class Address
+    {
+        public string Street { get; set; } = "";
+        public string City { get; set; } = "";
+    }
+
+    class OrderRow
+    {
+        public int Id { get; set; }
+        public Address? Address { get; set; }
+        public string Note { get; set; } = "";
+    }
+
+    [Fact]
+    public void A_null_nested_object_still_fills_its_columns()
+    {
+        // A null Address produced one empty cell where a populated one produced two, so every
+        // value to its right shifted left under the wrong heading - a plausible-looking workbook
+        // with the Note in the City column.
+        var rows = new[]
+        {
+            new OrderRow { Id = 1, Address = new Address { Street = "s", City = "c" }, Note = "n1" },
+            new OrderRow { Id = 2, Address = null, Note = "n2" },
+        };
+
+        var sheet = Xlsx.Read(rows, XlsxSerializerOptions.Default with { HasHeaderRow = true });
+
+        Assert.Equal(new[] { "Id", "Street", "City", "Note" }, sheet.Texts(0));
+        Assert.Equal(4, sheet.Row(2).Count);
+        Assert.Equal("n2", sheet.Texts(2)[3]);   // the Note stays under Note
+        Assert.Null(sheet.Texts(2)[1]);
+        Assert.Null(sheet.Texts(2)[2]);
+    }
+
+    [Fact]
+    public void A_null_nested_object_in_the_first_row_does_not_break_the_header()
+    {
+        // Member-name titles walked value.Address.Street without a null check, so a null in the
+        // first row killed the whole export with a bare NullReferenceException.
+        var rows = new[] { new OrderRow { Id = 1, Address = null, Note = "n" } };
+
+        var sheet = Xlsx.Read(rows, XlsxSerializerOptions.Default with { HasHeaderRow = true });
+
+        Assert.Equal(new[] { "Id", "Street", "City", "Note" }, sheet.Texts(0));
+        Assert.Equal(4, sheet.Row(1).Count);
+    }
+
+    class TreeNode
+    {
+        public string Value { get; set; } = "";
+        public TreeNode? Parent { get; set; }
+    }
+
+    [Fact]
+    public void A_self_referencing_type_with_a_null_link_still_serializes()
+    {
+        // The null-column walk must cut type cycles instead of recursing until MaxDepth: a tree
+        // node whose Parent is null is an ordinary row, not a circular reference.
+        var sheet = Xlsx.Read(new[] { new TreeNode { Value = "root", Parent = null } },
+            XlsxSerializerOptions.Default);
+
+        Assert.Equal("root", sheet.Texts(0)[0]);
+    }
+
     class TypeWithStaticMembers
     {
         public static TypeWithStaticMembers Empty { get; } = new();

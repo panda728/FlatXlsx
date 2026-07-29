@@ -7,7 +7,7 @@ using System.Runtime.Serialization;
 
 namespace FlatXlsx.Serializers;
 
-internal sealed class CompiledObjectGraphXlsxSerializer<T> : IXlsxSerializer<T>
+internal sealed class CompiledObjectGraphXlsxSerializer<T> : IXlsxSerializer<T>, INullColumnSpan
 {
     delegate void WriteTitleMethod(XlsxCellWriter writer, IXlsxSerializer?[]? alternateSerializers, T value, XlsxSerializerOptions options);
     delegate void SerializeMethod(XlsxCellWriter writer, IXlsxSerializer?[]? alternateSerializers, T value, XlsxSerializerOptions options);
@@ -15,6 +15,7 @@ internal sealed class CompiledObjectGraphXlsxSerializer<T> : IXlsxSerializer<T>
     static readonly IXlsxSerializer?[]? alternateSerializers;
     static readonly WriteTitleMethod writeTitle;
     static readonly SerializeMethod serialize;
+    static readonly Action<XlsxCellWriter, XlsxSerializerOptions> writeNulls;
     static readonly bool isReferenceType;
 
     static CompiledObjectGraphXlsxSerializer()
@@ -39,6 +40,7 @@ internal sealed class CompiledObjectGraphXlsxSerializer<T> : IXlsxSerializer<T>
         }
         writeTitle = CompileTitleWriter(typeof(T), members);
         serialize = CompileSerializer(typeof(T), members);
+        writeNulls = CompileNullWriter(members);
     }
 
     public void WriteTitle(XlsxCellWriter writer, T value, XlsxSerializerOptions options, string name = "value")
@@ -54,7 +56,9 @@ internal sealed class CompiledObjectGraphXlsxSerializer<T> : IXlsxSerializer<T>
         {
             if (value == null)
             {
-                writer.WriteEmpty();
+                // A null instance still owns its columns; one empty cell would shift every
+                // later value under the wrong heading.
+                WriteNull(writer, options);
                 return;
             }
         }
@@ -63,6 +67,9 @@ internal sealed class CompiledObjectGraphXlsxSerializer<T> : IXlsxSerializer<T>
         serialize(writer, alternateSerializers, value, options);
         writer.ExitNested();
     }
+
+    public void WriteNull(XlsxCellWriter writer, XlsxSerializerOptions options)
+        => NullColumns.Walk(typeof(T), writer, options, writeNulls);
 
     static WriteTitleMethod CompileTitleWriter(Type valueType, SerializableMemberInfo[] memberInfos)
     {
@@ -74,6 +81,8 @@ internal sealed class CompiledObjectGraphXlsxSerializer<T> : IXlsxSerializer<T>
         var argOptions = Expression.Parameter(typeof(XlsxSerializerOptions));
         var foreachBodies = new List<Expression>();
 
+        // Titles come from metadata, but the walk still passes member values down so nested
+        // serializers can recurse; a null instance must yield defaults instead of throwing.
         var i = 0;
         foreach (var memberInfo in memberInfos)
         {
@@ -84,11 +93,18 @@ internal sealed class CompiledObjectGraphXlsxSerializer<T> : IXlsxSerializer<T>
                     typeof(IXlsxSerializer<>).MakeGenericType(memberInfo.MemberType)
                 );
 
+            Expression memberValue = valueType.IsValueType
+                ? memberInfo.GetMemberExpression(argValue)
+                : Expression.Condition(
+                    Expression.Equal(argValue, Expression.Constant(null, valueType)),
+                    Expression.Default(memberInfo.MemberType),
+                    memberInfo.GetMemberExpression(argValue));
+
             var callWriteMember = Expression.Call(
                 serializer,
                 ReflectionInfos.IXlsxSerializer_WriteTitle(memberInfo.MemberType),
                 argWriter,
-                memberInfo.GetMemberExpression(argValue),
+                memberValue,
                 argOptions,
                 Expression.Constant(memberInfo.Name)
             );
@@ -136,10 +152,12 @@ internal sealed class CompiledObjectGraphXlsxSerializer<T> : IXlsxSerializer<T>
             if (!memberInfo.MemberType.IsValueType || memberInfo.MemberType.IsNullable())
             {
                 var nullExpr = Expression.Constant(null, memberInfo.MemberType);
+                // The null branch writes the member's whole column span, not one cell - a null
+                // nested object must not shift the columns to its right.
                 var ifBody = Expression.IfThenElse(
                     Expression.NotEqual(memberInfo.GetMemberExpression(argValue), nullExpr),
                     callSerializer,
-                    Expression.Call(argWriter, ReflectionInfos.Writer_Empty)
+                    Expression.Call(ReflectionInfos.NullColumns_WriteFor(memberInfo.MemberType), argWriter, argOptions)
                 );
                 foreachBodies.Add(ifBody);
             }
@@ -156,9 +174,34 @@ internal sealed class CompiledObjectGraphXlsxSerializer<T> : IXlsxSerializer<T>
 
     }
 
+    static Action<XlsxCellWriter, XlsxSerializerOptions> CompileNullWriter(SerializableMemberInfo[] memberInfos)
+    {
+        // What a null instance writes: one empty cell per scalar member, and each nested
+        // member's own null span, so the total width matches a populated instance.
+        var argWriter = Expression.Parameter(typeof(XlsxCellWriter));
+        var argOptions = Expression.Parameter(typeof(XlsxSerializerOptions));
+        var bodies = new List<Expression>();
+
+        foreach (var memberInfo in memberInfos)
+        {
+            if (memberInfo.MemberType.IsValueType && !memberInfo.MemberType.IsNullable())
+                bodies.Add(Expression.Call(argWriter, ReflectionInfos.Writer_Empty));
+            else
+                bodies.Add(Expression.Call(ReflectionInfos.NullColumns_WriteFor(memberInfo.MemberType), argWriter, argOptions));
+        }
+
+        if (bodies.Count == 0)
+            bodies.Add(Expression.Empty());
+
+        var lambda = Expression.Lambda<Action<XlsxCellWriter, XlsxSerializerOptions>>(
+            Expression.Block(bodies), argWriter, argOptions);
+        return lambda.Compile();
+    }
+
     internal static class ReflectionInfos
     {
         internal static MethodInfo Writer_Empty { get; } = typeof(XlsxCellWriter).GetMethod("WriteEmpty")!;
+        internal static MethodInfo NullColumns_WriteFor(Type type) => typeof(NullColumns).GetMethod("WriteFor")!.MakeGenericMethod(type);
         internal static MethodInfo XlsxSerializerOptions_GetRequiredSerializer(Type type) => typeof(XlsxSerializerOptions).GetMethod("GetRequiredSerializer", 1, Type.EmptyTypes)!.MakeGenericMethod(type);
         internal static MethodInfo IXlsxSerializer_Serialize(Type type) => typeof(IXlsxSerializer<>).MakeGenericType(type).GetMethod("Serialize")!;
         internal static MethodInfo IXlsxSerializer_WriteTitle(Type type) => typeof(IXlsxSerializer<>).MakeGenericType(type).GetMethod("WriteTitle")!;
